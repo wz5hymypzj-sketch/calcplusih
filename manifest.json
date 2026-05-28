@@ -1,0 +1,8 @@
+{
+  "name": "Dan's Beat Speed Detector",
+  "short_name": "Dan's Tuner",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}
