@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V29</title>
+<title>DAN'S BEAT SPEED DETECTOR - V40</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -72,6 +72,9 @@
     font-size: 0.7rem; font-weight: 700; cursor: pointer; text-transform: uppercase;
   }
   button.ctrl-btn:active { background: #000000; color: #ffffff; }
+  button.ctrl-btn.fix-btn { background: #fff0f0; border: 1px solid #d00000; color: #d00000; font-weight: 900; }
+  button.ctrl-btn.fix-btn:active { background: #d00000; color: #ffffff; }
+  button.ctrl-btn.grade-btn { background: #000; color: #fff; border: 2px solid #000; padding: 8px; width: 100%; font-size: 0.8rem; margin-bottom: 8px;}
 
   .iv-tabs { display: flex; gap: 2px; margin-bottom: 6px; flex-shrink: 0; flex-wrap: wrap;}
   .iv-tab { 
@@ -108,24 +111,34 @@
   .param-side { display: flex; flex-direction: column; gap: 2px; }
   .param-lbl { font-size: 0.65rem; color: #555; text-transform: uppercase; font-weight: 800; }
 
-  .dual-readout { display: flex; margin-bottom: 6px; flex-shrink: 0; width: 100%; }
+  .dual-readout { display: flex; margin-bottom: 6px; flex-shrink: 0; width: 100%; gap: 6px; }
   .readout-box {
-    flex: 1; border: 3px solid #000; border-radius: 6px; padding: 6px 6px; 
+    flex: 1; border: 3px solid #000; border-radius: 6px; padding: 8px 6px; 
     text-align: center; background: #f0f0f0; position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
   .val-large { font-size: 2.8rem; font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; }
   .val-lbl { font-size: 0.85rem; text-transform: uppercase; font-weight: 900; color: #000; margin-top: 2px; }
+  .textbook-bps { font-size: 0.75rem; font-weight: 800; color: #666; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  
   #signalLight {
     position: absolute; top: 10px; left: 10px; width: 12px; height: 12px;
     border-radius: 50%; background: #e0e0e0; border: 2px solid #000; transition: background 0.05s, box-shadow 0.05s;
   }
   #captureStateLbl { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; font-weight: 900; color: #666; text-transform: uppercase; }
-  .textbook-bps { position: absolute; bottom: 6px; right: 8px; font-size: 0.85rem; font-weight: 900; color: #666; }
 
-  .workspace { flex: 1 1 auto; overflow: hidden; border: 1px solid #000; border-radius: 4px 4px 0 0; border-bottom: none; background: #ffffff; display: flex; flex-direction: column; }
+  /* STRICT FLEXBOX BOUNDARIES TO PREVENT SCROLL BLOWOUT */
+  .layout-wrapper { display: flex; flex-direction: column; width: 100%; flex: 1; min-height: 0; overflow: hidden; }
+  .left-panel { display: flex; flex-direction: column; flex-shrink: 0; }
+  .right-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
   
-  #logContainer, #ihContainer { width: 100%; height: 100%; overflow-y: auto; }
-  #guideContainer { flex: 1; width: 100%; height: 100%; overflow: hidden; display: none; flex-direction: column; }
+  .workspace { flex: 1; min-height: 0; overflow: hidden; border: 1px solid #000; border-radius: 4px 4px 0 0; border-bottom: none; background: #ffffff; display: flex; flex-direction: column; }
+  
+  #logContainer, #ihContainer { flex: 1; min-height: 0; width: 100%; overflow-y: auto; }
+  #guideContainer { flex: 1; min-height: 0; width: 100%; overflow: hidden; display: none; flex-direction: column; }
+  
+  .guide-pane { flex: 1; min-height: 0; display: none; padding: 8px; flex-direction: column; gap: 8px; background: #f9f9f9; overflow-y: auto; }
+  .guide-pane.active { display: flex; }
 
   table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.75rem; table-layout: fixed; }
   th:nth-child(1) { width: 15%; } th:nth-child(2) { width: 16%; } th:nth-child(3) { width: 22%; } th:nth-child(4) { width: 17%; } th:nth-child(5) { width: 20%; } th:nth-child(6) { width: 10%; }
@@ -143,16 +156,12 @@
   .gt-btn:last-child { border-right: none; }
   .gt-btn.active { background: #fff; color: #d00000; border-bottom: 2px solid #fff; margin-bottom: -2px; }
 
-  .guide-pane { display: none; padding: 8px; flex-direction: column; gap: 8px; background: #f9f9f9; overflow-y: auto; flex: 1; }
-  .guide-pane.active { display: flex; }
-
-  .guide-step { border: 2px solid #000; border-radius: 6px; padding: 8px; background: #fff; }
-  .guide-step h3 { font-size: 0.85rem; color: #000; margin-bottom: 4px; text-transform: uppercase; font-weight: 900; background: #eee; padding: 4px; border-radius: 2px; }
-  .guide-step p { font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; color: #444; line-height: 1.2; }
+  .guide-step { border: 2px solid #000; border-radius: 6px; padding: 8px; background: #fff; flex-shrink: 0; }
+  .guide-step h3 { font-size: 0.85rem; color: #000; margin-bottom: 4px; text-transform: uppercase; font-weight: 900; background: #eee; padding: 4px; border-radius: 2px; text-align: center; }
+  .guide-step p { font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; color: #444; line-height: 1.2; text-align: center; }
+  .tuning-target { font-weight: 700; color: #000; text-align: center; margin-bottom: 6px; font-size: 0.75rem; }
   
-  #gPane-UP, #gPane-DOWN, #gPane-CHECK { overflow-y: hidden; justify-content: center; }
-
-  #gPane-UP .guide-step, #gPane-DOWN .guide-step, #gPane-CHECK .guide-step { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px; gap: 4px; }
+  #gPane-UP .guide-step, #gPane-DOWN .guide-step, #gPane-CHECK .guide-step { display: flex; flex-direction: column; justify-content: center; padding: 8px; gap: 4px; }
   
   .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; justify-content: center; }
   .action-btn { background: #e0f0ff; border: 1px solid #0066ff; color: #0044bb; font-size: 0.75rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 0 #0066ff; transition: transform 0.05s, box-shadow 0.05s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px;}
@@ -161,10 +170,16 @@
   .action-btn.logged { background: #e6ffe6; border-color: #00aa00; color: #006600; box-shadow: 0 2px 0 #00aa00; }
   .action-btn.logged:active { box-shadow: 0 0 0 #00aa00; }
 
-  .guide-result { font-size: 0.75rem; font-weight: 600; padding: 6px; background: #fff; border: 1px dashed #000; text-align: center; line-height: 1.4; border-radius: 4px; }
-  .guide-res-wait { background: #f4f4f4; color: #666; border: 1px dashed #999; font-style: italic; }
+  .listen-btn.active-listen { background: #0066ff; color: #fff; box-shadow: 0 0 0 #0066ff; transform: translateY(2px); }
+
+  .guide-result { font-size: 0.75rem; font-weight: 600; padding: 6px; background: #fff; border: 1px dashed #000; text-align: left; line-height: 1.4; border-radius: 4px; }
+  .guide-res-wait { background: #f4f4f4; color: #666; border: 1px dashed #999; font-style: italic; text-align: center; }
   .guide-res-pass { background: #e6ffe6; color: #006600; border: 2px solid #00aa00; font-weight: 900; }
   .guide-res-warn { background: #ffe6e6; color: #d00000; border: 2px solid #d00000; font-weight: 900; }
+
+  .grade-card { background: #fff8f8; border: 2px solid #d00000; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+  .grade-title { font-weight: 900; color: #d00000; font-size: 0.85rem; margin-bottom: 4px; text-transform: uppercase; border-bottom: 1px solid #d00000; padding-bottom: 2px; }
+  .grade-desc { font-size: 0.75rem; color: #333; margin-bottom: 8px; line-height: 1.3; }
 
   .dynamic-controls { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 4px; background: #eee; padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
   .dynamic-btn { font-size: 1.2rem; font-weight: 900; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #000; background: #fff; cursor: pointer; display:flex; justify-content:center; align-items:center; transition: opacity 0.2s;}
@@ -180,30 +195,7 @@
     background: #f4f4f4; color: #000; cursor: pointer; box-shadow: 0 4px 0 #000;
   }
   .big-nav-controls button:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; background: #e0e0e0; }
-  
-  .laptop-hint { text-align: center; font-size: 0.55rem; color: #888; margin-top: 4px; margin-bottom: 0px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; flex-shrink: 0; }
 
-  /* Layout Wrapper Styles */
-  .layout-wrapper {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-  .left-panel {
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-  }
-  .right-panel {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    overflow: hidden;
-  }
-
-  /* * MOBILE LANDSCAPE ONLY FIX */
   @media (orientation: landscape) and (max-height: 650px) {
     body {
       max-width: 900px;
@@ -249,64 +241,34 @@
     .left-panel .readout-box { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-width: 3px; padding: 4px; }
     .left-panel .val-large    { font-size: clamp(2.6rem, 10vh, 4.5rem); line-height: 1; }
     .left-panel .val-lbl      { font-size: clamp(0.75rem, 2vh, 0.95rem); margin-top: 4px; }
-    .left-panel .textbook-bps { font-size: clamp(0.75rem, 1.8vh, 0.95rem); }
+    .left-panel .textbook-bps { font-size: clamp(0.7rem, 1.8vh, 0.9rem); }
 
-    .right-panel { flex: 45; height: 100%; }
+    .right-panel { flex: 45; height: 100%; display: flex; flex-direction: column; min-height: 0; }
   }
 </style>
 <script>
-  // Dynamically generate the App Icon instantly before the page fully loads
   (function generateAppIcon() {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
-
-    // White Background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, 256, 256);
-
-    // Font Setup - matching the heavy italic title, scaled down for 2 lines
     ctx.font = 'italic 900 110px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-
-    // D B over S D (Dan's Beat Speed Detector)
-    const lines = [
-      { text: 'DB', x: 124, y: 80 },  // Nudged left slightly to compensate for italic lean
-      { text: 'SD', x: 124, y: 185 }
-    ];
-
-    // Draw thick black outline/shadow effect
+    const lines = [ { text: 'DB', x: 124, y: 80 }, { text: 'SD', x: 124, y: 185 } ];
     ctx.fillStyle = '#000000';
-    const offsets = [
-      [6,6], [-6,-6], [6,-6], [-6,6],
-      [6,0], [-6,0], [0,6], [0,-6],
-      [4,4], [-4,-4], [4,-4], [-4,4]
-    ];
-    lines.forEach(line => {
-      offsets.forEach(off => {
-        ctx.fillText(line.text, line.x + off[0], line.y + off[1]);
-      });
-    });
-
-    // Draw the main Red Text over the top
+    const offsets = [ [6,6], [-6,-6], [6,-6], [-6,6], [6,0], [-6,0], [0,6], [0,-6], [4,4], [-4,-4], [4,-4], [-4,4] ];
+    lines.forEach(line => { offsets.forEach(off => { ctx.fillText(line.text, line.x + off[0], line.y + off[1]); }); });
     ctx.fillStyle = '#ff0000';
-    lines.forEach(line => {
-      ctx.fillText(line.text, line.x, line.y);
-    });
-
-    // Convert to a clean PNG data URL
+    lines.forEach(line => { ctx.fillText(line.text, line.x, line.y); });
     const dataUrl = canvas.toDataURL('image/png');
-
-    // Inject regular browser favicon
     const icon = document.createElement('link');
     icon.rel = 'icon';
     icon.type = 'image/png';
     icon.href = dataUrl;
     document.head.appendChild(icon);
-
-    // Inject Apple Touch Icon for "Add to Home Screen"
     const appleIcon = document.createElement('link');
     appleIcon.rel = 'apple-touch-icon';
     appleIcon.href = dataUrl;
@@ -392,7 +354,7 @@
       <div id="ihContainer" style="display: none;">
         <div style="padding: 8px;">
             <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Inharmonicity Profiler</h3>
-            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Measure reference notes across the keyboard to map this piano's specific stiffness (iH). This data will eventually generate a custom stretch curve.</p>
+            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Measure reference notes across the keyboard to map this piano's specific wire stiffness (iH). This dynamically updates all filter tracking and textbook beat speeds.</p>
             <div class="action-row" style="justify-content: flex-start; gap: 8px;" id="ihBtns">
                 <button class="action-btn" onclick="sampleIH(24)" id="ihBtn-24">C1</button>
                 <button class="action-btn" onclick="sampleIH(36)" id="ihBtn-36">C2</button>
@@ -401,7 +363,7 @@
                 <button class="action-btn" onclick="sampleIH(72)" id="ihBtn-72">C5</button>
                 <button class="action-btn" onclick="sampleIH(84)" id="ihBtn-84">C6</button>
             </div>
-            <div class="guide-result guide-res-wait" id="ihResult" style="margin-top: 12px;">Select a note to sample its pitch...</div>
+            <div class="guide-result guide-res-wait" id="ihResult" style="margin-top: 12px;">Select a note to sample its physical string stretch...</div>
         </div>
       </div>
 
@@ -415,98 +377,125 @@
 
         <div class="guide-pane active" id="gPane-TEMP">
           <div class="guide-step">
-            <h3>1. Tune A4 (Concert Pitch)</h3>
+            <h3>Step 1: Set Pitch</h3>
+            <div class="tuning-target">Tuning: A4</div>
             <button class="ctrl-btn" id="btnTunerToggle" style="width:100%; margin-bottom:4px; font-size:0.8rem;">TUNER: OFF</button>
             <div class="guide-result guide-res-wait" id="tunerReadout" style="min-height: 38px; display:flex; align-items:center; justify-content:center; flex-direction:column;">--- Hz</div>
           </div>
           <div class="guide-step">
-            <h3>2. Prove A3 from A4</h3>
+            <h3>Step 2: Prove A3 Octave</h3>
+            <div class="tuning-target">Tuning: A3</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 (M3)" onclick="setTarget(53, 'M3')">F3 (M3)</button>
-              <button class="action-btn" data-midi="53" data-iv="M10" data-label="F3 (M10)" onclick="setTarget(53, 'M10')">F3 (M10)</button>
+              <button class="action-btn listen-btn" onclick="handleListen(this, 57, 'OCT_42')">4:2</button>
+              <button class="action-btn listen-btn" onclick="handleListen(this, 57, 'OCT_63')">6:3</button>
+              <button class="action-btn listen-btn" onclick="handleListen(this, 57, 'OCT_21')">2:1</button>
+            </div>
+            <div class="action-row">
+              <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button>
+              <button class="action-btn" data-midi="53" data-iv="M10" data-label="F3 M10 A4" onclick="handleAction(this, 53, 'M10')">F3 M10 A4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes2">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>3. Set F3 Anchor</h3>
+            <h3>Step 3: Set F3 Anchor</h3>
+            <div class="tuning-target">Tuning: F3</div>
             <p>Aim for ~6.93 bps.</p>
-            <div class="action-row"><button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 (M3)" onclick="setTarget(53, 'M3')">F3 (M3)</button></div>
+            <div class="action-row"><button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button></div>
             <div class="guide-result guide-res-wait" id="guideRes3">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>4. Prove F3-F4 Octave</h3>
+            <h3>Step 4: Prove F4 Octave</h3>
+            <div class="tuning-target">Tuning: F4</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="49" data-iv="M3" data-label="C#3 (M3)" onclick="setTarget(49, 'M3')">C#3 (M3)</button>
-              <button class="action-btn" data-midi="49" data-iv="M10" data-label="C#3 (M10)" onclick="setTarget(49, 'M10')">C#3 (M10)</button>
+              <button class="action-btn listen-btn" onclick="handleListen(this, 53, 'OCT_42')">4:2</button>
+            </div>
+            <div class="action-row">
+              <button class="action-btn" data-midi="49" data-iv="M3" data-label="C#3 M3 F3" onclick="handleAction(this, 49, 'M3')">C#3 M3 F3</button>
+              <button class="action-btn" data-midi="49" data-iv="M10" data-label="C#3 M10 F4" onclick="handleAction(this, 49, 'M10')">C#3 M10 F4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes4">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>5. The 'F' Skeleton (Contiguous 3rds)</h3>
+            <h3>Step 5: 'F' Skeleton (Contiguous 3rds)</h3>
+            <div class="tuning-target">Tuning: C#4</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 (M3)" onclick="setTarget(53, 'M3')">F3 (M3)</button>
-              <button class="action-btn" data-midi="57" data-iv="M3" data-label="A3 (M3)" onclick="setTarget(57, 'M3')">A3 (M3)</button>
-              <button class="action-btn" data-midi="61" data-iv="M3" data-label="C#4 (M3)" onclick="setTarget(61, 'M3')">C#4 (M3)</button>
+              <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button>
+              <button class="action-btn" data-midi="57" data-iv="M3" data-label="A3 M3 C#4" onclick="handleAction(this, 57, 'M3')">A3 M3 C#4</button>
+              <button class="action-btn" data-midi="61" data-iv="M3" data-label="C#4 M3 F4" onclick="handleAction(this, 61, 'M3')">C#4 M3 F4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes5">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>6. The 'F#' Skeleton</h3>
+            <h3>Step 6: 'F#' Skeleton</h3>
+            <div class="tuning-target">Tuning: F#3, A#3</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="54" data-iv="P5" data-label="F#3 (P5)" onclick="setTarget(54, 'P5')">F#3 (P5)</button>
-              <button class="action-btn" data-midi="53" data-iv="P4" data-label="F3 (P4)" onclick="setTarget(53, 'P4')">F3 (P4)</button>
-              <button class="action-btn" data-midi="57" data-iv="P4" data-label="A3 (P4)" onclick="setTarget(57, 'P4')">A3 (P4)</button>
-              <button class="action-btn" data-midi="54" data-iv="M3" data-label="F#3 (M3)" onclick="setTarget(54, 'M3')">F#3 (M3)</button>
-              <button class="action-btn" data-midi="58" data-iv="M3" data-label="A#3 (M3)" onclick="setTarget(58, 'M3')">A#3 (M3)</button>
+              <button class="action-btn" data-midi="54" data-iv="P5" data-label="F#3 P5 C#4" onclick="handleAction(this, 54, 'P5')">F#3 P5 C#4</button>
+              <button class="action-btn" data-midi="53" data-iv="P4" data-label="F3 P4 A#3" onclick="handleAction(this, 53, 'P4')">F3 P4 A#3</button>
+              <button class="action-btn" data-midi="54" data-iv="M3" data-label="F#3 M3 A#3" onclick="handleAction(this, 54, 'M3')">F#3 M3 A#3</button>
             </div>
-            <div class="guide-result guide-res-wait" id="guideRes6">Awaiting M3 and P4/P5 checks...</div>
+            <div class="guide-result guide-res-wait" id="guideRes6">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>7. The 'G' Skeleton</h3>
+            <h3>Step 7: 'G' Skeleton</h3>
+            <div class="tuning-target">Tuning: G3, B3</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="55" data-iv="P5" data-label="G3 (P5)" onclick="setTarget(55, 'P5')">G3 (P5)</button>
-              <button class="action-btn" data-midi="54" data-iv="P4" data-label="F#3 (P4)" onclick="setTarget(54, 'P4')">F#3 (P4)</button>
-              <button class="action-btn" data-midi="58" data-iv="P4" data-label="A#3 (P4)" onclick="setTarget(58, 'P4')">A#3 (P4)</button>
-              <button class="action-btn" data-midi="55" data-iv="M3" data-label="G3 (M3)" onclick="setTarget(55, 'M3')">G3 (M3)</button>
-              <button class="action-btn" data-midi="59" data-iv="M3" data-label="B3 (M3)" onclick="setTarget(59, 'M3')">B3 (M3)</button>
+              <button class="action-btn" data-midi="55" data-iv="P5" data-label="G3 P5 D4" onclick="handleAction(this, 55, 'P5')">G3 P5 D4</button>
+              <button class="action-btn" data-midi="54" data-iv="P4" data-label="F#3 P4 B3" onclick="handleAction(this, 54, 'P4')">F#3 P4 B3</button>
+              <button class="action-btn" data-midi="55" data-iv="M3" data-label="G3 M3 B3" onclick="handleAction(this, 55, 'M3')">G3 M3 B3</button>
             </div>
-            <div class="guide-result guide-res-wait" id="guideRes7">Awaiting M3 and P4/P5 checks...</div>
+            <div class="guide-result guide-res-wait" id="guideRes7">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>8. The 'G#' Skeleton</h3>
+            <h3>Step 8: 'G#' Skeleton</h3>
+            <div class="tuning-target">Tuning: G#3, C4</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="56" data-iv="P5" data-label="G#3 (P5)" onclick="setTarget(56, 'P5')">G#3 (P5)</button>
-              <button class="action-btn" data-midi="55" data-iv="P4" data-label="G3 (P4)" onclick="setTarget(55, 'P4')">G3 (P4)</button>
-              <button class="action-btn" data-midi="59" data-iv="P4" data-label="B3 (P4)" onclick="setTarget(59, 'P4')">B3 (P4)</button>
-              <button class="action-btn" data-midi="56" data-iv="M3" data-label="G#3 (M3)" onclick="setTarget(56, 'M3')">G#3 (M3)</button>
-              <button class="action-btn" data-midi="60" data-iv="M3" data-label="C4 (M3)" onclick="setTarget(60, 'M3')">C4 (M3)</button>
+              <button class="action-btn" data-midi="56" data-iv="P5" data-label="G#3 P5 D#4" onclick="handleAction(this, 56, 'P5')">G#3 P5 D#4</button>
+              <button class="action-btn" data-midi="55" data-iv="P4" data-label="G3 P4 C4" onclick="handleAction(this, 55, 'P4')">G3 P4 C4</button>
+              <button class="action-btn" data-midi="56" data-iv="M3" data-label="G#3 M3 C4" onclick="handleAction(this, 56, 'M3')">G#3 M3 C4</button>
             </div>
-            <div class="guide-result guide-res-wait" id="guideRes8">Awaiting M3 and P4/P5 checks...</div>
+            <div class="guide-result guide-res-wait" id="guideRes8">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>9. Inside 4ths & 5ths Verification</h3>
+            <h3>Step 9: Chromatic M3 Sweep</h3>
+            <div class="tuning-target">Targeting Refinements</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="53" data-iv="P5" data-label="F3 (P5)" onclick="setTarget(53, 'P5')">F3 (P5)</button>
-              <button class="action-btn" data-midi="60" data-iv="P4" data-label="C4 (P4)" onclick="setTarget(60, 'P4')">C4 (P4)</button>
-              <button class="action-btn" data-midi="54" data-iv="P5" data-label="F#3 (P5)" onclick="setTarget(54, 'P5')">F#3 (P5)</button>
-              <button class="action-btn" data-midi="61" data-iv="P4" data-label="C#4 (P4)" onclick="setTarget(61, 'P4')">C#4 (P4)</button>
+              <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button>
+              <button class="action-btn" data-midi="54" data-iv="M3" data-label="F#3 M3 A#3" onclick="handleAction(this, 54, 'M3')">F#3 M3 A#3</button>
+              <button class="action-btn" data-midi="55" data-iv="M3" data-label="G3 M3 B3" onclick="handleAction(this, 55, 'M3')">G3 M3 B3</button>
+              <button class="action-btn" data-midi="56" data-iv="M3" data-label="G#3 M3 C4" onclick="handleAction(this, 56, 'M3')">G#3 M3 C4</button>
+              <button class="action-btn" data-midi="57" data-iv="M3" data-label="A3 M3 C#4" onclick="handleAction(this, 57, 'M3')">A3 M3 C#4</button>
+              <button class="action-btn" data-midi="58" data-iv="M3" data-label="A#3 M3 D4" onclick="handleAction(this, 58, 'M3')">A#3 M3 D4</button>
+              <button class="action-btn" data-midi="59" data-iv="M3" data-label="B3 M3 D#4" onclick="handleAction(this, 59, 'M3')">B3 M3 D#4</button>
+              <button class="action-btn" data-midi="60" data-iv="M3" data-label="C4 M3 E4" onclick="handleAction(this, 60, 'M3')">C4 M3 E4</button>
+              <button class="action-btn" data-midi="61" data-iv="M3" data-label="C#4 M3 F4" onclick="handleAction(this, 61, 'M3')">C#4 M3 F4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes9">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>10. Chromatic M3 Sweep</h3>
+            <h3>Step 10: Chromatic M6 Sweep</h3>
+            <div class="tuning-target">Inside/Outside Architecture</div>
             <div class="action-row">
-              <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3" onclick="setTarget(53, 'M3')">F3</button>
-              <button class="action-btn" data-midi="54" data-iv="M3" data-label="F#3" onclick="setTarget(54, 'M3')">F#3</button>
-              <button class="action-btn" data-midi="55" data-iv="M3" data-label="G3" onclick="setTarget(55, 'M3')">G3</button>
-              <button class="action-btn" data-midi="56" data-iv="M3" data-label="G#3" onclick="setTarget(56, 'M3')">G#3</button>
-              <button class="action-btn" data-midi="57" data-iv="M3" data-label="A3" onclick="setTarget(57, 'M3')">A3</button>
-              <button class="action-btn" data-midi="58" data-iv="M3" data-label="A#3" onclick="setTarget(58, 'M3')">A#3</button>
-              <button class="action-btn" data-midi="59" data-iv="M3" data-label="B3" onclick="setTarget(59, 'M3')">B3</button>
-              <button class="action-btn" data-midi="60" data-iv="M3" data-label="C4" onclick="setTarget(60, 'M3')">C4</button>
-              <button class="action-btn" data-midi="61" data-iv="M3" data-label="C#4" onclick="setTarget(61, 'M3')">C#4</button>
+              <button class="action-btn" data-midi="53" data-iv="M6" data-label="F3 M6 D4" onclick="handleAction(this, 53, 'M6')">F3 M6 D4</button>
+              <button class="action-btn" data-midi="54" data-iv="M6" data-label="F#3 M6 D#4" onclick="handleAction(this, 54, 'M6')">F#3 M6 D#4</button>
+              <button class="action-btn" data-midi="55" data-iv="M6" data-label="G3 M6 E4" onclick="handleAction(this, 55, 'M6')">G3 M6 E4</button>
+              <button class="action-btn" data-midi="56" data-iv="M6" data-label="G#3 M6 F4" onclick="handleAction(this, 56, 'M6')">G#3 M6 F4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes10">Awaiting logs...</div>
+          </div>
+          <div class="guide-step">
+            <h3>Step 11: Final P4/P5 Polish</h3>
+            <div class="tuning-target">Bulletproof The Temperament</div>
+            <p style="font-size:0.7rem; color:#666; margin-bottom:8px;">All P4s and P5s should beat slowly. Ensure all are logged to unlock the Grader.</p>
+            <div class="action-row" id="finalPolishBtns">
+               </div>
+            <div class="guide-result guide-res-wait" id="guideRes11">Awaiting logs...</div>
+          </div>
+          <div class="guide-step" style="background: #fdfdfd; border-color: #000; padding-bottom:12px;">
+            <h3 style="background:#000; color:#fff;">Step 12: Temperament Grader</h3>
+            <div class="tuning-target" style="margin-bottom:8px;">The Auto-Debugger</div>
+            <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">Matrixes all M3s, M6s, 4ths and 5ths to find conflicting pieces of the puzzle and guides you to the safest compromises.</p>
+            <button class="ctrl-btn grade-btn" onclick="checkStep12()">ANALYZE TEMPERAMENT</button>
+            <div id="guideRes12"></div>
           </div>
         </div>
 
@@ -520,6 +509,7 @@
               <button class="dynamic-btn" id="btnUpPlus" onclick="changeExpandNote(1, true)">+</button>
             </div>
             <p style="text-align:center;">Tune to octave below. Click buttons to verify:</p>
+            <div class="action-row" id="dynUpListenBtns"></div>
             <div class="action-row" id="dynUpBtns"></div>
             <div class="guide-result guide-res-wait" id="dynUpRes">Log intervals to analyze...</div>
           </div>
@@ -535,6 +525,7 @@
               <button class="dynamic-btn" id="btnDownPlus" onclick="changeExpandNote(1, false)">+</button>
             </div>
             <p style="text-align:center;">Tune to octave above. Click buttons to verify:</p>
+            <div class="action-row" id="dynDownListenBtns"></div>
             <div class="action-row" id="dynDownBtns"></div>
             <div class="guide-result guide-res-wait" id="dynDownRes">Log intervals to analyze...</div>
           </div>
@@ -587,42 +578,76 @@ async function getBuiltInMicConstraints() {
   return base;
 }
 
+let ihFilter1 = null, ihFilter4 = null, ihAnalyser1 = null, ihAnalyser4 = null;
+let ihData1 = null, ihData4 = null;
+
+window.startAudioEngine = async function() {
+    if (audioCtx) { try { audioCtx.close(); } catch(e) {} audioCtx = null; }
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+        micStream = stream;
+        const constraints = await getBuiltInMicConstraints();
+        if (constraints.deviceId) {
+            stream.getTracks().forEach(t => t.stop());
+            const betterStream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
+            micStream = betterStream;
+        }
+        
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        const src = audioCtx.createMediaStreamSource(micStream);
+        
+        analyserFull = audioCtx.createAnalyser(); analyserFull.fftSize = 4096; analyserFull.smoothingTimeConstant = 0.7;
+        tunerFilter = audioCtx.createBiquadFilter(); 
+        tunerFilter.type = 'bandpass'; tunerFilter.frequency.value = 440.0; tunerFilter.Q.value = 3.0; 
+        analyserTuner = audioCtx.createAnalyser(); analyserTuner.fftSize = 4096;
+        src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
+
+        // IH Scanners
+        ihFilter1 = audioCtx.createBiquadFilter(); ihFilter1.type = 'bandpass'; ihFilter1.Q.value = 5.0;
+        ihAnalyser1 = audioCtx.createAnalyser(); ihAnalyser1.fftSize = 4096;
+        src.connect(ihFilter1); ihFilter1.connect(ihAnalyser1);
+        
+        ihFilter4 = audioCtx.createBiquadFilter(); ihFilter4.type = 'bandpass'; ihFilter4.Q.value = 5.0;
+        ihAnalyser4 = audioCtx.createAnalyser(); ihAnalyser4.fftSize = 4096;
+        src.connect(ihFilter4); ihFilter4.connect(ihAnalyser4);
+        
+        ihData1 = new Float32Array(ihAnalyser1.fftSize);
+        ihData4 = new Float32Array(ihAnalyser4.fftSize);
+
+        const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
+        gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
+        monitorGain = audioCtx.createGain(); monitorGain.gain.value = monitorOn && !micPaused ? 25.0 : 0.0;
+        scriptNode = audioCtx.createScriptProcessor(1024, 1, 1);
+
+        src.connect(analyserFull); 
+        src.connect(filters[0]); 
+        filters[0].connect(filters[1]); 
+        filters[1].connect(gainNode); 
+        filters[1].connect(monitorGain); 
+        monitorGain.connect(audioCtx.destination);
+        gainNode.connect(scriptNode); 
+        scriptNode.connect(audioCtx.destination);
+
+        scriptNode.onaudioprocess = buildAudioProcessor();
+        isRunning = true; 
+        if(rafId) cancelAnimationFrame(rafId);
+        lastEnvelope = 0; rafId = requestAnimationFrame(renderLoop);
+    } catch (e) {
+        console.warn("Audio start failed: ", e);
+        if(!isRunning) $('startOverlay').style.display = 'flex';
+    }
+}
+
 navigator.mediaDevices.addEventListener('devicechange', async () => {
   if (!isRunning || micPaused) return;
   if (micStream) {
     const track = micStream.getAudioTracks()[0];
     const label = (track && track.label) || '';
     if (/airpod|bluetooth|bt |wireless|headset/i.test(label)) {
-      if (audioCtx) { try { audioCtx.close(); } catch(e) {} audioCtx = null; }
-      try {
-        const constraints = await getBuiltInMicConstraints();
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
-        micStream = stream;
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
-        const src = audioCtx.createMediaStreamSource(stream);
-        analyserFull = audioCtx.createAnalyser(); analyserFull.fftSize = 4096; analyserFull.smoothingTimeConstant = 0.7;
-        
-        tunerFilter = audioCtx.createBiquadFilter(); 
-        tunerFilter.type = 'bandpass'; 
-        tunerFilter.frequency.value = 440.0; 
-        tunerFilter.Q.value = 3.0; 
-        
-        analyserTuner = audioCtx.createAnalyser(); 
-        analyserTuner.fftSize = 4096;
-        src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
-        
-        const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
-        gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0;
-        monitorGain = audioCtx.createGain(); monitorGain.gain.value = monitorOn ? 25.0 : 0.0;
-        scriptNode = audioCtx.createScriptProcessor(1024, 1, 1);
-        src.connect(analyserFull); src.connect(filters[0]); filters[0].connect(filters[1]); filters[1].connect(filters[2]);
-        filters[2].connect(gainNode); filters[2].connect(monitorGain); monitorGain.connect(audioCtx.destination);
-        gainNode.connect(scriptNode); scriptNode.connect(audioCtx.destination);
-        scriptNode.onaudioprocess = buildAudioProcessor();
-        if (rafId) cancelAnimationFrame(rafId);
-        lastEnvelope = 0; rafId = requestAnimationFrame(renderLoop);
-      } catch(e) { console.warn('devicechange mic reinit failed:', e); }
+      await startAudioEngine();
     }
   }
 });
@@ -631,37 +656,8 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !isRunning || micPaused) return;
   if (audioCtx && audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch(e) {} }
   const tracksLost = !micStream || micStream.getTracks().every(t => t.readyState === 'ended');
-  if (tracksLost) {
-    try {
-      if (audioCtx) { try { audioCtx.close(); } catch(e) {} audioCtx = null; }
-      const constraints = await getBuiltInMicConstraints();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints });
-      micStream = stream;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') await audioCtx.resume();
-      const src = audioCtx.createMediaStreamSource(stream);
-      analyserFull = audioCtx.createAnalyser(); analyserFull.fftSize = 4096; analyserFull.smoothingTimeConstant = 0.7;
-      
-      tunerFilter = audioCtx.createBiquadFilter(); 
-      tunerFilter.type = 'bandpass'; 
-      tunerFilter.frequency.value = 440.0; 
-      tunerFilter.Q.value = 3.0; 
-      
-      analyserTuner = audioCtx.createAnalyser(); 
-      analyserTuner.fftSize = 4096;
-      src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
-
-      const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
-      gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0;
-      monitorGain = audioCtx.createGain(); monitorGain.gain.value = monitorOn ? 25.0 : 0.0;
-      scriptNode = audioCtx.createScriptProcessor(1024, 1, 1);
-      src.connect(analyserFull); src.connect(filters[0]); filters[0].connect(filters[1]); filters[1].connect(filters[2]);
-      filters[2].connect(gainNode); filters[2].connect(monitorGain); monitorGain.connect(audioCtx.destination);
-      gainNode.connect(scriptNode); scriptNode.connect(audioCtx.destination);
-      scriptNode.onaudioprocess = buildAudioProcessor();
-      if (rafId) cancelAnimationFrame(rafId);
-      lastEnvelope = 0; rafId = requestAnimationFrame(renderLoop);
-    } catch(e) { console.warn('Mic reinit failed on resume:', e); }
+  if (tracksLost || !audioCtx || audioCtx.state === 'closed') {
+    await startAudioEngine();
   }
 });
 
@@ -698,46 +694,86 @@ Object.keys(IV).forEach(key => {
   IV[key].min = min; IV[key].max = max;
 });
 
+// Custom iH State
+let ihProfile = {};
+let useCustomIH = false;
+
+function getIH(midi) {
+    if (!useCustomIH || Object.keys(ihProfile).length === 0) return 0;
+    let sortedMidis = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b);
+    if (midi <= sortedMidis[0]) return ihProfile[sortedMidis[0]];
+    if (midi >= sortedMidis[sortedMidis.length-1]) return ihProfile[sortedMidis[sortedMidis.length-1]];
+    for (let i=0; i<sortedMidis.length-1; i++) {
+        let m1 = sortedMidis[i];
+        let m2 = sortedMidis[i+1];
+        if (midi >= m1 && midi <= m2) {
+            let fraction = (midi - m1) / (m2 - m1);
+            return ihProfile[m1] + fraction * (ihProfile[m2] - ihProfile[m1]);
+        }
+    }
+    return 0;
+}
+
+function getMidiHarmonicStretch(midi, partial) {
+    if (!useCustomIH) return 1.0;
+    let B = getIH(midi);
+    return Math.sqrt(1 + B * partial * partial);
+}
+
 function getConfig(lowerMidi, ivKey) {
   const iv = IV[ivKey]; const upperMidi = lowerMidi + iv.sem;
   const fLo = freq(lowerMidi), fHi = freq(upperMidi);
-  const pLo = iv.lp * fLo, pHi = iv.up * fHi;
-  const center = (pLo + pHi) / 2; const theoBeat = Math.abs(iv.up * fHi - iv.lp * fLo);
-  let margin = Math.max(22, theoBeat * 1.2 + 8);
+  
+  let stretchLo = getMidiHarmonicStretch(lowerMidi, iv.lp);
+  let stretchHi = getMidiHarmonicStretch(upperMidi, iv.up);
+
+  const pLo = iv.lp * fLo * stretchLo;
+  const pHi = iv.up * fHi * stretchHi;
+  const center = (pLo + pHi) / 2; 
+  const theoBeat = Math.abs(pHi - pLo);
+  
+  let margin = Math.max(22, theoBeat * 1.2 + 8) * 1.20; 
   if (ivKey === 'M10' || ivKey === 'M17') margin *= 1.8; 
   if (lowerMidi < 40) margin *= 1.4; 
   return { lowerMidi, upperMidi, fLo, fHi, pLo, pHi, center, theoBeat, bpLo: center - margin, bpHi: center + margin, iv, ivKey };
 }
 
 function getDynamicThresholds(midiNote, ivKey) {
-  let minEnv = 0.003, minSnr = 2.5;   
+  let minEnv = 0.002, minSnr = 2.0;   
   if (midiNote > 60) {
     let boostFactor = Math.min(1, (midiNote - 60) / 36); 
-    minEnv = 0.003 - (boostFactor * 0.0025); minSnr = 2.5 - (boostFactor * 1.5);      
+    minEnv = 0.002 - (boostFactor * 0.0015); minSnr = 2.0 - (boostFactor * 1.0);      
   }
+  if (midiNote >= 58) { minEnv *= 0.5; minSnr *= 0.5; }
   if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) { minSnr *= 0.75; minEnv *= 0.8; }
-  minEnv *= 0.15; minSnr *= 0.5;  
   return { env: Math.max(0.0001, minEnv), snr: Math.max(1.0, minSnr) };
+}
+
+function getBeatDesc(val) {
+    if(val === null || isNaN(val)) return '';
+    if(val < 0.25) return 'PURE / STILL';
+    if(val < 0.85) return 'SLOW BREATHING';
+    if(val < 1.6) return 'HEARTBEAT';
+    if(val < 3.5) return 'WALKING PACE';
+    if(val < 6.0) return 'JOGGING';
+    if(val < 9.0) return 'FAST TAPPING';
+    if(val < 13.0) return 'RAPID FLUTTER';
+    return 'MOTOR / PURR';
 }
 
 let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53; 
 let currentOctMode = 'OCT_42';
-let audioCtx = null, analyserFull = null, analyserTuner = null, filters = [], tunerFilter = null, gainNode = null, monitorGain = null;
-let isRunning = false, micPaused = false, monitorOn = false, rafId = null, currentChunkSize = 1024;
-let micStream = null, scriptNode = null; 
+let isRunning = false, micPaused = false, monitorOn = false, rafId = null, currentChunkSize = 512; 
 let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];    
 let transientSamplesLeft = 0, lastAttackTime = 0;
 let loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] };
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
 
-let tunerActive = false, tunerDataArray = null;
-let smoothedPitch = -1;
-let pitchHistory = [];
-
-let expUpMidi = 66; 
-let expDownMidi = 52; 
-let sweepMidi = 41; 
-let sweepIvType = 'M3';
+let isIHScanning = false;
+let ihScanMidi = -1;
+let ihPitches1 = [];
+let ihPitches4 = [];
+let ihRafId = null;
 
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
@@ -750,7 +786,7 @@ function loadPersistence() {
       if(parsed.P8 && parsed.P8.length > 0 && !parsed.OCT_42) parsed.OCT_42 = parsed.P8;
       if(parsed.P15 && parsed.P15.length > 0 && !parsed['OCT+2']) parsed['OCT+2'] = parsed.P15;
       loggedIntervals = { ...loggedIntervals, ...parsed };
-      renderLogTable(); analyzeTemperament(); updateGuide(); 
+      renderLogTable(); updateGuide(); 
     } catch(e) {}
   }
 }
@@ -787,6 +823,9 @@ function switchGuideTab(tab) {
 
 window.setTarget = function(midi, ivKey) {
   lowerMidi = midi; 
+  
+  document.querySelectorAll('.listen-btn').forEach(b => b.classList.remove('active-listen'));
+  
   if (ivKey.startsWith('OCT_')) {
       curIv = ivKey;
       currentOctMode = ivKey;
@@ -804,25 +843,124 @@ window.setTarget = function(midi, ivKey) {
   enforceReblitzLimits(); resetCapture(); buildPianoRoll(); renderLogTable();
 }
 
+window.handleAction = function(btn, midi, ivKey) {
+    if (btn.classList.contains('logged')) {
+        deleteEntry(ivKey, midi);
+    }
+    setTarget(midi, ivKey);
+}
+
+window.handleListen = function(btn, midi, ivKey) {
+    setTarget(midi, ivKey); 
+    
+    captureState = 'LISTEN_ONLY';
+    $('captureStateLbl').textContent = 'LISTENING';
+    $('captureStateLbl').style.color = '#0066ff';
+    
+    if (!monitorOn) {
+        $('btnPassThrough').click();
+    }
+    
+    document.querySelectorAll('.listen-btn').forEach(b => b.classList.remove('active-listen'));
+    btn.classList.add('active-listen');
+}
+
+window.wipeAndTarget = function(midi, ivKey) {
+    deleteEntry(ivKey, midi);
+    setTarget(midi, ivKey);
+}
+
+// DYNAMIC CLUSTER WIPE
+window.wipeCluster = function(targetMidi, targetIv, wipeArray) {
+    wipeArray.forEach(item => {
+        if (loggedIntervals[item.i]) {
+            loggedIntervals[item.i] = loggedIntervals[item.i].filter(e => e.midi !== item.m);
+        }
+    });
+    savePersistence(); renderLogTable(); updateGuide(); updateDynRes();
+    setTarget(targetMidi, targetIv);
+}
+
+function runIHScanner() {
+    if (!isIHScanning || !isRunning || micPaused) return;
+
+    ihAnalyser1.getFloatTimeDomainData(ihData1);
+    ihAnalyser4.getFloatTimeDomainData(ihData4);
+
+    let p1 = getPitchYin(ihData1, audioCtx.sampleRate);
+    let p4 = getPitchYin(ihData4, audioCtx.sampleRate);
+
+    let f1 = freq(ihScanMidi);
+    if (p1 > f1 * 0.9 && p1 < f1 * 1.1) ihPitches1.push(p1);
+    if (p4 > f1 * 3.6 && p4 < f1 * 4.4) ihPitches4.push(p4);
+
+    ihRafId = requestAnimationFrame(runIHScanner);
+}
+
+function checkAllIHSampled() {
+    let required = [24, 36, 48, 60, 72, 84];
+    let allGood = required.every(m => ihProfile[m] !== undefined);
+    if (allGood) {
+        if (!$('btnApplyIH')) {
+            let btn = document.createElement('button');
+            btn.id = 'btnApplyIH';
+            btn.className = 'ctrl-btn grade-btn';
+            btn.style.marginTop = '12px';
+            btn.style.background = '#00aa00';
+            btn.style.borderColor = '#00aa00';
+            btn.innerHTML = 'APPLY CUSTOM STRETCH PROFILE';
+            btn.onclick = () => {
+                useCustomIH = true;
+                btn.innerHTML = 'PROFILE ACTIVE ✔';
+                btn.disabled = true;
+                btn.style.background = '#e6ffe6';
+                btn.style.color = '#006600';
+                setTarget(lowerMidi, curIv); // Natively updates UI
+            };
+            $('ihBtns').parentElement.appendChild(btn);
+        }
+    }
+}
+
 window.sampleIH = function(midi) {
+    if(!ihFilter1 || !ihFilter4) return;
+    ihScanMidi = midi;
+    let f1 = freq(midi);
+    let f4 = f1 * 4;
+    ihFilter1.frequency.value = f1;
+    ihFilter4.frequency.value = f4;
+    ihPitches1 = []; ihPitches4 = [];
+    
+    if (ihRafId) cancelAnimationFrame(ihRafId);
+    isIHScanning = true;
+    runIHScanner();
+
     $('ihResult').className = 'guide-result guide-res-wait';
-    $('ihResult').innerHTML = `Listening to ${noteName(midi)}...<br>Play strongly and let it ring.`;
-    
-    if(tunerFilter) tunerFilter.frequency.value = freq(midi); 
-    
-    if(!tunerActive) $('btnTunerToggle').click(); 
+    $('ihResult').innerHTML = `Scanning Fundamental and 4th Partial for ${noteName(midi)}...<br>Play strongly and let it ring.`;
     
     setTimeout(() => {
-        if(smoothedPitch > 0) {
-            let cents = 1200 * Math.log2(smoothedPitch / freq(midi));
+        isIHScanning = false;
+        if(ihPitches1.length > 5 && ihPitches4.length > 5) {
+            ihPitches1.sort((a,b)=>a-b); ihPitches4.sort((a,b)=>a-b);
+            let med1 = ihPitches1[Math.floor(ihPitches1.length/2)];
+            let med4 = ihPitches4[Math.floor(ihPitches4.length/2)];
+
+            // Algebra to find B
+            let ratio = med4 / (4 * med1);
+            let B = (ratio * ratio - 1) / 16;
+            if (B < 0) B = 0; 
+            
+            ihProfile[midi] = B;
+
             $('ihResult').className = 'guide-result guide-res-pass';
-            $('ihResult').innerHTML = `<b>${noteName(midi)} logged!</b><br>${smoothedPitch.toFixed(2)} Hz (${cents > 0 ? '+':''}${cents.toFixed(1)}c)`;
+            $('ihResult').innerHTML = `<b>${noteName(midi)} scale mapped!</b><br>iH Factor: ${B.toFixed(6)}`;
             $('ihBtn-'+midi).classList.add('logged');
+
+            checkAllIHSampled();
         } else {
             $('ihResult').className = 'guide-result guide-res-warn';
-            $('ihResult').innerHTML = `Could not lock pitch for ${noteName(midi)}.<br>Try again.`;
+            $('ihResult').innerHTML = `Could not lock partials for ${noteName(midi)}.<br>Try again louder.`;
         }
-        if(tunerFilter) tunerFilter.frequency.value = 440.0;
     }, 2500); 
 }
 
@@ -835,7 +973,14 @@ $('btnPause').onclick = async () => {
     if(monitorGain) monitorGain.gain.value = 0; if(audioCtx) audioCtx.suspend(); 
   } else {
     $('btnPause').textContent = 'MIC: ON'; $('btnPause').style.background = '#00aa00'; $('btnPause').style.color = '#ffffff'; $('btnPause').style.borderColor = '#00aa00';
-    resetCapture(); if(audioCtx) await audioCtx.resume(); if(monitorGain && monitorOn) monitorGain.gain.value = 25.0; 
+    resetCapture(); 
+    const tracksLost = !micStream || micStream.getTracks().every(t => t.readyState === 'ended');
+    if (tracksLost || !audioCtx || audioCtx.state === 'closed') {
+        await startAudioEngine(); 
+    } else {
+        if(audioCtx.state === 'suspended') await audioCtx.resume(); 
+    }
+    if(monitorGain && monitorOn) monitorGain.gain.value = 25.0; 
   }
 };
 
@@ -883,7 +1028,7 @@ function buildPianoRoll() {
     key.className = 'pk' + (isSharp ? ' sh' : ''); key.dataset.midi = m;
     if (m >= ivDef.min && m <= ivDef.max) {
       key.textContent = noteName(m);
-      key.addEventListener('click', () => { lowerMidi = m; currentChunkSize = (lowerMidi > 60) ? 256 : 1024; resetCapture(); refreshUI(); });
+      key.addEventListener('click', () => { lowerMidi = m; currentChunkSize = 512; resetCapture(); refreshUI(); });
     } else { key.classList.add('disabled'); if (!isSharp) key.textContent = noteName(m); }
     roll.appendChild(key);
   }
@@ -899,14 +1044,16 @@ function refreshUI() {
   });
   $('lblInterval').textContent = `${noteName(cfg.lowerMidi)} - ${noteName(cfg.upperMidi)}`;
   $('coincidentPartial').textContent = `${cfg.iv.lp}x / ${cfg.iv.up}x ≈ ${cfg.center.toFixed(1)} Hz`;
-  $('lblTarget').textContent = `~${cfg.theoBeat.toFixed(2)}`;
+  
+  $('lblTarget').textContent = `~${cfg.theoBeat.toFixed(2)} (${getBeatDesc(cfg.theoBeat)})`;
+  
   retuneFilters(cfg);
 }
 
 $('octDown').addEventListener('click', () => { if (rollBaseMidi > 12) { rollBaseMidi -= 12; buildPianoRoll(); } });
 $('octUp').addEventListener('click', () => { if (rollBaseMidi < 108) { rollBaseMidi += 12; buildPianoRoll(); } });
-$('btnBigDown').addEventListener('click', () => { if (!isRunning || lowerMidi <= IV[curIv].min) return; lowerMidi--; updateRollBounds(); currentChunkSize = (lowerMidi > 60) ? 256 : 1024; resetCapture(); buildPianoRoll(); });
-$('btnBigUp').addEventListener('click', () => { if (!isRunning || lowerMidi >= IV[curIv].max) return; lowerMidi++; updateRollBounds(); currentChunkSize = (lowerMidi > 60) ? 256 : 1024; resetCapture(); buildPianoRoll(); });
+$('btnBigDown').addEventListener('click', () => { if (!isRunning || lowerMidi <= IV[curIv].min) return; lowerMidi--; updateRollBounds(); currentChunkSize = 512; resetCapture(); buildPianoRoll(); });
+$('btnBigUp').addEventListener('click', () => { if (!isRunning || lowerMidi >= IV[curIv].max) return; lowerMidi++; updateRollBounds(); currentChunkSize = 512; resetCapture(); buildPianoRoll(); });
 window.addEventListener('keydown', (e) => { if (!isRunning) return; if (e.key === 'ArrowRight') { e.preventDefault(); $('btnBigUp').click(); } else if (e.key === 'ArrowLeft') { e.preventDefault(); $('btnBigDown').click(); } });
 
 function finalizeLog() {
@@ -917,12 +1064,12 @@ function finalizeLog() {
   entry.strikes.push(lockedAverage);
   let sortedStrikes = [...entry.strikes].sort((a,b) => a-b);
   entry.measured = sortedStrikes[Math.floor(sortedStrikes.length/2)];
-  savePersistence(); renderLogTable(); analyzeTemperament(); updateGuide(); updateDynRes();
+  savePersistence(); renderLogTable(); updateGuide(); updateDynRes();
 }
 
 window.deleteEntry = function(iv, midi) { 
   loggedIntervals[iv] = loggedIntervals[iv].filter(e => e.midi !== midi); 
-  savePersistence(); renderLogTable(); analyzeTemperament(); updateGuide(); updateDynRes();
+  savePersistence(); renderLogTable(); updateGuide(); updateDynRes();
 };
 
 function renderLogTable() {
@@ -930,10 +1077,18 @@ function renderLogTable() {
   if (entries.length > 0) {
     entries.sort((a, b) => a.midi - b.midi);
     for (let i = 0; i < entries.length; i++) {
+      entries[i].pctStr = '-'; entries[i].isWrong = false;
       if (i > 0) {
         const pct = ((entries[i].measured - entries[i-1].measured) / entries[i-1].measured) * 100;
-        entries[i].pctStr = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%'; entries[i].isWrong = (pct <= 0);
-      } else { entries[i].pctStr = '-'; entries[i].isWrong = false; }
+        entries[i].pctStr = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
+        
+        // Traffic Light Logic: Only RED (Error) on purely consecutive semitone jumps
+        if (entries[i].midi === entries[i-1].midi + 1) {
+            if (pct <= 0) {
+                entries[i].isWrong = true; // RED (Dip)
+            }
+        }
+      }
     }
     tb.innerHTML += `<tr style="background:#f4f4f4; border-bottom:1px solid #000;"><td colspan="6" style="text-align:center; font-weight:800; font-size:0.8rem; padding:4px;">${curIv} PROGRESSION</td></tr>`;
     for (let i = entries.length - 1; i >= 0; i--) {
@@ -945,35 +1100,10 @@ function renderLogTable() {
   } else { tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#666;">Logs automatically upon solid capture</td></tr>'; }
 }
 
-function analyzeTemperament() {
-  let nudges = {}; const getOrInit = (m) => { if(!nudges[m]) nudges[m] = { note: noteName(m), up: [], down: [] }; return nudges[m]; };
-  let allLogs = []; Object.keys(loggedIntervals).forEach(ivKey => { loggedIntervals[ivKey].forEach(entry => { allLogs.push({ ivKey, ...entry }); }); });
-  allLogs.forEach(log => {
-      let ivDef = IV[log.ivKey]; let m1 = log.midi; let m2 = log.midi + ivDef.sem;
-      let margin = Math.max(0.2, log.target * 0.05); let diff = log.measured - log.target;
-      if (Math.abs(diff) <= margin) return; 
-      let isFast = diff > 0; let reason = `${log.ivKey} ${noteName(m1)} is ${isFast ? 'fast' : 'slow'}`;
-      let isWideInterval = ['M3','M6','M10','M17','P4'].includes(log.ivKey);
-      let needsNarrowing = (isWideInterval && isFast) || (!isWideInterval && !isFast);
-      let needsWidening = (isWideInterval && !isFast) || (!isWideInterval && isFast);
-      if (needsNarrowing) { getOrInit(m1).up.push(reason); getOrInit(m2).down.push(reason); } 
-      else if (needsWidening) { getOrInit(m1).down.push(reason); getOrInit(m2).up.push(reason); }
-  });
-  let suggestions = [];
-  Object.keys(nudges).forEach(mStr => {
-      let m = parseInt(mStr); let n = nudges[m]; let note = n.note;
-      if (n.up.length >= 2 && n.down.length === 0) suggestions.push(`<b style="color:#d00000;">${note} &uarr;</b> - ${n.up.join(' - ')}`);
-      else if (n.down.length >= 2 && n.up.length === 0) suggestions.push(`<b style="color:#000;">${note} &darr;</b> - ${n.down.join(' - ')}`);
-  });
-  let box = $('analysisBox');
-  if (suggestions.length > 0) { box.style.display = 'block'; box.innerHTML = `<div style="text-align:left; font-size:0.75rem; font-weight: 500; line-height:1.4;">${suggestions.join('<br>')}</div>`; } 
-  else { box.style.display = 'none'; box.innerHTML = ''; }
-}
-
 function getLogVal(iv, noteNameStr) { let e = loggedIntervals[iv].find(x => x.noteName === noteNameStr); return e ? e.measured : null; }
 
 function updateActionButtons() {
-  document.querySelectorAll('.action-btn').forEach(btn => {
+  document.querySelectorAll('.action-btn:not(.listen-btn)').forEach(btn => {
     let iv = btn.dataset.iv;
     let midiStr = btn.dataset.midi;
     if(!iv || !midiStr) return; 
@@ -990,15 +1120,15 @@ function updateActionButtons() {
   });
 }
 
-function updateGuide() { checkStep2(); checkStep3(); checkStep4(); checkStep5(); checkStep6(); checkStep7(); checkStep8(); checkStep9(); checkStep10(); updateActionButtons(); }
+function updateGuide() { checkStep2(); checkStep3(); checkStep4(); checkStep5(); checkStep6(); checkStep7(); checkStep8(); checkStep9(); checkStep10(); checkStep11(); updateActionButtons(); }
 
 function checkStep2() {
   let m3 = getLogVal('M3', 'F3'), m10 = getLogVal('M10', 'F3'); let res = $('guideRes2');
   if(!m3 || !m10) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; }
   let diff = m10 - m3; let html = `M3: ${m3.toFixed(2)} | M10: ${m10.toFixed(2)}<br>`;
-  if(diff >= -0.1 && diff <= 0.6) { res.className = 'guide-result guide-res-pass'; html += `✔ Solid 4:2 Octave!`; }
-  else if (diff > 0.6) { res.className = 'guide-result guide-res-warn'; html += `Octave too wide. SHARPEN A3.`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `Octave too narrow. FLATTEN A3.`; }
+  if(diff >= -0.2 && diff <= 0.3) { res.className = 'guide-result guide-res-pass'; html += `✔ Solid 4:2 Octave!`; }
+  else if (diff > 0.3) { res.className = 'guide-result guide-res-warn'; html += `Octave too wide. A4 is locked. Adjust A3 (SHARPEN).`; }
+  else { res.className = 'guide-result guide-res-warn'; html += `Octave too narrow. A4 is locked. Adjust A3 (FLATTEN).`; }
   res.innerHTML = html;
 }
 
@@ -1008,9 +1138,9 @@ function checkStep3() {
   if (m3 >= 6.7 && m3 <= 7.2) {
     res.className = 'guide-result guide-res-pass'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>✔ Solid anchor.`;
   } else if (m3 < 6.7) {
-    res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too slow. FLATTEN F3.`;
+    res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too slow. A3 is locked. Adjust F3 (FLATTEN).`;
   } else {
-    res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too fast. SHARPEN F3.`;
+    res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too fast. A3 is locked. Adjust F3 (SHARPEN).`;
   }
 }
 
@@ -1018,81 +1148,400 @@ function checkStep4() {
   let m3 = getLogVal('M3', 'C#3'), m10 = getLogVal('M10', 'C#3'); let res = $('guideRes4');
   if(!m3 || !m10) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; }
   let diff = m10 - m3; let html = `M3: ${m3.toFixed(2)} | M10: ${m10.toFixed(2)}<br>`;
-  if(diff >= -0.1 && diff <= 0.6) { res.className = 'guide-result guide-res-pass'; html += `✔ Solid 4:2 Octave!`; }
-  else if (diff > 0.6) { res.className = 'guide-result guide-res-warn'; html += `Octave too wide. FLATTEN F4.`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `Octave too narrow. SHARPEN F4.`; }
+  if(diff >= -0.2 && diff <= 0.3) { res.className = 'guide-result guide-res-pass'; html += `✔ Solid 4:2 Octave!`; }
+  else if (diff > 0.3) { res.className = 'guide-result guide-res-warn'; html += `Octave too wide. F3 is locked. Adjust F4 (FLATTEN).`; }
+  else { res.className = 'guide-result guide-res-warn'; html += `Octave too narrow. F3 is locked. Adjust F4 (SHARPEN).`; }
   res.innerHTML = html;
 }
 
 function checkStep5() {
-  let f3 = getLogVal('M3', 'F3'), a3 = getLogVal('M3', 'A3'), c4 = getLogVal('M3', 'C#4'); let res = $('guideRes5');
+  let f3 = getLogVal('M3', 'F3'), a3 = getLogVal('M3', 'A3'), c4 = getLogVal('M3', 'C#4'); 
+  let res = $('guideRes5');
   if(!f3 || !a3 || !c4) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; }
   let r1 = ((a3 - f3) / f3) * 100, r2 = ((c4 - a3) / a3) * 100;
   let html = `F3&rarr;A3: +${r1.toFixed(0)}% | A3&rarr;C#4: +${r2.toFixed(0)}%<br>`;
-  let target = 26, tol = 6; let r1Good = Math.abs(r1 - target) <= tol, r2Good = Math.abs(r2 - target) <= tol;
-  if (r1Good && r2Good) { res.className = 'guide-result guide-res-pass'; html += `✔ PROPORTIONAL SPACING!`; }
-  else if (r1 > target + tol && r2 < target - tol) { res.className = 'guide-result guide-res-warn'; html += `SHARPEN A3 or FLATTEN C#4`; }
-  else if (r1 < target - tol && r2 > target + tol) { res.className = 'guide-result guide-res-warn'; html += `FLATTEN A3 or SHARPEN C#4`; }
-  else if (r1 < target - tol && r2 < target - tol) { res.className = 'guide-result guide-res-warn'; html += `Both jumps too small. FLATTEN F3 (Step 3).`; }
-  else if (r1 > target + tol && r2 > target + tol) { res.className = 'guide-result guide-res-warn'; html += `Both jumps too large. SHARPEN F3 (Step 3).`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `Spacing uneven. Tweak A3 or C#4.`; }
+  let target = 28, tol = 8;
+  
+  if (Math.abs(r2 - target) <= tol) { 
+      res.className = 'guide-result guide-res-pass'; html += `✔ PROPORTIONAL SPACING!`; 
+  } else { 
+      res.className = 'guide-result guide-res-warn'; 
+      html += `Uneven Jump (+${r2.toFixed(0)}%). C#4 is likely ${r2 > target ? 'flat' : 'sharp'}.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeAndTarget(61, 'M3')">FIX C#4 (M3)</button>`; 
+  }
   res.innerHTML = html;
+}
+
+function checkP4P5(val, type, lockedStr, tuneStr, tuneRole) {
+    if (!val) return null;
+    let html = '';
+    let isError = false;
+    if (type === 'P4') {
+        if (val > 1.2) {
+            html = `<span style="color:#d00000;">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Wide)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
+            isError = true;
+        } else if (val < 0.6) {
+            html = `<span style="color:#d00000;">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Narrow)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
+            isError = true;
+        } else {
+            html = `<span style="color:#006600;">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
+        }
+    } else {
+        if (val > 1.0) {
+            html = `<span style="color:#d00000;">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Narrow)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
+            isError = true;
+        } else if (val < 0.3) {
+            html = `<span style="color:#d00000;">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Wide)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
+            isError = true;
+        } else {
+            html = `<span style="color:#006600;">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
+        }
+    }
+    return { html, isError };
+}
+
+function progressiveM3Check(htmlSoFar, resEl) {
+    let m3s = [
+        {n: 'F3', v: getLogVal('M3', 'F3')}, {n: 'F#3', v: getLogVal('M3', 'F#3')},
+        {n: 'G3', v: getLogVal('M3', 'G3')}, {n: 'G#3', v: getLogVal('M3', 'G#3')},
+        {n: 'A3', v: getLogVal('M3', 'A3')}, {n: 'A#3', v: getLogVal('M3', 'A#3')},
+        {n: 'B3', v: getLogVal('M3', 'B3')}, {n: 'C4', v: getLogVal('M3', 'C4')},
+        {n: 'C#4', v: getLogVal('M3', 'C#4')}
+    ];
+    let errors = [];
+    for(let i=1; i<m3s.length; i++) {
+        if(m3s[i].v !== null && m3s[i-1].v !== null) {
+            if(m3s[i].v <= m3s[i-1].v) {
+                errors.push(`M3 DIP: ${m3s[i].n} (${m3s[i].v.toFixed(1)}) is slower than ${m3s[i-1].n} (${m3s[i-1].v.toFixed(1)}).`);
+            }
+        }
+    }
+    if (errors.length > 0) {
+        resEl.className = 'guide-result guide-res-warn';
+        resEl.innerHTML = htmlSoFar + `<br><b style="color:#d00000;">WARNING:</b><br><span style="font-size:0.7rem;">${errors.join('<br>')}</span>`;
+        return true;
+    }
+    return false;
 }
 
 function checkStep6() {
-  let p5 = getLogVal('P5', 'F#3'), p4_f = getLogVal('P4', 'F3'), p4_a = getLogVal('P4', 'A3'), m3f = getLogVal('M3', 'F#3'), m3a = getLogVal('M3', 'A#3'); 
+  let p5 = getLogVal('P5', 'F#3'), p4_f = getLogVal('P4', 'F3'), m3f = getLogVal('M3', 'F#3'); 
   let res = $('guideRes6');
-  if(!p5 || !p4_f || !p4_a || !m3f || !m3a) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting M3 and P4/P5 cross-checks..."; return; }
-  let html = `F#3(P5): ${p5.toFixed(1)} | F3(P4): ${p4_f.toFixed(1)} | A3(P4): ${p4_a.toFixed(1)}<br>M3s: ${m3f.toFixed(1)} &rarr; ${m3a.toFixed(1)}<br>`;
-  let r1 = ((m3a - m3f) / m3f) * 100;
-  if (p5 > 1.8 || p4_f > 1.8 || p4_a > 1.8) { res.className = 'guide-result guide-res-warn'; html += `P4/P5 check failed! Adjust placement.`; }
-  else if(Math.abs(r1 - 26) <= 6) { res.className = 'guide-result guide-res-pass'; html += `✔ SKELETON PROPORTIONAL (+${r1.toFixed(0)}%)`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `Uneven Jump (+${r1.toFixed(0)}%). Adjust A#3/D4.`; }
-  res.innerHTML = html;
+
+  let html = '';
+  if (!p5 && !p4_f && !m3f) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place F#3 and A#3..."; return; }
+
+  let err = false;
+  if (p5) {
+      if (p5 < 0.3 || p5 > 1.0) { html += `<span style="color:#d00000;">F#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style="font-size:0.65rem; color:#444;">Adjust F#3 pin.</span><br>`; err = true; }
+      else html += `<span style="color:#006600;">F#3 P5: ${p5.toFixed(1)} ✔</span><br>`;
+  }
+  if (p4_f) {
+      if (p4_f < 0.6 || p4_f > 1.4) { html += `<span style="color:#d00000;">F3 P4 (A#3): ${p4_f.toFixed(1)} (Aim 0.6-1.2)</span><br><span style="font-size:0.65rem; color:#444;">Adjust A#3 pin.</span><br>`; err = true; }
+      else html += `<span style="color:#006600;">F3 P4 (A#3): ${p4_f.toFixed(1)} ✔</span><br>`;
+  }
+
+  if(!m3f) {
+      res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait';
+      res.innerHTML = html + "<br><i>Log M3 to check dip...</i>";
+      return;
+  }
+
+  let m3_prev = getLogVal('M3', 'F3');
+  if (m3_prev && m3f <= m3_prev) {
+      res.className = 'guide-result guide-res-warn';
+      res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> F#3 M3 (${m3f.toFixed(1)}) is slower than F3 M3 (${m3_prev.toFixed(1)}). F#3 is FLAT or A#3 is SHARP.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeCluster(54, 'M3', [{m:54,i:'M3'}])">FIX F#3 / A#3</button>`;
+      return;
+  }
+  
+  res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass';
+  res.innerHTML = html + `<br>✔ No M3 Dip Detected.`;
 }
 
 function checkStep7() {
-  let p5 = getLogVal('P5', 'G3'), p4_f = getLogVal('P4', 'F#3'), p4_a = getLogVal('P4', 'A#3'), m3g = getLogVal('M3', 'G3'), m3b = getLogVal('M3', 'B3'); 
+  let p5 = getLogVal('P5', 'G3'), p4_b = getLogVal('P4', 'F#3'), m3_b = getLogVal('M3', 'G3'); 
   let res = $('guideRes7');
-  if(!p5 || !p4_f || !p4_a || !m3g || !m3b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting M3 and P4/P5 cross-checks..."; return; }
-  let html = `G3(P5): ${p5.toFixed(1)} | F#3(P4): ${p4_f.toFixed(1)} | A#3(P4): ${p4_a.toFixed(1)}<br>M3s: ${m3g.toFixed(1)} &rarr; ${m3b.toFixed(1)}<br>`;
-  let r1 = ((m3b - m3g) / m3g) * 100;
-  if (p5 > 1.8 || p4_f > 1.8 || p4_a > 1.8) { res.className = 'guide-result guide-res-warn'; html += `P4/P5 check failed! Adjust placement.`; }
-  else if(Math.abs(r1 - 26) <= 6) { res.className = 'guide-result guide-res-pass'; html += `✔ SKELETON PROPORTIONAL (+${r1.toFixed(0)}%)`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `Uneven Jump (+${r1.toFixed(0)}%). Adjust B3/D#4.`; }
-  res.innerHTML = html;
+
+  let html = '';
+  if (!p5 && !p4_b && !m3_b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G3 and B3..."; return; }
+
+  let err = false;
+  if (p5) {
+      if (p5 < 0.3 || p5 > 1.0) { html += `<span style="color:#d00000;">G3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style="font-size:0.65rem; color:#444;">Adjust G3 pin.</span><br>`; err = true; }
+      else html += `<span style="color:#006600;">G3 P5: ${p5.toFixed(1)} ✔</span><br>`;
+  }
+  if (p4_b) {
+      if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style="color:#d00000;">F#3 P4 (B3): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style="font-size:0.65rem; color:#444;">Adjust B3 pin.</span><br>`; err = true; }
+      else html += `<span style="color:#006600;">F#3 P4 (B3): ${p4_b.toFixed(1)} ✔</span><br>`;
+  }
+
+  if(!m3_b) {
+      res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait';
+      res.innerHTML = html + "<br><i>Log M3 to check dip...</i>";
+      return;
+  }
+
+  let m3_prev = getLogVal('M3', 'F#3');
+  if (m3_prev && m3_b <= m3_prev) {
+      res.className = 'guide-result guide-res-warn';
+      res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> G3 M3 (${m3_b.toFixed(1)}) is slower than F#3 M3 (${m3_prev.toFixed(1)}). G3 is FLAT or B3 is SHARP.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeCluster(55, 'M3', [{m:55,i:'M3'}])">FIX G3 / B3</button>`;
+      return;
+  }
+  
+  res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass';
+  res.innerHTML = html + `<br>✔ No M3 Dip Detected.`;
 }
 
 function checkStep8() {
-  let p5 = getLogVal('P5', 'G#3'), p4_g = getLogVal('P4', 'G3'), p4_b = getLogVal('P4', 'B3'), m3g = getLogVal('M3', 'G#3'), m3c = getLogVal('M3', 'C4'); 
+  let p5 = getLogVal('P5', 'G#3'), p4_b = getLogVal('P4', 'G3'), m3_b = getLogVal('M3', 'G#3'); 
   let res = $('guideRes8');
-  if(!p5 || !p4_g || !p4_b || !m3g || !m3c) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting M3 and P4/P5 cross-checks..."; return; }
-  let html = `G#3(P5): ${p5.toFixed(1)} | G3(P4): ${p4_g.toFixed(1)} | B3(P4): ${p4_b.toFixed(1)}<br>M3s: ${m3g.toFixed(1)} &rarr; ${m3c.toFixed(1)}<br>`;
-  let r1 = ((m3c - m3g) / m3g) * 100;
-  if (p5 > 1.8 || p4_g > 1.8 || p4_b > 1.8) { res.className = 'guide-result guide-res-warn'; html += `P4/P5 check failed! Adjust placement.`; }
-  else if(Math.abs(r1 - 26) <= 6) { res.className = 'guide-result guide-res-pass'; html += `✔ SKELETON PROPORTIONAL (+${r1.toFixed(0)}%)`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `Uneven Jump (+${r1.toFixed(0)}%). Adjust C4/E4.`; }
-  res.innerHTML = html;
+
+  let html = '';
+  if (!p5 && !p4_b && !m3_b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G#3 and C4..."; return; }
+
+  let err = false;
+  if (p5) {
+      if (p5 < 0.3 || p5 > 1.0) { html += `<span style="color:#d00000;">G#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style="font-size:0.65rem; color:#444;">Adjust G#3 pin.</span><br>`; err = true; }
+      else html += `<span style="color:#006600;">G#3 P5: ${p5.toFixed(1)} ✔</span><br>`;
+  }
+  if (p4_b) {
+      if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style="color:#d00000;">G3 P4 (C4): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style="font-size:0.65rem; color:#444;">Adjust C4 pin.</span><br>`; err = true; }
+      else html += `<span style="color:#006600;">G3 P4 (C4): ${p4_b.toFixed(1)} ✔</span><br>`;
+  }
+
+  if(!m3_b) {
+      res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait';
+      res.innerHTML = html + "<br><i>Log M3 to check dip...</i>";
+      return;
+  }
+
+  let m3_prev = getLogVal('M3', 'G3');
+  if (m3_prev && m3_b <= m3_prev) {
+      res.className = 'guide-result guide-res-warn';
+      res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> G#3 M3 (${m3_b.toFixed(1)}) is slower than G3 M3 (${m3_prev.toFixed(1)}). G#3 is FLAT or C4 is SHARP.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeCluster(56, 'M3', [{m:56,i:'M3'}])">FIX G#3 / C4</button>`;
+      return;
+  }
+  
+  res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass';
+  res.innerHTML = html + `<br>✔ No M3 Dip Detected.`;
 }
 
 function checkStep9() {
-  let p5F = getLogVal('P5', 'F3'), p4C = getLogVal('P4', 'C4'), p5Fs = getLogVal('P5', 'F#3'), p4Cs = getLogVal('P4', 'C#4');
-  let res = $('guideRes9');
-  if(!p5F || !p4C || !p5Fs || !p4Cs) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; }
-  let html = `F3-C4: P5=${p5F.toFixed(1)} P4=${p4C.toFixed(1)}<br>F#3-C#4: P5=${p5Fs.toFixed(1)} P4=${p4Cs.toFixed(1)}<br>`;
-  if(p4C > p5F && p4Cs > p5Fs) { res.className = 'guide-result guide-res-pass'; html += `✔ OVERLAPS ARE CORRECT.`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `ERROR: P4 must be faster than P5!`; }
+  let seq = [
+    {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, 
+    {m: 56, n: 'G#3'}, {m: 57, n: 'A3'}, {m: 58, n: 'A#3'}, 
+    {m: 59, n: 'B3'}, {m: 60, n: 'C4'}, {m: 61, n: 'C#4'}
+  ];
+  let vals = []; let res = $('guideRes9');
+  
+  for(let i=0; i<seq.length; i++) { 
+      let v = getLogVal('M3', seq[i].n); 
+      if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M3s...`; return; } 
+      vals.push({note: seq[i].n, midi: seq[i].m, val: v}); 
+  }
+  
+  let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); 
+  let html = `<div style="font-size:0.65rem; margin-bottom:6px;">${str}</div>`;
+  let issues = []; 
+  
+  for(let i=1; i<vals.length; i++) { 
+      let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100;
+      if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); 
+      else if (pct < 3) issues.push({type: 'FLATLINE', low: vals[i-1], high: vals[i], pct: pct});
+      else if (pct > 9) issues.push({type: 'SPIKE', low: vals[i-1], high: vals[i], pct: pct});
+  }
+  
+  if(issues.length === 0) { 
+      res.className = 'guide-result guide-res-pass'; html += `✔ PROGRESSION EVEN!`; 
+  } else { 
+      res.className = 'guide-result guide-res-warn'; 
+      let issue = issues[0];
+      if (issue.type === 'DIP') {
+          html += `<b style="font-size:0.8rem; color:#d00000;">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; 
+      } else {
+          html += `<b style="font-size:0.8rem; color:#b38000;">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; 
+      }
+      html += `<span style="font-size:0.7rem; color:#444;">Run Auto-Debugger to diagnose exact pin.</span>`;
+  }
   res.innerHTML = html;
 }
 
 function checkStep10() {
-  let seq = ['F3','F#3','G3','G#3','A3','A#3','B3','C4','C#4']; let vals = []; let res = $('guideRes10');
-  for(let n of seq) { let v = getLogVal('M3', n); if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M3s...`; return; } vals.push({note: n, val: v}); }
-  let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); let html = `${str}<br>`;
-  let issues = []; for(let i=1; i<vals.length; i++) { if(vals[i].val <= vals[i-1].val) issues.push(vals[i].note); }
-  if(issues.length === 0) { res.className = 'guide-result guide-res-pass'; html += `✔ FLAWLESS PROGRESSION!`; }
-  else { res.className = 'guide-result guide-res-warn'; html += `DIP AT: ${issues.join(', ')}`; }
+  let seq = [ {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, {m: 56, n: 'G#3'} ];
+  let vals = []; let res = $('guideRes10');
+  
+  for(let i=0; i<seq.length; i++) { 
+      let v = getLogVal('M6', seq[i].n); 
+      if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M6s...`; return; } 
+      vals.push({note: seq[i].n, midi: seq[i].m, val: v}); 
+  }
+  
+  let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); 
+  let html = `<div style="font-size:0.65rem; margin-bottom:6px;">${str}</div>`;
+  let issues = []; 
+  
+  for(let i=1; i<vals.length; i++) { 
+      let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100;
+      if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); 
+      else if (pct < 3) issues.push({type: 'FLATLINE', low: vals[i-1], high: vals[i], pct: pct});
+      else if (pct > 9) issues.push({type: 'SPIKE', low: vals[i-1], high: vals[i], pct: pct});
+  }
+  
+  if(issues.length === 0) { 
+      res.className = 'guide-result guide-res-pass'; html += `✔ M6 SWEEP EVEN!`; 
+  } else { 
+      res.className = 'guide-result guide-res-warn'; 
+      let issue = issues[0];
+      if (issue.type === 'DIP') {
+          html += `<b style="font-size:0.8rem; color:#d00000;">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; 
+      } else {
+          html += `<b style="font-size:0.8rem; color:#b38000;">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; 
+      }
+      html += `<span style="font-size:0.7rem; color:#444;">Run Auto-Debugger to diagnose exact pin.</span>`;
+  }
   res.innerHTML = html;
+}
+
+function checkStep11() {
+    let pList = [
+        {m:53, i:'P4', n:'F3 P4 A#3'}, {m:53, i:'P5', n:'F3 P5 C4'},
+        {m:54, i:'P4', n:'F#3 P4 B3'}, {m:54, i:'P5', n:'F#3 P5 C#4'},
+        {m:55, i:'P4', n:'G3 P4 C4'},  {m:55, i:'P5', n:'G3 P5 D4'},
+        {m:56, i:'P4', n:'G#3 P4 C#4'},{m:56, i:'P5', n:'G#3 P5 D#4'},
+        {m:57, i:'P4', n:'A3 P4 D4'},  {m:57, i:'P5', n:'A3 P5 E4'},
+        {m:58, i:'P4', n:'A#3 P4 D#4'},{m:58, i:'P5', n:'A#3 P5 F4'},
+        {m:59, i:'P4', n:'B3 P4 E4'},
+        {m:60, i:'P4', n:'C4 P4 F4'}
+    ];
+    
+    let btnContainer = $('finalPolishBtns');
+    if (!btnContainer.hasChildNodes()) {
+        pList.forEach(item => {
+            let b = document.createElement('button');
+            b.className = 'action-btn';
+            b.dataset.midi = item.m;
+            b.dataset.iv = item.i;
+            b.dataset.label = item.n;
+            b.innerHTML = item.n;
+            b.onclick = function() { handleAction(this, item.m, item.i); };
+            btnContainer.appendChild(b);
+        });
+        updateActionButtons();
+    }
+    
+    let res = $('guideRes11');
+    let badCount = 0; let loggedCount = 0; let msg = '';
+    
+    pList.forEach(item => {
+        let val = getLogVal(item.i, noteName(item.m));
+        if (val !== null) {
+            loggedCount++;
+            if (val > 1.5) { badCount++; msg += `<b>${item.n}</b> is too fast (${val.toFixed(1)} bps)<br>`; }
+        }
+    });
+    
+    if (loggedCount === 0) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log 4ths and 5ths to hunt for howling intervals."; }
+    else if (badCount === 0 && loggedCount === pList.length) { res.className = 'guide-result guide-res-pass'; res.innerHTML = "✔ ALL 4THS & 5THS ARE QUIET."; }
+    else if (badCount === 0) { res.className = 'guide-result guide-res-pass'; res.innerHTML = "✔ Logged intervals are quiet. Keep checking..."; }
+    else { res.className = 'guide-result guide-res-warn'; res.innerHTML = `<span style="color:#d00000;">WARNING: HOWLING INTERVALS FOUND</span><br><br>${msg}<i>Use Auto-Debugger to distribute the error safely.</i>`; }
+}
+
+window.checkStep12 = function() {
+    let res = $('guideRes12');
+    res.innerHTML = '<div style="text-align:center; padding: 10px;">Analyzing Temperament Matrix...</div>';
+    
+    setTimeout(() => {
+        let errors = [];
+        
+        let seqM3 = [53, 54, 55, 56, 57, 58, 59, 60, 61];
+        for(let i=1; i<seqM3.length; i++) {
+            let vPrev = getLogVal('M3', noteName(seqM3[i-1]));
+            let vCur = getLogVal('M3', noteName(seqM3[i]));
+            if (vPrev && vCur) {
+                let pct = ((vCur - vPrev) / vPrev) * 100;
+                
+                if (pct <= 0) {
+                    let culprit = seqM3[i] + 4; 
+                    let reason = `Widen ${noteName(seqM3[i])} M3 (DIP)`;
+                    let fixDir = 'SHARPEN';
+                    
+                    let p4_to_top = getLogVal('P4', noteName(culprit - 5));
+                    if (p4_to_top && p4_to_top > 1.2) {
+                        culprit = seqM3[i]; 
+                        reason = `Narrow ${noteName(seqM3[i])} M3 (Top Trapped)`;
+                        fixDir = 'FLATTEN';
+                    }
+                    errors.push({ note: culprit, dir: fixDir, reason: reason, cluster: [{m:seqM3[i], i:'M3'}, {m:culprit-5, i:'P4'}, {m:culprit-7, i:'P5'}] });
+                } else if (pct > 9) {
+                    let topNote = seqM3[i] + 4;
+                    let bottomNote = seqM3[i];
+                    let top_p4 = getLogVal('P4', noteName(topNote - 5)); 
+                    if (top_p4 && top_p4 > 1.2) {
+                        errors.push({ note: topNote, dir: 'FLATTEN', reason: `Smooth out M3 SPIKE and quiet fast P4`, cluster: [{m:seqM3[i], i:'M3'}, {m:topNote-5, i:'P4'}] });
+                    } else {
+                        errors.push({ note: bottomNote, dir: 'SHARPEN', reason: `Smooth out M3 SPIKE`, cluster: [{m:seqM3[i], i:'M3'}] });
+                    }
+                } else if (pct > 0 && pct < 3) {
+                    let topNote = seqM3[i] + 4;
+                    let bottomNote = seqM3[i];
+                    let top_p4 = getLogVal('P4', noteName(topNote - 5)); 
+                    if (top_p4 && top_p4 < 0.6) {
+                        errors.push({ note: topNote, dir: 'SHARPEN', reason: `Fix M3 FLATLINE and speed up slow P4`, cluster: [{m:seqM3[i], i:'M3'}, {m:topNote-5, i:'P4'}] });
+                    } else {
+                        errors.push({ note: bottomNote, dir: 'FLATTEN', reason: `Fix M3 FLATLINE`, cluster: [{m:seqM3[i], i:'M3'}] });
+                    }
+                }
+            }
+        }
+
+        let pList = [
+            {m:53, i:'P4'}, {m:53, i:'P5'}, {m:54, i:'P4'}, {m:54, i:'P5'},
+            {m:55, i:'P4'}, {m:55, i:'P5'}, {m:56, i:'P4'}, {m:56, i:'P5'},
+            {m:57, i:'P4'}, {m:57, i:'P5'}, {m:58, i:'P4'}, {m:58, i:'P5'}
+        ];
+        
+        pList.forEach(item => {
+            let val = getLogVal(item.i, noteName(item.m));
+            if (val && val > 1.4) {
+                let topNote = item.m + IV[item.i].sem;
+                errors.push({
+                    note: topNote, dir: item.i === 'P4' ? 'FLATTEN' : 'SHARPEN', 
+                    reason: `Slow down howling ${noteName(item.m)} ${item.i}`,
+                    cluster: [{m:item.m, i:item.i}, {m:topNote-4, i:'M3'}]
+                });
+            }
+        });
+
+        if (errors.length === 0) {
+            res.innerHTML = `<div class="guide-result guide-res-pass">✔ TEMPERAMENT PASSED!<br>No structural knots found. The jigsaw fits!</div>`;
+            return;
+        }
+
+        let uniqueErrors = {};
+        errors.forEach(e => {
+            if(!uniqueErrors[e.note]) uniqueErrors[e.note] = { dir: e.dir, reasons: [], cluster: [] };
+            if(!uniqueErrors[e.note].reasons.includes(e.reason)) uniqueErrors[e.note].reasons.push(e.reason);
+            e.cluster.forEach(c => {
+                if(!uniqueErrors[e.note].cluster.some(x => x.m === c.m && x.i === c.i)) uniqueErrors[e.note].cluster.push(c);
+            });
+        });
+
+        let html = '';
+        Object.keys(uniqueErrors).forEach(noteMidi => {
+            let e = uniqueErrors[noteMidi];
+            let cStr = JSON.stringify(e.cluster);
+            html += `
+            <div class="grade-card">
+                <div class="grade-title">⚠️ Fix ${noteName(noteMidi)}</div>
+                <div class="grade-desc">
+                    <b>Action:</b> ${e.dir} ${noteName(noteMidi)}.<br>
+                    <b>Why:</b> ${e.reasons.join(' AND ')}.<br>
+                </div>
+                <button class="action-btn" style="width:100%; border-color:#d00000; color:#d00000;" onclick='wipeCluster(${noteMidi}, "M3", ${cStr})'>RE-TUNE CLUSTER & VERIFY</button>
+            </div>`;
+        });
+        
+        res.innerHTML = html;
+    }, 400); 
 }
 
 // --- DYNAMIC EXPANDERS ---
@@ -1107,19 +1556,40 @@ function renderDynExpanders() {
   $('btnUpMinus').disabled = (expUpMidi <= 66);
   $('btnDownPlus').disabled = (expDownMidi >= 52);
 
-  let uBtns = '';
-  let uP8 = expUpMidi - 12, uM10 = expUpMidi - 16, uM17 = expUpMidi - 28;
-  if(uP8 >= 21) uBtns += `<button class="action-btn" onclick="setTarget(${uP8}, 'OCT_42')" data-midi="${uP8}" data-iv="OCT_42" data-label="${noteName(uP8)} (OCT)">${noteName(uP8)} (OCT)</button>`;
-  if(uM10 >= 21) uBtns += `<button class="action-btn" onclick="setTarget(${uM10}, 'M10')" data-midi="${uM10}" data-iv="M10" data-label="${noteName(uM10)} (M10)">${noteName(uM10)} (M10)</button>`;
-  if(uM17 >= 21) uBtns += `<button class="action-btn" onclick="setTarget(${uM17}, 'M17')" data-midi="${uM17}" data-iv="M17" data-label="${noteName(uM17)} (M17)">${noteName(uM17)} (M17)</button>`;
+  let lBtnsU = ''; let uBtns = '';
+  let uP8 = expUpMidi - 12, uM10 = expUpMidi - 16, uM17 = expUpMidi - 28, uDouble = expUpMidi - 24;
+  
+  if(uP8 >= 21) {
+      lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${uP8}, 'OCT_42')">4:2</button>`;
+      lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${uP8}, 'OCT_63')">6:3</button>`;
+      lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${uP8}, 'OCT_21')">2:1</button>`;
+      if(uDouble >= 21) lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${uDouble}, 'OCT+2')">OCT+2</button>`;
+      
+      uBtns += `<button class="action-btn" onclick="handleAction(this, ${uP8}, 'OCT_42')" data-midi="${uP8}" data-iv="OCT_42" data-label="${noteName(uP8)} OCT ${noteName(uP8+12)}">${noteName(uP8)} OCT ${noteName(uP8+12)}</button>`;
+  }
+  if(uM10 >= 21) uBtns += `<button class="action-btn" onclick="handleAction(this, ${uM10}, 'M10')" data-midi="${uM10}" data-iv="M10" data-label="${noteName(uM10)} M10 ${noteName(uM10+16)}">${noteName(uM10)} M10 ${noteName(uM10+16)}</button>`;
+  if(uM17 >= 21) uBtns += `<button class="action-btn" onclick="handleAction(this, ${uM17}, 'M17')" data-midi="${uM17}" data-iv="M17" data-label="${noteName(uM17)} M17 ${noteName(uM17+28)}">${noteName(uM17)} M17 ${noteName(uM17+28)}</button>`;
+  
+  $('dynUpListenBtns').innerHTML = lBtnsU;
   $('dynUpBtns').innerHTML = uBtns;
 
   $('dynDownTarget').textContent = noteName(expDownMidi);
-  let dBtns = '';
-  if(expDownMidi + 12 <= 108) dBtns += `<button class="action-btn" onclick="setTarget(${expDownMidi}, 'OCT_42')" data-midi="${expDownMidi}" data-iv="OCT_42" data-label="${noteName(expDownMidi)} (OCT)">${noteName(expDownMidi)} (OCT)</button>`;
-  if(expDownMidi + 16 <= 108) dBtns += `<button class="action-btn" onclick="setTarget(${expDownMidi}, 'M10')" data-midi="${expDownMidi}" data-iv="M10" data-label="${noteName(expDownMidi)} (M10)">${noteName(expDownMidi)} (M10)</button>`;
-  if(expDownMidi + 28 <= 108) dBtns += `<button class="action-btn" onclick="setTarget(${expDownMidi}, 'M17')" data-midi="${expDownMidi}" data-iv="M17" data-label="${noteName(expDownMidi)} (M17)">${noteName(expDownMidi)} (M17)</button>`;
+  let lBtnsD = ''; let dBtns = '';
+  
+  if(expDownMidi + 12 <= 108) {
+      lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${expDownMidi}, 'OCT_42')">4:2</button>`;
+      lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${expDownMidi}, 'OCT_63')">6:3</button>`;
+      lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${expDownMidi}, 'OCT_21')">2:1</button>`;
+      if(expDownMidi + 24 <= 108) lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${expDownMidi}, 'OCT+2')">OCT+2</button>`;
+      
+      dBtns += `<button class="action-btn" onclick="handleAction(this, ${expDownMidi}, 'OCT_42')" data-midi="${expDownMidi}" data-iv="OCT_42" data-label="${noteName(expDownMidi)} OCT ${noteName(expDownMidi+12)}">${noteName(expDownMidi)} OCT ${noteName(expDownMidi+12)}</button>`;
+  }
+  if(expDownMidi + 16 <= 108) dBtns += `<button class="action-btn" onclick="handleAction(this, ${expDownMidi}, 'M10')" data-midi="${expDownMidi}" data-iv="M10" data-label="${noteName(expDownMidi)} M10 ${noteName(expDownMidi+16)}">${noteName(expDownMidi)} M10 ${noteName(expDownMidi+16)}</button>`;
+  if(expDownMidi + 28 <= 108) dBtns += `<button class="action-btn" onclick="handleAction(this, ${expDownMidi}, 'M17')" data-midi="${expDownMidi}" data-iv="M17" data-label="${noteName(expDownMidi)} M17 ${noteName(expDownMidi+28)}">${noteName(expDownMidi)} M17 ${noteName(expDownMidi+28)}</button>`;
+  
+  $('dynDownListenBtns').innerHTML = lBtnsD;
   $('dynDownBtns').innerHTML = dBtns;
+  
   updateDynRes();
 }
 
@@ -1250,19 +1720,33 @@ $('bigStartBtn').addEventListener('click', async () => {
     analyserTuner.fftSize = 4096;
     src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
 
+    // IH Scanners
+    ihFilter1 = audioCtx.createBiquadFilter(); ihFilter1.type = 'bandpass'; ihFilter1.Q.value = 5.0;
+    ihAnalyser1 = audioCtx.createAnalyser(); ihAnalyser1.fftSize = 4096;
+    src.connect(ihFilter1); ihFilter1.connect(ihAnalyser1);
+    
+    ihFilter4 = audioCtx.createBiquadFilter(); ihFilter4.type = 'bandpass'; ihFilter4.Q.value = 5.0;
+    ihAnalyser4 = audioCtx.createAnalyser(); ihAnalyser4.fftSize = 4096;
+    src.connect(ihFilter4); ihFilter4.connect(ihAnalyser4);
+    
+    ihData1 = new Float32Array(ihAnalyser1.fftSize);
+    ihData4 = new Float32Array(ihAnalyser4.fftSize);
+
     const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
     gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
     monitorGain = audioCtx.createGain(); monitorGain.gain.value = monitorOn && !micPaused ? 25.0 : 0.0;
     scriptNode = audioCtx.createScriptProcessor(1024, 1, 1);
 
-    src.connect(analyserFull); src.connect(filters[0]); filters[0].connect(filters[1]); filters[1].connect(filters[2]); 
-    filters[2].connect(gainNode); filters[2].connect(monitorGain); monitorGain.connect(audioCtx.destination);
+    src.connect(analyserFull); src.connect(filters[0]); filters[0].connect(filters[1]);
+    filters[1].connect(gainNode); filters[1].connect(monitorGain); monitorGain.connect(audioCtx.destination);
     gainNode.connect(scriptNode); scriptNode.connect(audioCtx.destination);
 
     scriptNode.onaudioprocess = buildAudioProcessor();
     isRunning = true; lastEnvelope = 0; rafId = requestAnimationFrame(renderLoop);
   } catch(e) { alert('Microphone setup failed:\n' + e.message); $('startOverlay').style.display = 'flex'; }
 });
+
+let smoothedEnvelope = 0; 
 
 function buildAudioProcessor() {
   return (e) => {
@@ -1271,58 +1755,103 @@ function buildAudioProcessor() {
     for (let offset = 0; offset < inputData.length; offset += currentChunkSize) {
       let sum = 0, limit = Math.min(currentChunkSize, inputData.length - offset);
       for (let i = 0; i < limit; i++) sum += inputData[offset + i] * inputData[offset + i];
-      const rms = Math.sqrt(sum / limit); envelopeRunning = rms;
-      const strikeMult = currentChunkSize === 256 ? 1.8 : 2.5;
+      const rms = Math.sqrt(sum / limit); 
+      
+      smoothedEnvelope = (smoothedEnvelope * 0.7) + (rms * 0.3);
+      envelopeRunning = smoothedEnvelope;
+      
+      const strikeMult = 2.0; 
       const isStrike = (envelopeRunning > lastEnvelope * strikeMult) && (envelopeRunning > 0.005);
       lastEnvelope = envelopeRunning;
       noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004;
       if (noiseFloor < 0.000001) noiseFloor = 0.000001;
       const snr = envelopeRunning / noiseFloor;
-      if (isStrike && snr > 3.0) {
+      
+      if (isStrike && snr > 2.5) {
         const timeNow = performance.now();
         if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) {
-          envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = currentChunkSize === 256 ? 72 : 18;
+          envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; 
           captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = [];
           $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900';
         }
       }
       if (transientSamplesLeft > 0) { transientSamplesLeft--; }
-      else { envHistory.push({ val: envelopeRunning }); const fps = audioCtx.sampleRate / currentChunkSize; if (envHistory.length > Math.round(3.5 * fps)) envHistory.shift(); }
+      else { 
+          envHistory.push({ val: envelopeRunning }); 
+          const fps = audioCtx.sampleRate / currentChunkSize; 
+          if (envHistory.length > Math.round(4.5 * fps)) envHistory.shift(); 
+      }
     }
   };
 }
 
 function buildFilters(cfg) {
-  const Q = (cfg.center / (cfg.bpHi - cfg.bpLo)) * 1.4;
+  const Q = (cfg.center / (cfg.bpHi - cfg.bpLo)) * 0.75;
   const f1 = audioCtx.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = cfg.center; f1.Q.value = Q;
   const f2 = audioCtx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = cfg.center; f2.Q.value = Q;
-  const f3 = audioCtx.createBiquadFilter(); f3.type = 'bandpass'; f3.frequency.value = cfg.center; f3.Q.value = Q;
-  return [f1, f2, f3];
+  return [f1, f2];
 }
+
 function retuneFilters(cfg) {
   if (!audioCtx || filters.length === 0) return;
-  const Q = (cfg.center / (cfg.bpHi - cfg.bpLo)) * 1.4;
-  filters[0].frequency.value = cfg.center; filters[0].Q.value = Q; filters[1].frequency.value = cfg.center; filters[1].Q.value = Q; filters[2].frequency.value = cfg.center; filters[2].Q.value = Q;
+  const Q = (cfg.center / (cfg.bpHi - cfg.bpLo)) * 0.75;
+  filters[0].frequency.value = cfg.center; filters[0].Q.value = Q; 
+  filters[1].frequency.value = cfg.center; filters[1].Q.value = Q; 
 }
 
 function renderLoop(ts) {
   if (!isRunning) return; rafId = requestAnimationFrame(renderLoop); if (micPaused) return;
+  
+  if (captureState === 'LISTEN_ONLY') {
+      $('captureStateLbl').textContent = 'LISTENING'; 
+      $('captureStateLbl').style.color = '#0066ff';
+      const snr = envelopeRunning / noiseFloor;
+      if (snr > 1.5 && envelopeRunning > 0.0005) sigLight.style.background = '#00ff00'; 
+      else sigLight.style.background = '#e0e0e0';
+      return; 
+  }
+
   const cfg = getConfig(lowerMidi, curIv); const snr = envelopeRunning / noiseFloor; const threshold = getDynamicThresholds(lowerMidi, curIv);
   if (snr > threshold.snr && envelopeRunning > threshold.env) { sigLight.style.background = '#00ff00'; } else { sigLight.style.background = '#e0e0e0'; }
-  let now = performance.now(); const fps = audioCtx.sampleRate / currentChunkSize; const minHistFrames = Math.round(fps * 0.4);
+  let now = performance.now(); const fps = audioCtx.sampleRate / currentChunkSize; 
   
+  let minHistFrames = Math.round(fps * 0.5);
+
   if (captureState === 'WAIT' && now - captureStartTime > 800) { captureState = 'CAPTURING'; $('captureStateLbl').textContent = 'RECORDING...'; $('captureStateLbl').style.color = '#d00000'; }
   if (captureState === 'CAPTURING') {
-      if (envHistory.length >= minHistFrames && snr > threshold.snr && envelopeRunning > threshold.env) { let beat = detectBeat(envHistory, cfg.theoBeat, curIv); if (beat !== null) capturedBeats.push(beat); }
-      if (now - captureStartTime > 3300 || snr < threshold.snr * 0.8) {
-          if (capturedBeats.length > 5) {
-              capturedBeats.sort((a,b) => a-b); let median = capturedBeats[Math.floor(capturedBeats.length/2)];
-              let stableCount = capturedBeats.filter(b => Math.abs(b - median) < 0.6).length;
-              if (stableCount / capturedBeats.length >= 0.7 || median === 0.0) {
-                  lockedAverage = median; avgEl.textContent = lockedAverage.toFixed(2);
+      if (envHistory.length >= minHistFrames && snr > threshold.snr && envelopeRunning > threshold.env) { 
+          let beat = detectBeat(envHistory, cfg.theoBeat, curIv); 
+          if (beat !== null) {
+              capturedBeats.push(beat);
+              avgEl.textContent = beat.toFixed(2);
+          }
+      }
+      
+      let strictTimer;
+      if (cfg.theoBeat > 6.0) { strictTimer = 1500; }
+      else if (cfg.theoBeat >= 3.0) { strictTimer = 3000; }
+      else { strictTimer = 4500; }
+
+      let timeElapsed = now - captureStartTime;
+      let isTimerUp = timeElapsed > strictTimer;
+      let isSignalDead = snr < threshold.snr * 0.3; 
+
+      if (isTimerUp || (timeElapsed > 1500 && isSignalDead)) {
+          if (capturedBeats.length >= 3) {
+              capturedBeats.sort((a,b) => a-b); 
+              let median = capturedBeats[Math.floor(capturedBeats.length/2)];
+              let stableCount = capturedBeats.filter(b => Math.abs(b - median) <= 0.6).length;
+              
+              if (stableCount / capturedBeats.length >= 0.6 || median === 0.0) {
+                  lockedAverage = median; 
+                  avgEl.textContent = lockedAverage.toFixed(2);
                   $('captureStateLbl').textContent = 'LOCKED!'; $('captureStateLbl').style.color = '#00aa00'; captureState = 'LOCKED'; finalizeLog(); 
-              } else { captureState = 'IDLE'; $('captureStateLbl').textContent = 'UNSTABLE'; $('captureStateLbl').style.color = '#d00000'; setTimeout(() => { if(!micPaused && captureState==='IDLE') resetCapture(); }, 1500); }
-          } else { captureState = 'IDLE'; $('captureStateLbl').textContent = 'NO BEAT'; $('captureStateLbl').style.color = '#d00000'; setTimeout(() => { if(!micPaused && captureState==='IDLE') resetCapture(); }, 1500); }
+              } else { 
+                  captureState = 'IDLE'; $('captureStateLbl').textContent = 'UNSTABLE'; $('captureStateLbl').style.color = '#d00000'; setTimeout(() => { if(!micPaused && captureState==='IDLE') resetCapture(); }, 1500); 
+              }
+          } else { 
+              captureState = 'IDLE'; $('captureStateLbl').textContent = 'NO BEAT'; $('captureStateLbl').style.color = '#d00000'; setTimeout(() => { if(!micPaused && captureState==='IDLE') resetCapture(); }, 1500); 
+          }
       }
   }
 }
@@ -1337,15 +1866,17 @@ function detectBeat(history, theoreticalBeat, ivKey) {
   let ac0 = 0; for (let i = 0; i < N; i++) ac0 += AC[i] * AC[i]; 
 
   let beatIntensity = Math.sqrt(ac0 / N) / valAvg;
-  if (beatIntensity < 0.015 && valAvg > 0.005) return 0.0; 
+  if (beatIntensity < 0.012 && valAvg > 0.005) return 0.0; 
 
   if (ac0 < 1e-12) return null;
 
   const minLag = Math.max(2, Math.round(fps / 55)), maxLag = Math.min(N - 2, Math.round(fps / 0.5)); 
   const ac = new Float32Array(maxLag + 1); for (let lag = minLag; lag <= maxLag; lag++) { let sum = 0; for (let i = 0; i < N - lag; i++) sum += AC[i] * AC[i + lag]; ac[lag] = sum / ac0; }
   const peaks = []; 
-  let acThreshold = theoreticalBeat > 10.0 ? 0.015 : 0.03; 
-  if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) acThreshold = 0.01; 
+  
+  let acThreshold = theoreticalBeat > 10.0 ? 0.01 : 0.02; 
+  if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) acThreshold = 0.005; 
+  if (lowerMidi >= 58) { acThreshold *= 0.5; } 
   
   for (let lag = minLag + 1; lag < maxLag; lag++) { 
       if (ac[lag] > ac[lag - 1] && ac[lag] > ac[lag + 1] && ac[lag] > acThreshold) peaks.push({ lag, ac: ac[lag] }); 
@@ -1363,8 +1894,19 @@ function detectBeat(history, theoreticalBeat, ivKey) {
     let allowedDev = Math.max(1.0, theoreticalBeat * 0.35); 
     if (ivKey.includes('OCT') || ivKey === 'P12' || ivKey === 'P15' || ivKey === 'OCT+2') allowedDev = 4.0; 
     if (Math.abs(rate - theoreticalBeat) > allowedDev) return; 
-    let ratio = rate / theoreticalBeat; let distanceDev = theoreticalBeat === 0 ? 0 : Math.abs(Math.log2(ratio)); let proximityWeight = theoreticalBeat === 0 ? 1.0 : Math.exp(-0.5 * Math.pow(distanceDev / 0.8, 2));
-    if (rate < 0.15 || rate > 35.0) proximityWeight = 0.0; let score = p.ac * proximityWeight; if (score > maxScore) { maxScore = score; bestCandidate = rate; }
+    
+    let score = p.ac; 
+    
+    if (ivKey !== 'P4' && ivKey !== 'P5' && !ivKey.includes('OCT')) {
+        let ratio = rate / theoreticalBeat; let distanceDev = theoreticalBeat === 0 ? 0 : Math.abs(Math.log2(ratio)); 
+        let proximityWeight = theoreticalBeat === 0 ? 1.0 : Math.exp(-0.5 * Math.pow(distanceDev / 0.8, 2));
+        if (rate < 0.15 || rate > 43.0) proximityWeight = 0.0; 
+        score *= proximityWeight; 
+    } else {
+        if (rate < 0.15 || rate > 25.0) score *= 0.0;
+    }
+    
+    if (score > maxScore) { maxScore = score; bestCandidate = rate; }
   }); 
   
   if (maxScore > 0 && maxScore <= 0.005 && ivKey.includes('OCT')) { return 0.0; }
@@ -1372,7 +1914,7 @@ function detectBeat(history, theoreticalBeat, ivKey) {
   return maxScore > 0.005 ? bestCandidate : null;
 }
 
-$('clearBtn').addEventListener('click', () => { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; savePersistence(); resetCapture(); renderLogTable(); analyzeTemperament(); updateGuide(); updateDynRes(); });
+$('clearBtn').addEventListener('click', () => { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; savePersistence(); resetCapture(); renderLogTable(); updateGuide(); updateDynRes(); });
 
 document.querySelectorAll('.iv-tab').forEach(t => { 
   t.addEventListener('click', () => { 
