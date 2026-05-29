@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V41</title>
+<title>DAN'S BEAT SPEED DETECTOR - PRO</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -366,7 +366,7 @@
       <div id="ihContainer" style="display: none;">
         <div style="padding: 8px;">
             <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Stretch Curve Profiler</h3>
-            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample the keys below to map this piano's wire stiffness scale. This instantly corrects target beat speeds across the app.</p>
+            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample the keys below to map this piano's wire stiffness scale. This builds a custom fundamental grid and instantly corrects target beat speeds across the app.</p>
             <div class="action-row" style="justify-content: center; gap: 6px;" id="ihBtns">
                 <button class="action-btn" onclick="sampleIH(24)" id="ihBtn-24">C1</button>
                 <button class="action-btn" onclick="sampleIH(29)" id="ihBtn-29">F1</button>
@@ -603,6 +603,7 @@ async function getBuiltInMicConstraints() {
 
 let ihFilter1 = null, ihFilter4 = null, ihAnalyser1 = null, ihAnalyser4 = null;
 let ihData1 = null, ihData4 = null;
+let ihPartials = [1, 4]; // dynamic tracking for bass isolation
 
 window.startAudioEngine = async function() {
     if (audioCtx) { try { audioCtx.close(); } catch(e) {} audioCtx = null; }
@@ -686,8 +687,15 @@ document.addEventListener('visibilitychange', async () => {
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
-const freq = m => 440 * Math.pow(2, (m - 69) / 12);
 const noteName = m => NOTES[m % 12] + (Math.floor(m / 12) - 1);
+
+// Global Tuning Curve Array
+let tuningCurve = new Float32Array(109);
+for(let m=0; m<=108; m++) tuningCurve[m] = 440 * Math.pow(2, (m - 69) / 12);
+
+function freq(m) {
+    return tuningCurve[m] || 440 * Math.pow(2, (m - 69) / 12);
+}
 
 const IV = {
   M3:  { sem:4,  lp:5, up:4, name:'Major Third' }, 
@@ -719,34 +727,151 @@ Object.keys(IV).forEach(key => {
 
 // Custom Stretch State
 let ihProfile = {};
+let smoothedIH = new Float32Array(109);
 let useCustomIH = false;
 
-function getIH(midi) {
-    if (!useCustomIH || Object.keys(ihProfile).length === 0) return 0;
-    let sortedMidis = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b);
-    if (midi <= sortedMidis[0]) return ihProfile[sortedMidis[0]];
-    if (midi >= sortedMidis[sortedMidis.length-1]) return ihProfile[sortedMidis[sortedMidis.length-1]];
-    for (let i=0; i<sortedMidis.length-1; i++) {
-        let m1 = sortedMidis[i];
-        let m2 = sortedMidis[i+1];
-        if (midi >= m1 && midi <= m2) {
-            let fraction = (midi - m1) / (m2 - m1);
-            return ihProfile[m1] + fraction * (ihProfile[m2] - ihProfile[m1]);
+// Feature 2: Polynomial Curve Smoothing (Least Squares Regression)
+function smoothIHData() {
+    let keys = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b);
+    if (keys.length === 0) return;
+    if (keys.length < 3) {
+        for(let m=0; m<=108; m++) smoothedIH[m] = ihProfile[keys[0]] || 0.0005;
+        return;
+    }
+
+    let x = [], y = [];
+    for (let k of keys) {
+        if (ihProfile[k] > 0) {
+            x.push(k);
+            y.push(Math.log(ihProfile[k]));
         }
     }
-    return 0;
+
+    let n = x.length;
+    let sumX = 0, sumY = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0, sumXY = 0, sumX2Y = 0;
+    for(let i=0; i<n; i++) {
+        sumX += x[i]; sumX2 += x[i]*x[i]; sumX3 += x[i]*x[i]*x[i]; sumX4 += x[i]*x[i]*x[i]*x[i];
+        sumY += y[i]; sumXY += x[i]*y[i]; sumX2Y += x[i]*x[i]*y[i];
+    }
+
+    let M = [
+        [n, sumX, sumX2],
+        [sumX, sumX2, sumX3],
+        [sumX2, sumX3, sumX4]
+    ];
+    let V = [sumY, sumXY, sumX2Y];
+    let det = (m) => m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
+    let D = det(M);
+    
+    let a=0, b=0, c=0;
+    if (Math.abs(D) > 1e-10) {
+        let Ma = [[V[0], M[0][1], M[0][2]], [V[1], M[1][1], M[1][2]], [V[2], M[2][1], M[2][2]]];
+        let Mb = [[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]];
+        let Mc = [[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]];
+        a = det(Ma)/D; b = det(Mb)/D; c = det(Mc)/D;
+    } else {
+        // Fallback to Linear Interpolation if Matrix determinant is near 0
+        let denomL = n*sumX2 - sumX*sumX;
+        b = (n*sumXY - sumX*sumY) / denomL;
+        a = (sumY - b*sumX) / n;
+        c = 0;
+    }
+
+    // Apply the mathematical polynomial wrapper to the entire key compass
+    for(let m=0; m<=108; m++) {
+        let logB = a + b*m + c*m*m;
+        let B = Math.exp(logB);
+        if (B < 1e-6) B = 1e-6;
+        if (B > 0.05) B = 0.05;
+        smoothedIH[m] = B;
+    }
+}
+
+// Feature 3: Dynamic Octave Stretch Weighting
+function buildTuningCurve() {
+    tuningCurve[69] = 440.0;
+    
+    // Dynamic transition downwards from A4 (69)
+    for(let oct = 0; oct < 4; oct++) {
+        let topMidi = 69 - oct*12;
+        let botMidi = topMidi - 12;
+        if(botMidi < 21) break;
+        
+        let bTop = smoothedIH[topMidi];
+        let bBot = smoothedIH[botMidi];
+        
+        // Ratio calculations based on different acoustic alignments
+        let r42 = (2/4) * (Math.sqrt(1 + 4*bTop) / Math.sqrt(1 + 16*bBot));
+        let r63 = (3/6) * (Math.sqrt(1 + 9*bTop) / Math.sqrt(1 + 36*bBot));
+        let r84 = (4/8) * (Math.sqrt(1 + 16*bTop) / Math.sqrt(1 + 64*bBot));
+
+        let fTop = tuningCurve[topMidi];
+        
+        // DYNAMIC WEIGHTING ALGORITHM: Smoothly transition octaves
+        let w42 = 1, w63 = 0, w84 = 0;
+        let isHighIH = smoothedIH[60] > 0.00045;
+        
+        if (topMidi <= 45) { // Deep Bass Transition
+            w42 = 0; w63 = 0.4; w84 = 0.6;
+        } else if (topMidi <= 57) { // Tenor Break Transition
+            if (isHighIH) { w42 = 0; w63 = 1; }
+            else { w42 = 0.5; w63 = 0.5; }
+        }
+
+        let finalRatio = (r42 * w42) + (r63 * w63) + (r84 * w84);
+        let fBot = fTop * finalRatio;
+
+        tuningCurve[botMidi] = fBot;
+        
+        let step = Math.pow(fTop / fBot, 1/12);
+        for(let k = 1; k < 12; k++) {
+            tuningCurve[botMidi + k] = fBot * Math.pow(step, k);
+        }
+    }
+    
+    // Dynamic transition upwards from A4 (69)
+    for(let oct = 0; oct < 3; oct++) {
+        let botMidi = 69 + oct*12;
+        let topMidi = botMidi + 12;
+        if(topMidi > 108) topMidi = 108; 
+        
+        let bBot = smoothedIH[botMidi];
+        let bTop = smoothedIH[topMidi];
+
+        let r42 = (2/4) * (Math.sqrt(1 + 4*bTop) / Math.sqrt(1 + 16*bBot));
+        let r21 = (1/2) * (Math.sqrt(1 + 1*bTop) / Math.sqrt(1 + 4*bBot));
+        
+        let fBot = tuningCurve[botMidi];
+        
+        let w42 = 1, w21 = 0;
+        if (botMidi >= 81) { w42 = 0; w21 = 1; }
+        else if (botMidi >= 69) { w42 = 0.5; w21 = 0.5; }
+
+        let finalRatio = (r42 * w42) + (r21 * w21);
+        let fTop = fBot / finalRatio;
+
+        tuningCurve[topMidi] = fTop;
+        
+        let step = Math.pow(fTop / fBot, 1/12);
+        let semitones = topMidi - botMidi;
+        for(let k = 1; k < semitones; k++) {
+            tuningCurve[botMidi + k] = fBot * Math.pow(step, k);
+        }
+    }
 }
 
 function getMidiHarmonicStretch(midi, partial) {
     if (!useCustomIH) return 1.0;
-    let B = getIH(midi);
-    return Math.sqrt(1 + B * partial * partial);
+    return Math.sqrt(1 + smoothedIH[midi] * partial * partial);
 }
 
 function getConfig(lowerMidi, ivKey) {
   const iv = IV[ivKey]; const upperMidi = lowerMidi + iv.sem;
+  
+  // Gets the exact fundamental (either Dynamic Stretched if customIH, or flat 12-TET if not)
   const fLo = freq(lowerMidi), fHi = freq(upperMidi);
   
+  // Applies the overtone stretch to those fundamentals for partial collision
   let stretchLo = getMidiHarmonicStretch(lowerMidi, iv.lp);
   let stretchHi = getMidiHarmonicStretch(upperMidi, iv.up);
 
@@ -810,10 +935,10 @@ let sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
 
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSaves')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV43')) || {};
 
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV41');
+  const saved = localStorage.getItem('danDetectorLogsV43');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -821,11 +946,13 @@ function loadPersistence() {
           loggedIntervals = parsed.logs;
           ihProfile = parsed.ih || {};
           useCustomIH = parsed.customIH || false;
+          if (parsed.curve) tuningCurve = new Float32Array(parsed.curve);
       } else {
           loggedIntervals = { ...loggedIntervals, ...parsed }; // backwards compatibility
       }
       renderLogTable(); updateGuide(); 
       if(useCustomIH) {
+          smoothIHData();
           document.querySelectorAll('#ihBtns .action-btn').forEach(b => {
                let m = parseInt(b.id.split('-')[1]);
                if(ihProfile[m] !== undefined) b.classList.add('logged');
@@ -844,8 +971,8 @@ function loadPersistence() {
 }
 
 function savePersistence() { 
-    let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH };
-    localStorage.setItem('danDetectorLogsV41', JSON.stringify(state)); 
+    let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve) };
+    localStorage.setItem('danDetectorLogsV43', JSON.stringify(state)); 
 }
 
 function updateDynamicGuideTexts() {
@@ -887,8 +1014,8 @@ function renderSavedFiles() {
 window.saveCurrentTuning = function() {
     let name = $('saveNameInput').value.trim();
     if(!name) { alert('Please enter a name for the tuning.'); return; }
-    savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH };
-    localStorage.setItem('danTunerSaves', JSON.stringify(savedTunings));
+    savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve) };
+    localStorage.setItem('danTunerSavesV43', JSON.stringify(savedTunings));
     $('saveNameInput').value = '';
     renderSavedFiles();
 }
@@ -899,9 +1026,11 @@ window.loadTuning = function(key) {
         loggedIntervals = data.logs;
         ihProfile = data.ih || {};
         useCustomIH = data.customIH || false;
+        if(data.curve) tuningCurve = new Float32Array(data.curve);
         savePersistence();
         
         if(useCustomIH) {
+            smoothIHData();
             document.querySelectorAll('#ihBtns .action-btn').forEach(b => {
                let m = parseInt(b.id.split('-')[1]);
                if(ihProfile[m] !== undefined) b.classList.add('logged');
@@ -921,7 +1050,7 @@ window.loadTuning = function(key) {
 window.deleteTuning = function(key) {
     if(confirm('Delete ' + key + '?')) {
         delete savedTunings[key];
-        localStorage.setItem('danTunerSaves', JSON.stringify(savedTunings));
+        localStorage.setItem('danTunerSavesV43', JSON.stringify(savedTunings));
         renderSavedFiles();
     }
 }
@@ -1030,9 +1159,13 @@ function runIHScanner() {
     let p1 = getPitchYin(ihData1, audioCtx.sampleRate);
     let p4 = getPitchYin(ihData4, audioCtx.sampleRate);
 
-    let f1 = freq(ihScanMidi);
-    if (p1 > f1 * 0.9 && p1 < f1 * 1.1) ihPitches1.push(p1);
-    if (p4 > f1 * 3.6 && p4 < f1 * 4.4) ihPitches4.push(p4);
+    // Standard theoretical math fallback just for validation ranges
+    let f0 = 440 * Math.pow(2, (ihScanMidi - 69) / 12);
+    let fA = f0 * ihPartials[0];
+    let fB = f0 * ihPartials[1];
+
+    if (p1 > fA * 0.9 && p1 < fA * 1.1) ihPitches1.push(p1);
+    if (p4 > fB * 0.9 && p4 < fB * 1.1) ihPitches4.push(p4);
 
     ihRafId = requestAnimationFrame(runIHScanner);
 }
@@ -1054,9 +1187,12 @@ window.applyStretchCurve = function() {
     btn.style.background = '#e6ffe6';
     btn.style.color = '#006600';
     
-    // Determine Scale Class based on C4 (midi 60)
-    let bC4 = ihProfile[60];
-    if (!bC4) bC4 = 0.0005; // Fallback just in case
+    // Call Least Squares Smoothing Algorithm over raw points
+    smoothIHData();
+    
+    // Determine Scale Class based on Smoothed C4
+    let bC4 = smoothedIH[60];
+    if (!bC4) bC4 = 0.0005; // Fallback
     
     let classText = "";
     if (bC4 < 0.00015) classText = "Very Low Stretch (Approx. 9ft Concert Grand)";
@@ -1066,8 +1202,10 @@ window.applyStretchCurve = function() {
     else if (bC4 < 0.00095) classText = "High Stretch (Approx. 40\" Console Upright)";
     else classText = "Extreme Stretch (Approx. 36\" Spinet)";
     
-    $('stretchClassification').innerHTML = classText + `<br><span style="font-size:0.65rem;font-weight:normal;color:#666;">Ref iH: ${bC4.toFixed(6)}</span>`;
+    $('stretchClassification').innerHTML = classText + `<br><span style="font-size:0.65rem;font-weight:normal;color:#666;">Smoothed Ref iH: ${bC4.toFixed(6)}</span>`;
     
+    // Build Dynamic Octave Weightings Grid
+    buildTuningCurve();
     updateDynamicGuideTexts();
     setTarget(lowerMidi, curIv);
     savePersistence();
@@ -1076,6 +1214,9 @@ window.applyStretchCurve = function() {
 window.resetStretchCurve = function() {
     ihProfile = {};
     useCustomIH = false;
+    for(let m=0; m<=108; m++) tuningCurve[m] = 440 * Math.pow(2, (m - 69) / 12);
+    for(let m=0; m<=108; m++) smoothedIH[m] = 0;
+    
     $('stretchClassification').innerHTML = "";
     $('ihResult').className = 'guide-result guide-res-wait';
     $('ihResult').innerHTML = 'Select a note to sample its physical string stretch...';
@@ -1096,28 +1237,41 @@ window.resetStretchCurve = function() {
 window.sampleIH = function(midi) {
     if(!ihFilter1 || !ihFilter4) return;
     ihScanMidi = midi;
-    let f1 = freq(midi);
-    let f4 = f1 * 4;
-    ihFilter1.frequency.value = f1;
-    ihFilter4.frequency.value = f4;
+    let f0 = 440 * Math.pow(2, (midi - 69) / 12); // Always use strict math to find the deviation
+    
+    // Feature 4: Bass Partial Isolation. If deep bass, drop fundamental and scan 2nd and 4th partials.
+    ihPartials = midi <= 36 ? [2, 4] : [1, 4];
+    
+    let fA = f0 * ihPartials[0];
+    let fB = f0 * ihPartials[1];
+    
+    ihFilter1.frequency.value = fA;
+    ihFilter4.frequency.value = fB;
     ihPitches1 = []; ihPitches4 = [];
     
     if (ihRafId) cancelAnimationFrame(ihRafId);
     isIHScanning = true;
     runIHScanner();
 
+    let partialText = midi <= 36 ? '2nd & 4th' : 'Fundamental & 4th';
     $('ihResult').className = 'guide-result guide-res-wait';
-    $('ihResult').innerHTML = `Scanning Fundamental & 4th Partial for ${noteName(midi)}...`;
+    $('ihResult').innerHTML = `Scanning ${partialText} Partial for ${noteName(midi)}...`;
     
     setTimeout(() => {
         isIHScanning = false;
         if(ihPitches1.length > 5 && ihPitches4.length > 5) {
             ihPitches1.sort((a,b)=>a-b); ihPitches4.sort((a,b)=>a-b);
-            let med1 = ihPitches1[Math.floor(ihPitches1.length/2)];
-            let med4 = ihPitches4[Math.floor(ihPitches4.length/2)];
+            let medA = ihPitches1[Math.floor(ihPitches1.length/2)];
+            let medB = ihPitches4[Math.floor(ihPitches4.length/2)];
 
-            let ratio = med4 / (4 * med1);
-            let B = (ratio * ratio - 1) / 16;
+            let B = 0;
+            if (ihPartials[0] === 1 && ihPartials[1] === 4) {
+                let ratio = medB / (4 * medA);
+                B = (ratio * ratio - 1) / 16;
+            } else if (ihPartials[0] === 2 && ihPartials[1] === 4) {
+                let ratio = medB / (2 * medA);
+                B = (ratio * ratio - 1) / (16 - 4 * ratio * ratio);
+            }
             if (B < 0) B = 0; 
             
             ihProfile[midi] = B;
@@ -1247,7 +1401,7 @@ function renderLogTable() {
   if (entries.length > 0) {
     entries.sort((a, b) => a.midi - b.midi);
     for (let i = 0; i < entries.length; i++) {
-      entries[i].pctStr = '-'; entries[i].isWrong = false;
+      entries[i].pctStr = '-'; entries[i].isWrong = false; entries[i].isWarn = false;
       if (i > 0) {
         const pct = ((entries[i].measured - entries[i-1].measured) / entries[i-1].measured) * 100;
         entries[i].pctStr = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
@@ -1256,6 +1410,8 @@ function renderLogTable() {
         if (entries[i].midi === entries[i-1].midi + 1) {
             if (pct <= 0) {
                 entries[i].isWrong = true; // RED (Dip)
+            } else if (pct < 3 || pct > 9) {
+                entries[i].isWarn = true; // YELLOW (Flatline or Spike)
             }
         }
       }
@@ -1263,7 +1419,8 @@ function renderLogTable() {
     tb.innerHTML += `<tr style="background:#f4f4f4; border-bottom:1px solid #000;"><td colspan="6" style="text-align:center; font-weight:800; font-size:0.8rem; padding:4px;">${curIv} PROGRESSION</td></tr>`;
     for (let i = entries.length - 1; i >= 0; i--) {
       const c = entries[i];
-      const rowStyle = c.isWrong ? 'background-color: #ffeaea; color: #d00000; font-weight: 700;' : '';
+      const rowStyle = c.isWrong ? 'background-color: #ffeaea; color: #d00000; font-weight: 700;' : 
+                       (c.isWarn ? 'background-color: #fff8cc; color: #b38000; font-weight: 700;' : '');
       const strikeCountStr = c.strikes.length > 1 ? ` <span style="font-size:0.6rem; color:#666;">(${c.strikes.length}x)</span>` : '';
       tb.innerHTML += `<tr style="${rowStyle}"><td><b>${curIv}</b></td><td style="font-weight:800;">${c.noteName}</td><td style="font-weight:700; font-size:0.85rem;">${c.measured.toFixed(2)}${strikeCountStr}</td><td style="font-weight:700;">${c.pctStr}</td><td class="w">~${c.target.toFixed(2)}</td><td><button class="btn-del" onclick="deleteEntry('${curIv}', ${c.midi})">X</button></td></tr>`;
     }
