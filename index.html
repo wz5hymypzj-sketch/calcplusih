@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V40</title>
+<title>DAN'S BEAT SPEED DETECTOR - V41</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -58,7 +58,7 @@
   
   .controls-row { display: flex; gap: 4px; width: 100%; justify-content: space-between; flex-wrap: nowrap; }
   .mode-btn { 
-    background: #fff; border: 2px solid #000; font-size: 0.65rem; font-weight: 800; padding: 6px 2px; 
+    background: #fff; border: 2px solid #000; font-size: 0.60rem; font-weight: 800; padding: 6px 1px; 
     cursor: pointer; border-radius: 4px; text-transform: uppercase; flex: 1; text-align: center; 
     white-space: nowrap; transition: all 0.1s; color: #000;
   }
@@ -283,6 +283,17 @@
   <button id="bigStartBtn">ENTER</button>
 </div>
 
+<div id="filesOverlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.95); z-index:9000; flex-direction:column; padding:20px;">
+   <h2 style="margin-bottom:10px; text-transform:uppercase; font-style:italic;">Saved Tunings</h2>
+   <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px;"></div>
+   <input type="text" id="saveNameInput" placeholder="Tuning Name (e.g. Yamaha LU101)" style="padding:12px; font-size:1rem; margin-bottom:12px; border:2px solid #000; border-radius:4px;">
+   <div style="display:flex; gap:10px; margin-bottom:10px;">
+     <button class="ctrl-btn" onclick="saveCurrentTuning()" style="flex:1; background:#000; color:#fff; padding:12px; font-size:0.9rem;">SAVE CURRENT</button>
+     <button class="ctrl-btn fix-btn" onclick="startNewTuning()" style="flex:1; padding:12px; font-size:0.9rem;">NEW TUNING</button>
+   </div>
+   <button class="ctrl-btn" onclick="toggleFiles()" style="padding:12px; font-size:0.9rem;">CLOSE</button>
+</div>
+
 <div class="layout-wrapper">
   
   <div class="left-panel">
@@ -291,7 +302,8 @@
       <div class="controls-row">
         <button class="mode-btn active" id="btnModeDet" onclick="switchMainMode('DET')">LOGS</button>
         <button class="mode-btn" id="btnModeGuide" onclick="switchMainMode('GUIDE')">GUIDE</button>
-        <button class="mode-btn" id="btnModeIH" onclick="switchMainMode('IH')">iH</button>
+        <button class="mode-btn" id="btnModeIH" onclick="switchMainMode('IH')">STRETCH</button>
+        <button class="mode-btn" id="btnModeFiles" onclick="toggleFiles()">FILES</button>
         <button class="mode-btn active" id="btnPause">MIC: ON</button>
         <button class="mode-btn" id="btnPassThrough">PASS: OFF</button>
       </div>
@@ -353,17 +365,28 @@
 
       <div id="ihContainer" style="display: none;">
         <div style="padding: 8px;">
-            <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Inharmonicity Profiler</h3>
-            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Measure reference notes across the keyboard to map this piano's specific wire stiffness (iH). This dynamically updates all filter tracking and textbook beat speeds.</p>
-            <div class="action-row" style="justify-content: flex-start; gap: 8px;" id="ihBtns">
+            <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Stretch Curve Profiler</h3>
+            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample the keys below to map this piano's wire stiffness scale. This instantly corrects target beat speeds across the app.</p>
+            <div class="action-row" style="justify-content: center; gap: 6px;" id="ihBtns">
                 <button class="action-btn" onclick="sampleIH(24)" id="ihBtn-24">C1</button>
+                <button class="action-btn" onclick="sampleIH(29)" id="ihBtn-29">F1</button>
                 <button class="action-btn" onclick="sampleIH(36)" id="ihBtn-36">C2</button>
+                <button class="action-btn" onclick="sampleIH(41)" id="ihBtn-41">F2</button>
                 <button class="action-btn" onclick="sampleIH(48)" id="ihBtn-48">C3</button>
+                <button class="action-btn" onclick="sampleIH(53)" id="ihBtn-53">F3</button>
                 <button class="action-btn" onclick="sampleIH(60)" id="ihBtn-60">C4</button>
+                <button class="action-btn" onclick="sampleIH(65)" id="ihBtn-65">F4</button>
                 <button class="action-btn" onclick="sampleIH(72)" id="ihBtn-72">C5</button>
+                <button class="action-btn" onclick="sampleIH(77)" id="ihBtn-77">F5</button>
                 <button class="action-btn" onclick="sampleIH(84)" id="ihBtn-84">C6</button>
             </div>
             <div class="guide-result guide-res-wait" id="ihResult" style="margin-top: 12px;">Select a note to sample its physical string stretch...</div>
+            
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <button id="btnCalculateIH" class="ctrl-btn grade-btn" style="flex:2; margin:0;" disabled onclick="applyStretchCurve()">CALCULATE</button>
+                <button class="ctrl-btn fix-btn" style="flex:1; margin:0;" onclick="resetStretchCurve()">RESET CURVE</button>
+            </div>
+            <div id="stretchClassification" style="margin-top:10px; font-weight:bold; font-size:0.85rem; text-align:center;"></div>
         </div>
       </div>
 
@@ -399,7 +422,7 @@
           <div class="guide-step">
             <h3>Step 3: Set F3 Anchor</h3>
             <div class="tuning-target">Tuning: F3</div>
-            <p>Aim for ~6.93 bps.</p>
+            <p>Aim for ~<span id="guideStep3Target">6.93</span> bps.</p>
             <div class="action-row"><button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button></div>
             <div class="guide-result guide-res-wait" id="guideRes3">Awaiting logs...</div>
           </div>
@@ -694,7 +717,7 @@ Object.keys(IV).forEach(key => {
   IV[key].min = min; IV[key].max = max;
 });
 
-// Custom iH State
+// Custom Stretch State
 let ihProfile = {};
 let useCustomIH = false;
 
@@ -775,27 +798,145 @@ let ihPitches1 = [];
 let ihPitches4 = [];
 let ihRafId = null;
 
+let tunerActive = false, tunerDataArray = null;
+let smoothedPitch = -1;
+let pitchHistory = [];
+
+let expUpMidi = 66; 
+let expDownMidi = 52; 
+let sweepMidi = 41; 
+let sweepIvType = 'M3';
+
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
 
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSaves')) || {};
+
 function loadPersistence() {
-  const savedLogs = localStorage.getItem('danDetectorLogs');
-  if(savedLogs) {
+  const saved = localStorage.getItem('danDetectorLogsV41');
+  if(saved) {
     try { 
-      let parsed = JSON.parse(savedLogs); 
-      if(parsed.P8 && parsed.P8.length > 0 && !parsed.OCT_42) parsed.OCT_42 = parsed.P8;
-      if(parsed.P15 && parsed.P15.length > 0 && !parsed['OCT+2']) parsed['OCT+2'] = parsed.P15;
-      loggedIntervals = { ...loggedIntervals, ...parsed };
+      let parsed = JSON.parse(saved); 
+      if (parsed.logs) {
+          loggedIntervals = parsed.logs;
+          ihProfile = parsed.ih || {};
+          useCustomIH = parsed.customIH || false;
+      } else {
+          loggedIntervals = { ...loggedIntervals, ...parsed }; // backwards compatibility
+      }
       renderLogTable(); updateGuide(); 
+      if(useCustomIH) {
+          document.querySelectorAll('#ihBtns .action-btn').forEach(b => {
+               let m = parseInt(b.id.split('-')[1]);
+               if(ihProfile[m] !== undefined) b.classList.add('logged');
+          });
+          $('btnCalculateIH').disabled = false;
+          applyStretchCurve();
+      } else {
+          document.querySelectorAll('#ihBtns .action-btn').forEach(b => {
+               let m = parseInt(b.id.split('-')[1]);
+               if(ihProfile[m] !== undefined) b.classList.add('logged');
+          });
+          checkAllIHSampled();
+      }
     } catch(e) {}
   }
 }
-function savePersistence() { localStorage.setItem('danDetectorLogs', JSON.stringify(loggedIntervals)); }
+
+function savePersistence() { 
+    let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH };
+    localStorage.setItem('danDetectorLogsV41', JSON.stringify(state)); 
+}
+
+function updateDynamicGuideTexts() {
+    let f3m3 = getConfig(53, 'M3');
+    if($('guideStep3Target')) $('guideStep3Target').innerHTML = f3m3.theoBeat.toFixed(2);
+}
+
 loadPersistence();
+
+window.toggleFiles = function() {
+    let overlay = $('filesOverlay');
+    if(overlay.style.display === 'none') {
+        overlay.style.display = 'flex';
+        renderSavedFiles();
+    } else {
+        overlay.style.display = 'none';
+    }
+}
+
+function renderSavedFiles() {
+    let list = $('savedFilesList');
+    list.innerHTML = '';
+    Object.keys(savedTunings).forEach(key => {
+        let div = document.createElement('div');
+        div.style.padding = '12px';
+        div.style.borderBottom = '1px solid #eee';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'space-between';
+        div.innerHTML = `<span style="font-weight:bold; font-size:1rem; cursor:pointer; flex:1;" onclick="loadTuning('${key}')">${key}</span>
+                         <button class="btn-del" onclick="deleteTuning('${key}')" style="padding:6px 10px;">X</button>`;
+        list.appendChild(div);
+    });
+    if(Object.keys(savedTunings).length === 0) {
+        list.innerHTML = '<div style="padding:15px; color:#999; text-align:center; font-style:italic;">No saved tunings.</div>';
+    }
+}
+
+window.saveCurrentTuning = function() {
+    let name = $('saveNameInput').value.trim();
+    if(!name) { alert('Please enter a name for the tuning.'); return; }
+    savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH };
+    localStorage.setItem('danTunerSaves', JSON.stringify(savedTunings));
+    $('saveNameInput').value = '';
+    renderSavedFiles();
+}
+
+window.loadTuning = function(key) {
+    let data = savedTunings[key];
+    if(data) {
+        loggedIntervals = data.logs;
+        ihProfile = data.ih || {};
+        useCustomIH = data.customIH || false;
+        savePersistence();
+        
+        if(useCustomIH) {
+            document.querySelectorAll('#ihBtns .action-btn').forEach(b => {
+               let m = parseInt(b.id.split('-')[1]);
+               if(ihProfile[m] !== undefined) b.classList.add('logged');
+            });
+            $('btnCalculateIH').disabled = false;
+            applyStretchCurve();
+        } else {
+            resetStretchCurve();
+        }
+        
+        renderLogTable();
+        updateGuide();
+        toggleFiles();
+    }
+}
+
+window.deleteTuning = function(key) {
+    if(confirm('Delete ' + key + '?')) {
+        delete savedTunings[key];
+        localStorage.setItem('danTunerSaves', JSON.stringify(savedTunings));
+        renderSavedFiles();
+    }
+}
+
+window.startNewTuning = function() {
+    if(confirm('Clear all current logs and stretch data? Make sure you saved!')) {
+        loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] };
+        resetStretchCurve();
+        toggleFiles();
+    }
+}
 
 function switchMainMode(mode) {
   document.querySelectorAll('.mode-btn').forEach(b => {
-    if(b.id !== 'btnPause' && b.id !== 'btnPassThrough') b.classList.remove('active');
+    if(b.id !== 'btnPause' && b.id !== 'btnPassThrough' && b.id !== 'btnModeFiles') b.classList.remove('active');
   });
   $('logContainer').style.display = 'none';
   $('guideContainer').style.display = 'none';
@@ -870,7 +1011,6 @@ window.wipeAndTarget = function(midi, ivKey) {
     setTarget(midi, ivKey);
 }
 
-// DYNAMIC CLUSTER WIPE
 window.wipeCluster = function(targetMidi, targetIv, wipeArray) {
     wipeArray.forEach(item => {
         if (loggedIntervals[item.i]) {
@@ -898,28 +1038,59 @@ function runIHScanner() {
 }
 
 function checkAllIHSampled() {
-    let required = [24, 36, 48, 60, 72, 84];
+    let required = [24, 29, 36, 41, 48, 53, 60, 65, 72, 77, 84];
     let allGood = required.every(m => ihProfile[m] !== undefined);
     if (allGood) {
-        if (!$('btnApplyIH')) {
-            let btn = document.createElement('button');
-            btn.id = 'btnApplyIH';
-            btn.className = 'ctrl-btn grade-btn';
-            btn.style.marginTop = '12px';
-            btn.style.background = '#00aa00';
-            btn.style.borderColor = '#00aa00';
-            btn.innerHTML = 'APPLY CUSTOM STRETCH PROFILE';
-            btn.onclick = () => {
-                useCustomIH = true;
-                btn.innerHTML = 'PROFILE ACTIVE ✔';
-                btn.disabled = true;
-                btn.style.background = '#e6ffe6';
-                btn.style.color = '#006600';
-                setTarget(lowerMidi, curIv); // Natively updates UI
-            };
-            $('ihBtns').parentElement.appendChild(btn);
-        }
+        $('btnCalculateIH').disabled = false;
+        $('btnCalculateIH').style.background = '#00aa00';
+        $('btnCalculateIH').style.borderColor = '#00aa00';
     }
+}
+
+window.applyStretchCurve = function() {
+    useCustomIH = true;
+    let btn = $('btnCalculateIH');
+    btn.innerHTML = 'PROFILE ACTIVE ✔';
+    btn.style.background = '#e6ffe6';
+    btn.style.color = '#006600';
+    
+    // Determine Scale Class based on C4 (midi 60)
+    let bC4 = ihProfile[60];
+    if (!bC4) bC4 = 0.0005; // Fallback just in case
+    
+    let classText = "";
+    if (bC4 < 0.00015) classText = "Very Low Stretch (Approx. 9ft Concert Grand)";
+    else if (bC4 < 0.00028) classText = "Low Stretch (Approx. 7ft Semi-Concert Grand)";
+    else if (bC4 < 0.00045) classText = "Moderate Stretch (Approx. 52\" Large Upright / Baby Grand)";
+    else if (bC4 < 0.00065) classText = "Moderately High Stretch (Approx. 45\" Studio Upright)";
+    else if (bC4 < 0.00095) classText = "High Stretch (Approx. 40\" Console Upright)";
+    else classText = "Extreme Stretch (Approx. 36\" Spinet)";
+    
+    $('stretchClassification').innerHTML = classText + `<br><span style="font-size:0.65rem;font-weight:normal;color:#666;">Ref iH: ${bC4.toFixed(6)}</span>`;
+    
+    updateDynamicGuideTexts();
+    setTarget(lowerMidi, curIv);
+    savePersistence();
+}
+
+window.resetStretchCurve = function() {
+    ihProfile = {};
+    useCustomIH = false;
+    $('stretchClassification').innerHTML = "";
+    $('ihResult').className = 'guide-result guide-res-wait';
+    $('ihResult').innerHTML = 'Select a note to sample its physical string stretch...';
+    
+    let btn = $('btnCalculateIH');
+    btn.innerHTML = 'CALCULATE';
+    btn.disabled = true;
+    btn.style.background = '#000';
+    btn.style.color = '#fff';
+    
+    document.querySelectorAll('#ihBtns .action-btn').forEach(b => b.classList.remove('logged'));
+    
+    updateDynamicGuideTexts();
+    setTarget(lowerMidi, curIv);
+    savePersistence();
 }
 
 window.sampleIH = function(midi) {
@@ -936,7 +1107,7 @@ window.sampleIH = function(midi) {
     runIHScanner();
 
     $('ihResult').className = 'guide-result guide-res-wait';
-    $('ihResult').innerHTML = `Scanning Fundamental and 4th Partial for ${noteName(midi)}...<br>Play strongly and let it ring.`;
+    $('ihResult').innerHTML = `Scanning Fundamental & 4th Partial for ${noteName(midi)}...`;
     
     setTimeout(() => {
         isIHScanning = false;
@@ -945,7 +1116,6 @@ window.sampleIH = function(midi) {
             let med1 = ihPitches1[Math.floor(ihPitches1.length/2)];
             let med4 = ihPitches4[Math.floor(ihPitches4.length/2)];
 
-            // Algebra to find B
             let ratio = med4 / (4 * med1);
             let B = (ratio * ratio - 1) / 16;
             if (B < 0) B = 0; 
@@ -953,7 +1123,7 @@ window.sampleIH = function(midi) {
             ihProfile[midi] = B;
 
             $('ihResult').className = 'guide-result guide-res-pass';
-            $('ihResult').innerHTML = `<b>${noteName(midi)} scale mapped!</b><br>iH Factor: ${B.toFixed(6)}`;
+            $('ihResult').innerHTML = `<b>${noteName(midi)} stretch point logged!</b>`;
             $('ihBtn-'+midi).classList.add('logged');
 
             checkAllIHSampled();
@@ -1135,9 +1305,10 @@ function checkStep2() {
 function checkStep3() {
   let m3 = getLogVal('M3', 'F3'); let res = $('guideRes3');
   if(!m3) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; }
-  if (m3 >= 6.7 && m3 <= 7.2) {
+  let target = getConfig(53, 'M3').theoBeat;
+  if (m3 >= target - 0.25 && m3 <= target + 0.25) {
     res.className = 'guide-result guide-res-pass'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>✔ Solid anchor.`;
-  } else if (m3 < 6.7) {
+  } else if (m3 < target - 0.25) {
     res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too slow. A3 is locked. Adjust F3 (FLATTEN).`;
   } else {
     res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too fast. A3 is locked. Adjust F3 (SHARPEN).`;
@@ -1197,30 +1368,6 @@ function checkP4P5(val, type, lockedStr, tuneStr, tuneRole) {
         }
     }
     return { html, isError };
-}
-
-function progressiveM3Check(htmlSoFar, resEl) {
-    let m3s = [
-        {n: 'F3', v: getLogVal('M3', 'F3')}, {n: 'F#3', v: getLogVal('M3', 'F#3')},
-        {n: 'G3', v: getLogVal('M3', 'G3')}, {n: 'G#3', v: getLogVal('M3', 'G#3')},
-        {n: 'A3', v: getLogVal('M3', 'A3')}, {n: 'A#3', v: getLogVal('M3', 'A#3')},
-        {n: 'B3', v: getLogVal('M3', 'B3')}, {n: 'C4', v: getLogVal('M3', 'C4')},
-        {n: 'C#4', v: getLogVal('M3', 'C#4')}
-    ];
-    let errors = [];
-    for(let i=1; i<m3s.length; i++) {
-        if(m3s[i].v !== null && m3s[i-1].v !== null) {
-            if(m3s[i].v <= m3s[i-1].v) {
-                errors.push(`M3 DIP: ${m3s[i].n} (${m3s[i].v.toFixed(1)}) is slower than ${m3s[i-1].n} (${m3s[i-1].v.toFixed(1)}).`);
-            }
-        }
-    }
-    if (errors.length > 0) {
-        resEl.className = 'guide-result guide-res-warn';
-        resEl.innerHTML = htmlSoFar + `<br><b style="color:#d00000;">WARNING:</b><br><span style="font-size:0.7rem;">${errors.join('<br>')}</span>`;
-        return true;
-    }
-    return false;
 }
 
 function checkStep6() {
@@ -1827,17 +1974,17 @@ function renderLoop(ts) {
           }
       }
       
-      let strictTimer;
-      if (cfg.theoBeat > 6.0) { strictTimer = 1500; }
-      else if (cfg.theoBeat >= 3.0) { strictTimer = 3000; }
-      else { strictTimer = 4500; }
+      let strictTimer, minBeatsRequired;
+      if (cfg.theoBeat > 6.0) { strictTimer = 1500; minBeatsRequired = 5; }
+      else if (cfg.theoBeat >= 3.0) { strictTimer = 3000; minBeatsRequired = 4; }
+      else { strictTimer = 4500; minBeatsRequired = 3; }
 
       let timeElapsed = now - captureStartTime;
       let isTimerUp = timeElapsed > strictTimer;
       let isSignalDead = snr < threshold.snr * 0.3; 
 
       if (isTimerUp || (timeElapsed > 1500 && isSignalDead)) {
-          if (capturedBeats.length >= 3) {
+          if (capturedBeats.length >= minBeatsRequired) {
               capturedBeats.sort((a,b) => a-b); 
               let median = capturedBeats[Math.floor(capturedBeats.length/2)];
               let stableCount = capturedBeats.filter(b => Math.abs(b - median) <= 0.6).length;
@@ -1914,7 +2061,7 @@ function detectBeat(history, theoreticalBeat, ivKey) {
   return maxScore > 0.005 ? bestCandidate : null;
 }
 
-$('clearBtn').addEventListener('click', () => { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; savePersistence(); resetCapture(); renderLogTable(); updateGuide(); updateDynRes(); });
+$('clearBtn').addEventListener('click', () => { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; savePersistence(); resetCapture(); renderLogTable(); analyzeTemperament(); updateGuide(); updateDynRes(); });
 
 document.querySelectorAll('.iv-tab').forEach(t => { 
   t.addEventListener('click', () => { 
