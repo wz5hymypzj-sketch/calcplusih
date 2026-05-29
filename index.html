@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - PRO</title>
+<title>DAN'S BEAT SPEED DETECTOR - V45</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -286,12 +286,26 @@
 <div id="filesOverlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.95); z-index:9000; flex-direction:column; padding:20px;">
    <h2 style="margin-bottom:10px; text-transform:uppercase; font-style:italic;">Saved Tunings</h2>
    <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px;"></div>
-   <input type="text" id="saveNameInput" placeholder="Tuning Name (e.g. Yamaha LU101)" style="padding:12px; font-size:1rem; margin-bottom:12px; border:2px solid #000; border-radius:4px;">
-   <div style="display:flex; gap:10px; margin-bottom:10px;">
-     <button class="ctrl-btn" onclick="saveCurrentTuning()" style="flex:1; background:#000; color:#fff; padding:12px; font-size:0.9rem;">SAVE CURRENT</button>
-     <button class="ctrl-btn fix-btn" onclick="startNewTuning()" style="flex:1; padding:12px; font-size:0.9rem;">NEW TUNING</button>
+
+   <div style="background:#f4f4f4; padding:10px; border:2px solid #000; border-radius:6px; margin-bottom:12px;">
+       <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Save Current Workspace</h3>
+       <input type="text" id="saveNameInput" placeholder="Tuning Name (e.g. Yamaha LU101)" style="width:100%; padding:8px; font-size:0.9rem; margin-bottom:8px; border:1px solid #ccc; border-radius:4px;">
+       <button class="ctrl-btn" onclick="saveCurrentTuning()" style="width:100%; background:#000; color:#fff; padding:10px; font-size:0.9rem;">SAVE & ADD TO LIST</button>
    </div>
-   <button class="ctrl-btn" onclick="toggleFiles()" style="padding:12px; font-size:0.9rem;">CLOSE</button>
+
+   <div id="importSection" style="display:none; background:#e0f0ff; padding:10px; border:2px solid #0066ff; border-radius:6px; margin-bottom:12px;">
+       <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase; color:#0044bb;">Import From Clipboard</h3>
+       <textarea id="importDataInput" rows="3" placeholder="Paste tuning data string here..." style="width:100%; padding:6px; font-size:0.8rem; margin-bottom:6px; border:1px solid #ccc; border-radius:4px; font-family:monospace; resize:none;"></textarea>
+       <input type="text" id="importNameInput" placeholder="Name for this imported tuning" style="width:100%; padding:8px; font-size:0.9rem; margin-bottom:8px; border:1px solid #ccc; border-radius:4px;">
+       <button class="action-btn" onclick="importTuning()" style="width:100%; padding:10px; font-size:0.9rem;">SAVE IMPORTED DATA</button>
+   </div>
+
+   <div style="display:flex; gap:10px; margin-bottom:10px;">
+     <button class="ctrl-btn fix-btn" onclick="startNewTuning()" style="flex:1; padding:12px; font-size:0.9rem;">NEW TUNING (CLEAR ALL)</button>
+     <button class="ctrl-btn" onclick="toggleImportUI()" style="flex:1; padding:12px; font-size:0.9rem;" id="btnShowImport">IMPORT TEXT</button>
+   </div>
+
+   <button class="ctrl-btn" onclick="toggleFiles()" style="padding:12px; font-size:1rem; border-width:3px;">CLOSE</button>
 </div>
 
 <div class="layout-wrapper">
@@ -380,6 +394,23 @@
                 <button class="action-btn" onclick="sampleIH(77)" id="ihBtn-77">F5</button>
                 <button class="action-btn" onclick="sampleIH(84)" id="ihBtn-84">C6</button>
             </div>
+            
+            <div style="display:flex; justify-content:center; align-items:center; margin-top:12px; gap:8px;">
+                <label style="font-size:0.75rem; font-weight:bold;">Bass Break Note: </label>
+                <select id="bassBreakSelect" style="font-size:0.75rem; padding:2px 4px; border:1px solid #000; border-radius:4px;">
+                    <option value="48">C3</option>
+                    <option value="49">C#3</option>
+                    <option value="50">D3</option>
+                    <option value="51">D#3</option>
+                    <option value="52" selected>E3</option>
+                    <option value="53">F3</option>
+                    <option value="54">F#3</option>
+                    <option value="55">G3</option>
+                    <option value="56">G#3</option>
+                    <option value="57">A3</option>
+                </select>
+            </div>
+
             <div class="guide-result guide-res-wait" id="ihResult" style="margin-top: 12px;">Select a note to sample its physical string stretch...</div>
             
             <div style="display:flex; gap:10px; margin-top:12px;">
@@ -519,6 +550,11 @@
             <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">Matrixes all M3s, M6s, 4ths and 5ths to find conflicting pieces of the puzzle and guides you to the safest compromises.</p>
             <button class="ctrl-btn grade-btn" onclick="checkStep12()">ANALYZE TEMPERAMENT</button>
             <div id="guideRes12"></div>
+          </div>
+          <div class="guide-step" style="background: #fdfdfd; border-color: #000; padding-bottom:12px;">
+            <h3 style="background:#000; color:#fff;">Step 13: High Treble Expansion</h3>
+            <div class="tuning-target" style="margin-bottom:8px;">Tuning: C6 to C8</div>
+            <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">In the top two octaves, stop listening to beats. Strike the key firmly and listen to the "ring" of the whole piano to ensure the treble excites the lower string resonances. Tune double octaves and 12ths for resonance.</p>
           </div>
         </div>
 
@@ -730,57 +766,60 @@ let ihProfile = {};
 let smoothedIH = new Float32Array(109);
 let useCustomIH = false;
 
-// Feature 2: Polynomial Curve Smoothing (Least Squares Regression)
-function smoothIHData() {
-    let keys = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b);
-    if (keys.length === 0) return;
-    if (keys.length < 3) {
-        for(let m=0; m<=108; m++) smoothedIH[m] = ihProfile[keys[0]] || 0.0005;
-        return;
+function getPolynomial(xData, yData) {
+    let n = xData.length;
+    if (n === 0) return (m) => 0.0005;
+    if (n === 1) return (m) => Math.exp(yData[0]);
+    if (n === 2) {
+        // Linear fit fallback
+        let slope = (yData[1] - yData[0]) / (xData[1] - xData[0]);
+        let intercept = yData[0] - slope * xData[0];
+        return (m) => Math.exp(slope * m + intercept);
     }
-
-    let x = [], y = [];
-    for (let k of keys) {
-        if (ihProfile[k] > 0) {
-            x.push(k);
-            y.push(Math.log(ihProfile[k]));
-        }
-    }
-
-    let n = x.length;
-    let sumX = 0, sumY = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0, sumXY = 0, sumX2Y = 0;
+    
+    // Quadratic (Least Squares Regression)
+    let sumX=0, sumY=0, sumX2=0, sumX3=0, sumX4=0, sumXY=0, sumX2Y=0;
     for(let i=0; i<n; i++) {
-        sumX += x[i]; sumX2 += x[i]*x[i]; sumX3 += x[i]*x[i]*x[i]; sumX4 += x[i]*x[i]*x[i]*x[i];
-        sumY += y[i]; sumXY += x[i]*y[i]; sumX2Y += x[i]*x[i]*y[i];
+        let x = xData[i], y = yData[i];
+        sumX += x; sumX2 += x*x; sumX3 += x*x*x; sumX4 += x*x*x*x;
+        sumY += y; sumXY += x*y; sumX2Y += x*x*y;
     }
-
-    let M = [
-        [n, sumX, sumX2],
-        [sumX, sumX2, sumX3],
-        [sumX2, sumX3, sumX4]
-    ];
+    
+    let M = [[n, sumX, sumX2], [sumX, sumX2, sumX3], [sumX2, sumX3, sumX4]];
     let V = [sumY, sumXY, sumX2Y];
     let det = (m) => m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
     let D = det(M);
     
-    let a=0, b=0, c=0;
     if (Math.abs(D) > 1e-10) {
-        let Ma = [[V[0], M[0][1], M[0][2]], [V[1], M[1][1], M[1][2]], [V[2], M[2][1], M[2][2]]];
-        let Mb = [[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]];
-        let Mc = [[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]];
-        a = det(Ma)/D; b = det(Mb)/D; c = det(Mc)/D;
+        let a = det([[V[0], M[0][1], M[0][2]], [V[1], M[1][1], M[1][2]], [V[2], M[2][1], M[2][2]]])/D;
+        let b = det([[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]])/D;
+        let c = det([[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]])/D;
+        return (m) => Math.exp(a + b*m + c*m*m);
     } else {
-        // Fallback to Linear Interpolation if Matrix determinant is near 0
+        // Linear fallback
         let denomL = n*sumX2 - sumX*sumX;
-        b = (n*sumXY - sumX*sumY) / denomL;
-        a = (sumY - b*sumX) / n;
-        c = 0;
+        let slope = (n*sumXY - sumX*sumY) / denomL;
+        let intercept = (sumY - slope*sumX) / n;
+        return (m) => Math.exp(intercept + slope*m);
     }
+}
 
-    // Apply the mathematical polynomial wrapper to the entire key compass
+// Feature A & 2: Bass Break Selector & Polynomial Smoothing
+function smoothIHData() {
+    let keys = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b);
+    if (keys.length === 0) return;
+    
+    let breakSelect = document.getElementById('bassBreakSelect');
+    let breakMidi = breakSelect ? parseInt(breakSelect.value) : 52; // E3
+
+    let bassKeys = keys.filter(k => k <= breakMidi);
+    let mainKeys = keys.filter(k => k > breakMidi);
+
+    let bassCurve = getPolynomial(bassKeys, bassKeys.map(k => Math.log(ihProfile[k])));
+    let mainCurve = getPolynomial(mainKeys, mainKeys.map(k => Math.log(ihProfile[k])));
+
     for(let m=0; m<=108; m++) {
-        let logB = a + b*m + c*m*m;
-        let B = Math.exp(logB);
+        let B = m <= breakMidi ? bassCurve(m) : mainCurve(m);
         if (B < 1e-6) B = 1e-6;
         if (B > 0.05) B = 0.05;
         smoothedIH[m] = B;
@@ -800,20 +839,19 @@ function buildTuningCurve() {
         let bTop = smoothedIH[topMidi];
         let bBot = smoothedIH[botMidi];
         
-        // Ratio calculations based on different acoustic alignments
         let r42 = (2/4) * (Math.sqrt(1 + 4*bTop) / Math.sqrt(1 + 16*bBot));
         let r63 = (3/6) * (Math.sqrt(1 + 9*bTop) / Math.sqrt(1 + 36*bBot));
         let r84 = (4/8) * (Math.sqrt(1 + 16*bTop) / Math.sqrt(1 + 64*bBot));
 
         let fTop = tuningCurve[topMidi];
         
-        // DYNAMIC WEIGHTING ALGORITHM: Smoothly transition octaves
+        // DYNAMIC WEIGHTING ALGORITHM
         let w42 = 1, w63 = 0, w84 = 0;
         let isHighIH = smoothedIH[60] > 0.00045;
         
-        if (topMidi <= 45) { // Deep Bass Transition
+        if (topMidi <= 45) { // Deep Bass
             w42 = 0; w63 = 0.4; w84 = 0.6;
-        } else if (topMidi <= 57) { // Tenor Break Transition
+        } else if (topMidi <= 57) { // Tenor Break
             if (isHighIH) { w42 = 0; w63 = 1; }
             else { w42 = 0.5; w63 = 0.5; }
         }
@@ -935,10 +973,10 @@ let sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
 
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV43')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV45')) || {};
 
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV43');
+  const saved = localStorage.getItem('danDetectorLogsV45');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -948,7 +986,7 @@ function loadPersistence() {
           useCustomIH = parsed.customIH || false;
           if (parsed.curve) tuningCurve = new Float32Array(parsed.curve);
       } else {
-          loggedIntervals = { ...loggedIntervals, ...parsed }; // backwards compatibility
+          loggedIntervals = { ...loggedIntervals, ...parsed }; 
       }
       renderLogTable(); updateGuide(); 
       if(useCustomIH) {
@@ -972,7 +1010,7 @@ function loadPersistence() {
 
 function savePersistence() { 
     let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve) };
-    localStorage.setItem('danDetectorLogsV43', JSON.stringify(state)); 
+    localStorage.setItem('danDetectorLogsV45', JSON.stringify(state)); 
 }
 
 function updateDynamicGuideTexts() {
@@ -1003,7 +1041,8 @@ function renderSavedFiles() {
         div.style.alignItems = 'center';
         div.style.justifyContent = 'space-between';
         div.innerHTML = `<span style="font-weight:bold; font-size:1rem; cursor:pointer; flex:1;" onclick="loadTuning('${key}')">${key}</span>
-                         <button class="btn-del" onclick="deleteTuning('${key}')" style="padding:6px 10px;">X</button>`;
+                         <button class="ctrl-btn" onclick="copyTuning('${key}')" style="padding:4px 8px; margin-right:4px;">COPY</button>
+                         <button class="btn-del" onclick="deleteTuning('${key}')" style="padding:4px 8px;">X</button>`;
         list.appendChild(div);
     });
     if(Object.keys(savedTunings).length === 0) {
@@ -1011,11 +1050,60 @@ function renderSavedFiles() {
     }
 }
 
+window.copyTuning = function(key) {
+    let data = savedTunings[key];
+    if(data) {
+        let jsonStr = JSON.stringify(data);
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                alert('Tuning data copied to clipboard! You can paste it into a text message or document.');
+            }).catch(err => prompt("Copy this text:", jsonStr));
+        } else {
+            prompt("Your browser doesn't support direct copying here. Copy this text manually:", jsonStr);
+        }
+    }
+}
+
+window.toggleImportUI = function() {
+    let el = $('importSection');
+    if(el.style.display === 'none') {
+        el.style.display = 'flex';
+        $('btnShowImport').style.background = '#0066ff';
+        $('btnShowImport').style.color = '#fff';
+    } else {
+        el.style.display = 'none';
+        $('btnShowImport').style.background = '#fff';
+        $('btnShowImport').style.color = '#000';
+    }
+}
+
+window.importTuning = function() {
+    let dataStr = $('importDataInput').value.trim();
+    let name = $('importNameInput').value.trim();
+    if(!dataStr || !name) { alert("Please provide both the copied data and a name."); return; }
+    try {
+        let data = JSON.parse(dataStr);
+        if(data.logs) {
+            savedTunings[name] = data;
+            localStorage.setItem('danTunerSavesV45', JSON.stringify(savedTunings));
+            renderSavedFiles();
+            $('importDataInput').value = '';
+            $('importNameInput').value = '';
+            toggleImportUI();
+            alert("Tuning imported successfully!");
+        } else {
+            alert("Invalid tuning data format.");
+        }
+    } catch(e) {
+        alert("Invalid text. Make sure you pasted the exact copied string.");
+    }
+}
+
 window.saveCurrentTuning = function() {
     let name = $('saveNameInput').value.trim();
     if(!name) { alert('Please enter a name for the tuning.'); return; }
     savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve) };
-    localStorage.setItem('danTunerSavesV43', JSON.stringify(savedTunings));
+    localStorage.setItem('danTunerSavesV45', JSON.stringify(savedTunings));
     $('saveNameInput').value = '';
     renderSavedFiles();
 }
@@ -1050,7 +1138,7 @@ window.loadTuning = function(key) {
 window.deleteTuning = function(key) {
     if(confirm('Delete ' + key + '?')) {
         delete savedTunings[key];
-        localStorage.setItem('danTunerSavesV43', JSON.stringify(savedTunings));
+        localStorage.setItem('danTunerSavesV45', JSON.stringify(savedTunings));
         renderSavedFiles();
     }
 }
@@ -1187,7 +1275,6 @@ window.applyStretchCurve = function() {
     btn.style.background = '#e6ffe6';
     btn.style.color = '#006600';
     
-    // Call Least Squares Smoothing Algorithm over raw points
     smoothIHData();
     
     // Determine Scale Class based on Smoothed C4
@@ -1195,16 +1282,15 @@ window.applyStretchCurve = function() {
     if (!bC4) bC4 = 0.0005; // Fallback
     
     let classText = "";
-    if (bC4 < 0.00015) classText = "Very Low Stretch (Approx. 9ft Concert Grand)";
-    else if (bC4 < 0.00028) classText = "Low Stretch (Approx. 7ft Semi-Concert Grand)";
-    else if (bC4 < 0.00045) classText = "Moderate Stretch (Approx. 52\" Large Upright / Baby Grand)";
-    else if (bC4 < 0.00065) classText = "Moderately High Stretch (Approx. 45\" Studio Upright)";
-    else if (bC4 < 0.00095) classText = "High Stretch (Approx. 40\" Console Upright)";
-    else classText = "Extreme Stretch (Approx. 36\" Spinet)";
+    if (bC4 < 0.00015) classText = "Concert Grand (9ft)";
+    else if (bC4 < 0.00030) classText = "Semi-Concert Grand (7ft)";
+    else if (bC4 < 0.00050) classText = "Parlor Grand / Tall Upright (52\")";
+    else if (bC4 < 0.00085) classText = "Studio Upright (45\")";
+    else if (bC4 < 0.00130) classText = "Console Upright (40-43\")";
+    else classText = "Drop-Action Spinet (36\")";
     
     $('stretchClassification').innerHTML = classText + `<br><span style="font-size:0.65rem;font-weight:normal;color:#666;">Smoothed Ref iH: ${bC4.toFixed(6)}</span>`;
     
-    // Build Dynamic Octave Weightings Grid
     buildTuningCurve();
     updateDynamicGuideTexts();
     setTarget(lowerMidi, curIv);
@@ -1237,10 +1323,12 @@ window.resetStretchCurve = function() {
 window.sampleIH = function(midi) {
     if(!ihFilter1 || !ihFilter4) return;
     ihScanMidi = midi;
-    let f0 = 440 * Math.pow(2, (midi - 69) / 12); // Always use strict math to find the deviation
+    let f0 = 440 * Math.pow(2, (midi - 69) / 12); // Use strict math to find deviation
     
-    // Feature 4: Bass Partial Isolation. If deep bass, drop fundamental and scan 2nd and 4th partials.
-    ihPartials = midi <= 36 ? [2, 4] : [1, 4];
+    // Feature 4: Bass Partial Isolation. Ignore fundamentals below C3.
+    if (midi <= 36) { ihPartials = [4, 8]; }       // C1 to C2 (Track 4th/8th)
+    else if (midi <= 48) { ihPartials = [2, 4]; }  // up to C3 (Track 2nd/4th)
+    else { ihPartials = [1, 4]; }                  // above C3 (Track Fund/4th)
     
     let fA = f0 * ihPartials[0];
     let fB = f0 * ihPartials[1];
@@ -1253,7 +1341,10 @@ window.sampleIH = function(midi) {
     isIHScanning = true;
     runIHScanner();
 
-    let partialText = midi <= 36 ? '2nd & 4th' : 'Fundamental & 4th';
+    let partialText = ihPartials[0] + 'th & ' + ihPartials[1] + 'th';
+    if(ihPartials[0]===1) partialText = 'Fundamental & 4th';
+    if(ihPartials[0]===2) partialText = '2nd & 4th';
+    
     $('ihResult').className = 'guide-result guide-res-wait';
     $('ihResult').innerHTML = `Scanning ${partialText} Partial for ${noteName(midi)}...`;
     
@@ -1264,14 +1355,12 @@ window.sampleIH = function(midi) {
             let medA = ihPitches1[Math.floor(ihPitches1.length/2)];
             let medB = ihPitches4[Math.floor(ihPitches4.length/2)];
 
-            let B = 0;
-            if (ihPartials[0] === 1 && ihPartials[1] === 4) {
-                let ratio = medB / (4 * medA);
-                B = (ratio * ratio - 1) / 16;
-            } else if (ihPartials[0] === 2 && ihPartials[1] === 4) {
-                let ratio = medB / (2 * medA);
-                B = (ratio * ratio - 1) / (16 - 4 * ratio * ratio);
-            }
+            // Universal Inharmonicity Algebraic Formula based on any [n, m] partials
+            let n = ihPartials[0];
+            let m = ihPartials[1];
+            let ratio = (medB / m) / (medA / n);
+            let R2 = ratio * ratio;
+            let B = (R2 - 1) / (m*m - R2 * n*n);
             if (B < 0) B = 0; 
             
             ihProfile[midi] = B;
@@ -1494,7 +1583,7 @@ function checkStep5() {
       res.className = 'guide-result guide-res-pass'; html += `✔ PROPORTIONAL SPACING!`; 
   } else { 
       res.className = 'guide-result guide-res-warn'; 
-      html += `Uneven Jump (+${r2.toFixed(0)}%). C#4 is likely ${r2 > target ? 'flat' : 'sharp'}.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeAndTarget(61, 'M3')">FIX C#4 (M3)</button>`; 
+      html += `Uneven Jump (+${r2.toFixed(0)}%). C#4 is likely ${r2 > target ? 'flat' : 'sharp'}.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeAndTarget(61, 'M3')\">FIX C#4 (M3)</button>`; 
   }
   res.innerHTML = html;
 }
@@ -1505,23 +1594,23 @@ function checkP4P5(val, type, lockedStr, tuneStr, tuneRole) {
     let isError = false;
     if (type === 'P4') {
         if (val > 1.2) {
-            html = `<span style="color:#d00000;">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Wide)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
+            html = `<span style=\"color:#d00000;\">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Wide)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
             isError = true;
         } else if (val < 0.6) {
-            html = `<span style="color:#d00000;">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Narrow)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
+            html = `<span style=\"color:#d00000;\">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Narrow)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
             isError = true;
         } else {
-            html = `<span style="color:#006600;">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
+            html = `<span style=\"color:#006600;\">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
         }
     } else {
         if (val > 1.0) {
-            html = `<span style="color:#d00000;">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Narrow)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
+            html = `<span style=\"color:#d00000;\">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Narrow)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
             isError = true;
         } else if (val < 0.3) {
-            html = `<span style="color:#d00000;">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Wide)</span><br><span style="font-size:0.65rem; color:#444;">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
+            html = `<span style=\"color:#d00000;\">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Wide)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
             isError = true;
         } else {
-            html = `<span style="color:#006600;">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
+            html = `<span style=\"color:#006600;\">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
         }
     }
     return { html, isError };
@@ -1536,12 +1625,12 @@ function checkStep6() {
 
   let err = false;
   if (p5) {
-      if (p5 < 0.3 || p5 > 1.0) { html += `<span style="color:#d00000;">F#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style="font-size:0.65rem; color:#444;">Adjust F#3 pin.</span><br>`; err = true; }
-      else html += `<span style="color:#006600;">F#3 P5: ${p5.toFixed(1)} ✔</span><br>`;
+      if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">F#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust F#3 pin.</span><br>`; err = true; }
+      else html += `<span style=\"color:#006600;\">F#3 P5: ${p5.toFixed(1)} ✔</span><br>`;
   }
   if (p4_f) {
-      if (p4_f < 0.6 || p4_f > 1.4) { html += `<span style="color:#d00000;">F3 P4 (A#3): ${p4_f.toFixed(1)} (Aim 0.6-1.2)</span><br><span style="font-size:0.65rem; color:#444;">Adjust A#3 pin.</span><br>`; err = true; }
-      else html += `<span style="color:#006600;">F3 P4 (A#3): ${p4_f.toFixed(1)} ✔</span><br>`;
+      if (p4_f < 0.6 || p4_f > 1.4) { html += `<span style=\"color:#d00000;\">F3 P4 (A#3): ${p4_f.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust A#3 pin.</span><br>`; err = true; }
+      else html += `<span style=\"color:#006600;\">F3 P4 (A#3): ${p4_f.toFixed(1)} ✔</span><br>`;
   }
 
   if(!m3f) {
@@ -1553,7 +1642,7 @@ function checkStep6() {
   let m3_prev = getLogVal('M3', 'F3');
   if (m3_prev && m3f <= m3_prev) {
       res.className = 'guide-result guide-res-warn';
-      res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> F#3 M3 (${m3f.toFixed(1)}) is slower than F3 M3 (${m3_prev.toFixed(1)}). F#3 is FLAT or A#3 is SHARP.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeCluster(54, 'M3', [{m:54,i:'M3'}])">FIX F#3 / A#3</button>`;
+      res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> F#3 M3 (${m3f.toFixed(1)}) is slower than F3 M3 (${m3_prev.toFixed(1)}). F#3 is FLAT or A#3 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(54, 'M3', [{m:54,i:'M3'}])\">FIX F#3 / A#3</button>`;
       return;
   }
   
@@ -1570,12 +1659,12 @@ function checkStep7() {
 
   let err = false;
   if (p5) {
-      if (p5 < 0.3 || p5 > 1.0) { html += `<span style="color:#d00000;">G3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style="font-size:0.65rem; color:#444;">Adjust G3 pin.</span><br>`; err = true; }
-      else html += `<span style="color:#006600;">G3 P5: ${p5.toFixed(1)} ✔</span><br>`;
+      if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">G3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust G3 pin.</span><br>`; err = true; }
+      else html += `<span style=\"color:#006600;\">G3 P5: ${p5.toFixed(1)} ✔</span><br>`;
   }
   if (p4_b) {
-      if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style="color:#d00000;">F#3 P4 (B3): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style="font-size:0.65rem; color:#444;">Adjust B3 pin.</span><br>`; err = true; }
-      else html += `<span style="color:#006600;">F#3 P4 (B3): ${p4_b.toFixed(1)} ✔</span><br>`;
+      if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style=\"color:#d00000;\">F#3 P4 (B3): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust B3 pin.</span><br>`; err = true; }
+      else html += `<span style=\"color:#006600;\">F#3 P4 (B3): ${p4_b.toFixed(1)} ✔</span><br>`;
   }
 
   if(!m3_b) {
@@ -1587,7 +1676,7 @@ function checkStep7() {
   let m3_prev = getLogVal('M3', 'F#3');
   if (m3_prev && m3_b <= m3_prev) {
       res.className = 'guide-result guide-res-warn';
-      res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> G3 M3 (${m3_b.toFixed(1)}) is slower than F#3 M3 (${m3_prev.toFixed(1)}). G3 is FLAT or B3 is SHARP.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeCluster(55, 'M3', [{m:55,i:'M3'}])">FIX G3 / B3</button>`;
+      res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> G3 M3 (${m3_b.toFixed(1)}) is slower than F#3 M3 (${m3_prev.toFixed(1)}). G3 is FLAT or B3 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(55, 'M3', [{m:55,i:'M3'}])\">FIX G3 / B3</button>`;
       return;
   }
   
@@ -1604,12 +1693,12 @@ function checkStep8() {
 
   let err = false;
   if (p5) {
-      if (p5 < 0.3 || p5 > 1.0) { html += `<span style="color:#d00000;">G#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style="font-size:0.65rem; color:#444;">Adjust G#3 pin.</span><br>`; err = true; }
-      else html += `<span style="color:#006600;">G#3 P5: ${p5.toFixed(1)} ✔</span><br>`;
+      if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">G#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust G#3 pin.</span><br>`; err = true; }
+      else html += `<span style=\"color:#006600;\">G#3 P5: ${p5.toFixed(1)} ✔</span><br>`;
   }
   if (p4_b) {
-      if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style="color:#d00000;">G3 P4 (C4): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style="font-size:0.65rem; color:#444;">Adjust C4 pin.</span><br>`; err = true; }
-      else html += `<span style="color:#006600;">G3 P4 (C4): ${p4_b.toFixed(1)} ✔</span><br>`;
+      if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style=\"color:#d00000;\">G3 P4 (C4): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust C4 pin.</span><br>`; err = true; }
+      else html += `<span style=\"color:#006600;\">G3 P4 (C4): ${p4_b.toFixed(1)} ✔</span><br>`;
   }
 
   if(!m3_b) {
@@ -1621,7 +1710,7 @@ function checkStep8() {
   let m3_prev = getLogVal('M3', 'G3');
   if (m3_prev && m3_b <= m3_prev) {
       res.className = 'guide-result guide-res-warn';
-      res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> G#3 M3 (${m3_b.toFixed(1)}) is slower than G3 M3 (${m3_prev.toFixed(1)}). G#3 is FLAT or C4 is SHARP.<br><button class="ctrl-btn fix-btn" style="margin-top:4px;" onclick="wipeCluster(56, 'M3', [{m:56,i:'M3'}])">FIX G#3 / C4</button>`;
+      res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> G#3 M3 (${m3_b.toFixed(1)}) is slower than G3 M3 (${m3_prev.toFixed(1)}). G#3 is FLAT or C4 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(56, 'M3', [{m:56,i:'M3'}])\">FIX G#3 / C4</button>`;
       return;
   }
   
@@ -1644,7 +1733,7 @@ function checkStep9() {
   }
   
   let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); 
-  let html = `<div style="font-size:0.65rem; margin-bottom:6px;">${str}</div>`;
+  let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`;
   let issues = []; 
   
   for(let i=1; i<vals.length; i++) { 
@@ -1660,11 +1749,11 @@ function checkStep9() {
       res.className = 'guide-result guide-res-warn'; 
       let issue = issues[0];
       if (issue.type === 'DIP') {
-          html += `<b style="font-size:0.8rem; color:#d00000;">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; 
+          html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; 
       } else {
-          html += `<b style="font-size:0.8rem; color:#b38000;">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; 
+          html += `<b style=\"font-size:0.8rem; color:#b38000;\">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; 
       }
-      html += `<span style="font-size:0.7rem; color:#444;">Run Auto-Debugger to diagnose exact pin.</span>`;
+      html += `<span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger to diagnose exact pin.</span>`;
   }
   res.innerHTML = html;
 }
@@ -1680,7 +1769,7 @@ function checkStep10() {
   }
   
   let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); 
-  let html = `<div style="font-size:0.65rem; margin-bottom:6px;">${str}</div>`;
+  let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`;
   let issues = []; 
   
   for(let i=1; i<vals.length; i++) { 
@@ -1696,11 +1785,11 @@ function checkStep10() {
       res.className = 'guide-result guide-res-warn'; 
       let issue = issues[0];
       if (issue.type === 'DIP') {
-          html += `<b style="font-size:0.8rem; color:#d00000;">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; 
+          html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; 
       } else {
-          html += `<b style="font-size:0.8rem; color:#b38000;">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; 
+          html += `<b style=\"font-size:0.8rem; color:#b38000;\">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; 
       }
-      html += `<span style="font-size:0.7rem; color:#444;">Run Auto-Debugger to diagnose exact pin.</span>`;
+      html += `<span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger to diagnose exact pin.</span>`;
   }
   res.innerHTML = html;
 }
@@ -1746,12 +1835,12 @@ function checkStep11() {
     if (loggedCount === 0) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log 4ths and 5ths to hunt for howling intervals."; }
     else if (badCount === 0 && loggedCount === pList.length) { res.className = 'guide-result guide-res-pass'; res.innerHTML = "✔ ALL 4THS & 5THS ARE QUIET."; }
     else if (badCount === 0) { res.className = 'guide-result guide-res-pass'; res.innerHTML = "✔ Logged intervals are quiet. Keep checking..."; }
-    else { res.className = 'guide-result guide-res-warn'; res.innerHTML = `<span style="color:#d00000;">WARNING: HOWLING INTERVALS FOUND</span><br><br>${msg}<i>Use Auto-Debugger to distribute the error safely.</i>`; }
+    else { res.className = 'guide-result guide-res-warn'; res.innerHTML = `<span style=\"color:#d00000;\">WARNING: HOWLING INTERVALS FOUND</span><br><br>${msg}<i>Use Auto-Debugger to distribute the error safely.</i>`; }
 }
 
 window.checkStep12 = function() {
     let res = $('guideRes12');
-    res.innerHTML = '<div style="text-align:center; padding: 10px;">Analyzing Temperament Matrix...</div>';
+    res.innerHTML = '<div style=\"text-align:center; padding: 10px;\">Analyzing Temperament Matrix...</div>';
     
     setTimeout(() => {
         let errors = [];
@@ -1816,7 +1905,7 @@ window.checkStep12 = function() {
         });
 
         if (errors.length === 0) {
-            res.innerHTML = `<div class="guide-result guide-res-pass">✔ TEMPERAMENT PASSED!<br>No structural knots found. The jigsaw fits!</div>`;
+            res.innerHTML = `<div class=\"guide-result guide-res-pass\">✔ TEMPERAMENT PASSED!<br>No structural knots found. The jigsaw fits!</div>`;
             return;
         }
 
@@ -1834,13 +1923,13 @@ window.checkStep12 = function() {
             let e = uniqueErrors[noteMidi];
             let cStr = JSON.stringify(e.cluster);
             html += `
-            <div class="grade-card">
-                <div class="grade-title">⚠️ Fix ${noteName(noteMidi)}</div>
-                <div class="grade-desc">
+            <div class=\"grade-card\">
+                <div class=\"grade-title\">⚠️ Fix ${noteName(noteMidi)}</div>
+                <div class=\"grade-desc\">
                     <b>Action:</b> ${e.dir} ${noteName(noteMidi)}.<br>
                     <b>Why:</b> ${e.reasons.join(' AND ')}.<br>
                 </div>
-                <button class="action-btn" style="width:100%; border-color:#d00000; color:#d00000;" onclick='wipeCluster(${noteMidi}, "M3", ${cStr})'>RE-TUNE CLUSTER & VERIFY</button>
+                <button class=\"action-btn\" style=\"width:100%; border-color:#d00000; color:#d00000;\" onclick='wipeCluster(${noteMidi}, \"M3\", ${cStr})'>RE-TUNE CLUSTER & VERIFY</button>
             </div>`;
         });
         
