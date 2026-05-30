@@ -6,7 +6,7 @@
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DBSD Tuner">
+<meta name="apple-mobile-web-app-title" content="Dan's Tuner">
 <link rel="manifest" href="manifest.json">
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='0' y='0' width='100' height='100' fill='%23ffffff'/%3E%3Cg transform='translate(50, 50) scale(0.65, 2.2)'%3E%3Ctext x='0' y='4' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-weight='900' font-style='italic' font-size='45' text-anchor='middle' fill='%23ff0000' stroke='%23000000' stroke-width='2'%3EDBSD%3C/text%3E%3C/g%3E%3C/svg%3E">
@@ -40,7 +40,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V56.1</title>
+<title>DAN'S BEAT SPEED DETECTOR - V56.2</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -314,7 +314,7 @@
         <button class="top-btn" id="nav-DET" onclick="selectMode('DET')">LOGS</button>
         <button class="top-btn" id="nav-GUIDE" onclick="selectMode('GUIDE')">GUIDE</button>
         <button class="top-btn" id="nav-PRAISE" onclick="selectMode('PRAISE')">PR</button>
-        <button class="top-btn" id="btnIHCycle" onclick="cycleIH()">40"</button>
+        <button class="top-btn" id="btnIHCycle" onclick="cycleIH()">IH</button>
         <button class="top-btn" id="nav-FILES" onclick="toggleFiles(true)">💾</button>
         <button class="top-btn" id="btnPause">🎙️</button>
         <button class="top-btn" id="btnPassThrough">🔇</button>
@@ -322,12 +322,13 @@
     </div>
 
     <div class="iv-tabs" id="ivTabs">
-      <button class="iv-tab on" data-iv="P4">P4</button>
+      <button class="iv-tab on" data-iv="M3">M3</button>
       <button class="iv-tab" data-iv="M6">M6</button>
+      <button class="iv-tab" data-iv="P4">P4</button>
       <button class="iv-tab" data-iv="P5">P5</button>
       <button class="iv-tab" data-iv="OCT" id="tabOct">OCT</button>
       <button class="iv-tab" data-iv="M10">M10</button>
-      <button class="iv-tab" data-iv="2x OCT">2x OCT</button>
+      <button class="iv-tab" data-iv="OCT+2">OCT+2</button>
       <button class="iv-tab" data-iv="M17">M17</button>
     </div>
 
@@ -454,6 +455,17 @@
             <div class="guide-result guide-res-wait" id="guideRes3">Awaiting logs...</div>
           </div>
           <div class="guide-step">
+            <h3>Step 3.5: Break Manager</h3>
+            <div class="tuning-target">Assess E3/F3 Crossover</div>
+            <p>Distribute error safely if M3 howls across the break.</p>
+            <div class="action-row">
+               <button class="action-btn" data-midi="52" data-iv="M3" data-label="E3 M3 G#3" onclick="handleAction(this, 52, 'M3')">E3 M3 G#3</button>
+               <button class="action-btn" data-midi="52" data-iv="P4" data-label="E3 P4 A3" onclick="handleAction(this, 52, 'P4')">E3 P4 A3</button>
+               <button class="action-btn" data-midi="52" data-iv="P5" data-label="E3 P5 B3" onclick="handleAction(this, 52, 'P5')">E3 P5 B3</button>
+            </div>
+            <div class="guide-result guide-res-wait" id="guideResBreak">Log E3 intervals...</div>
+          </div>
+          <div class="guide-step">
             <h3>Step 4: Prove F4 Octave</h3>
             <div class="tuning-target">Tuning: F4</div>
             <div class="action-row">
@@ -546,6 +558,11 @@
             <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">Matrixes all M3s, M6s, 4ths and 5ths to find conflicting pieces of the puzzle and guides you to the safest compromises.</p>
             <button class="ctrl-btn grade-btn" onclick="checkStep12()">ANALYZE TEMPERAMENT</button>
             <div id="guideRes12"></div>
+          </div>
+          <div class="guide-step" style="background: #fdfdfd; border-color: #000; padding-bottom:12px;">
+            <h3 style="background:#000; color:#fff;">Step 13: High Treble Expansion</h3>
+            <div class="tuning-target" style="margin-bottom:8px;">Tuning: C6 to C8</div>
+            <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">The app automatically shifts to targeting Pure 12ths (3:1 melodic stretch) in the high treble. Stop listening for beats; trust the target and listen for the singing resonance.</p>
           </div>
         </div>
 
@@ -675,9 +692,9 @@ let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];
 let transientSamplesLeft = 0, lastAttackTime = 0;
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
 
-let curIv = 'P4', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
+let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
 let decaySlope = 0; 
-let loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], '2x OCT': [], M17: [], P12: [] };
+let loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] };
 
 // Inharmonicity Presets (Railsback Curve Empirical Anchors)
 const ihPresets = [ 
@@ -714,7 +731,7 @@ let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
-const avgEl = $('avgVal'), sigLight = $('signalLight'); // RESTORED! Fixes the crashes!
+const avgEl = $('avgVal'), sigLight = $('signalLight'); 
 let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV56_0')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -733,7 +750,7 @@ const IV = {
   OCT_21: { sem:12, lp:2, up:1, name:'Octave (2:1)' },
   M10: { sem:16, lp:5, up:2, name:'Major Tenth' }, 
   P12: { sem:19, lp:3, up:1, name:'Perfect 12th' },
-  '2x OCT': { sem:24, lp:4, up:1, name:'Double Octave' },
+  'OCT+2': { sem:24, lp:4, up:1, name:'Double Octave' },
   M17: { sem:28, lp:5, up:1, name:'Major 17th' }
 };
 
@@ -874,7 +891,7 @@ window.loadTuning = function(key) {
     }
 }
 window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV56_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
-window.startNewTuning = function() { if(confirm('Clear all logs and resets?')) { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], '2x OCT': [], M17: [], P12: [] }; prLoggedOffsets = {}; prMode = 'MEASURE'; currentIHIndex = 0; lockedPins = {69: 0.0}; applyIHPreset(); toggleFiles(false); } }
+window.startNewTuning = function() { if(confirm('Clear all logs and resets?')) { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] }; prLoggedOffsets = {}; prMode = 'MEASURE'; currentIHIndex = 0; lockedPins = {69: 0.0}; applyIHPreset(); toggleFiles(false); } }
 
 // IH CYCLE LOGIC
 window.cycleIH = function() {
@@ -1355,7 +1372,7 @@ function refreshUI() {
   document.querySelectorAll('.pk').forEach(k => { let m = parseInt(k.dataset.midi); k.classList.toggle('on', m === cfg.lowerMidi); k.classList.toggle('on-top', m === cfg.upperMidi); });
   $('lblInterval').textContent = `${noteName(cfg.lowerMidi)} - ${noteName(cfg.upperMidi)}`; $('coincidentPartial').textContent = `${cfg.iv.lp}x / ${cfg.iv.up}x ≈ ${cfg.center.toFixed(1)} Hz`; $('lblTarget').textContent = `~${cfg.theoBeat.toFixed(2)} (${getBeatDesc(cfg.theoBeat)})`;
   
-  if (curIv.includes('OCT') || curIv === 'P12' || curIv === '2x OCT') {
+  if (curIv.includes('OCT') || curIv === 'P12' || curIv === 'OCT+2') {
       $('lblTarget').textContent = "TUNE PURE";
       if(captureState !== 'LISTEN_ONLY') avgEl.textContent = "PURE";
   }
@@ -1413,10 +1430,11 @@ function getPinButton(midi, label) {
     return `<button class="action-btn" onclick="openPinModal(${midi})" style="margin-top:4px; width:100%; background:#f0f8ff; color:#0066ff; box-shadow: 0 4px 0 #0044bb;">LOCK ${label} PITCH</button>`;
 }
 
-function updateGuide() { checkStep2(); checkStep3(); checkStep4(); checkStep5(); checkStep6(); checkStep7(); checkStep8(); checkStep9(); checkStep10(); checkStep11(); updateActionButtons(); }
+function updateGuide() { checkStep2(); checkStep3(); checkBreak(); checkStep4(); checkStep5(); checkStep6(); checkStep7(); checkStep8(); checkStep9(); checkStep10(); checkStep11(); updateActionButtons(); }
 
 function checkStep2() { let m3 = getLogVal('M3', 'F3'), m10 = getLogVal('M10', 'F3'); let res = $('guideRes2'); if(!m3 || !m10) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; } let diff = m10 - m3; let html = `M3: ${m3.toFixed(2)} | M10: ${m10.toFixed(2)}<br>`; if(diff >= -0.2 && diff <= 0.3) { res.className = 'guide-result guide-res-pass'; html += `✔ Solid 4:2 Octave!<br>${getPinButton(57, 'A3')}`; } else if (diff > 0.3) { res.className = 'guide-result guide-res-warn'; html += `Octave too wide. A4 is locked. Adjust A3 (SHARPEN).`; } else { res.className = 'guide-result guide-res-warn'; html += `Octave too narrow. A4 is locked. Adjust A3 (FLATTEN).`; } res.innerHTML = html; }
 function checkStep3() { let m3 = getLogVal('M3', 'F3'); let res = $('guideRes3'); if(!m3) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; } let target = getConfig(53, 'M3').theoBeat; if (m3 >= target - 0.25 && m3 <= target + 0.25) { res.className = 'guide-result guide-res-pass'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>✔ Solid anchor.<br>${getPinButton(53, 'F3')}`; } else if (m3 < target - 0.25) { res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too slow. A3 is locked. Adjust F3 (FLATTEN).`; } else { res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too fast. A3 is locked. Adjust F3 (SHARPEN).`; } }
+function checkBreak() { let m3 = getLogVal('M3', 'E3'), p4 = getLogVal('P4', 'E3'), p5 = getLogVal('P5', 'E3'); let res = $('guideResBreak'); if (!res) return; if(!m3 || !p4 || !p5) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log E3 intervals..."; return; } if (m3 > 9.0 || m3 < 5.0) { res.className = 'guide-result guide-res-warn'; res.innerHTML = `Break M3 is howling (${m3.toFixed(1)}). Compromise P4/P5 slightly to smooth the M3.`; } else { res.className = 'guide-result guide-res-pass'; res.innerHTML = `✔ Break managed successfully. Error safely distributed.`; } }
 function checkStep4() { let m3 = getLogVal('M3', 'C#3'), m10 = getLogVal('M10', 'C#3'); let res = $('guideRes4'); if(!m3 || !m10) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; } let diff = m10 - m3; let html = `M3: ${m3.toFixed(2)} | M10: ${m10.toFixed(2)}<br>`; if(diff >= -0.2 && diff <= 0.3) { res.className = 'guide-result guide-res-pass'; html += `✔ Solid 4:2 Octave!<br>${getPinButton(65, 'F4')}`; } else if (diff > 0.3) { res.className = 'guide-result guide-res-warn'; html += `Octave too wide. F3 is locked. Adjust F4 (FLATTEN).`; } else { res.className = 'guide-result guide-res-warn'; html += `Octave too narrow. F3 is locked. Adjust F4 (SHARPEN).`; } res.innerHTML = html; }
 function checkStep5() { let f3 = getLogVal('M3', 'F3'), a3 = getLogVal('M3', 'A3'), c4 = getLogVal('M3', 'C#4'); let res = $('guideRes5'); if(!f3 || !a3 || !c4) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; } let r1 = ((a3 - f3) / f3) * 100, r2 = ((c4 - a3) / a3) * 100; let html = `F3&rarr;A3: +${r1.toFixed(0)}% | A3&rarr;C#4: +${r2.toFixed(0)}%<br>`; let target = 28, tol = 8; if (Math.abs(r2 - target) <= tol) { res.className = 'guide-result guide-res-pass'; html += `✔ PROPORTIONAL SPACING!<br>${getPinButton(61, 'C#4')}`; } else { res.className = 'guide-result guide-res-warn'; html += `Uneven Jump (+${r2.toFixed(0)}%). C#4 is likely ${r2 > target ? 'flat' : 'sharp'}.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeAndTarget(61, 'M3')\">FIX C#4 (M3)</button>`; } res.innerHTML = html; }
 function checkStep6() { let p5 = getLogVal('P5', 'F#3'), p4_f = getLogVal('P4', 'F3'), m3f = getLogVal('M3', 'F#3'); let res = $('guideRes6'); let html = ''; if (!p5 && !p4_f && !m3f) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place F#3 and A#3..."; return; } let err = false; if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">F#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust F#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F#3 P5: ${p5.toFixed(1)} ✔</span><br>`; } if (p4_f) { if (p4_f < 0.6 || p4_f > 1.4) { html += `<span style=\"color:#d00000;\">F3 P4 (A#3): ${p4_f.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust A#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F3 P4 (A#3): ${p4_f.toFixed(1)} ✔</span><br>`; } if(!m3f) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3 to check dip...</i>"; return; } let m3_prev = getLogVal('M3', 'F3'); if (m3_prev && m3f <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> F#3 M3 (${m3f.toFixed(1)}) is slower than F3 M3 (${m3_prev.toFixed(1)}). F#3 is FLAT or A#3 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(54, 'M3', [{m:54,i:'M3'}])\">FIX F#3 / A#3</button>`; return; } res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`; }
@@ -1487,7 +1505,7 @@ function renderDynExpanders() {
       lBtnsU += `<button class="action-btn listen-btn ${zoneU==='U2'?'active-listen':''}" onclick="handleListen(this, ${mU-12}, 'OCT_21')">2:1</button>`;
   }
   if(mU-19 >= 21) lBtnsU += `<button class="action-btn listen-btn ${zoneU==='U3'?'active-listen':''}" onclick="handleListen(this, ${mU-19}, 'P12')">P12</button>`;
-  if(mU-24 >= 21) lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mU-24}, '2x OCT')">2x OCT</button>`;
+  if(mU-24 >= 21) lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mU-24}, 'OCT+2')">OCT+2</button>`;
   $('dynUpListenTop').innerHTML = lBtnsU;
 
   let proofsU = '', guardsU = '';
@@ -1521,7 +1539,7 @@ function renderDynExpanders() {
       lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mD}, 'OCT_21')">2:1</button>`;
   }
   if(mD+19 <= 108) lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mD}, 'P12')">P12</button>`;
-  if(mD+24 <= 108) lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mD}, '2x OCT')">2x OCT</button>`;
+  if(mD+24 <= 108) lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mD}, 'OCT+2')">OCT+2</button>`;
   $('dynDownListenTop').innerHTML = lBtnsD;
 
   let proofsD = '', guardsD = '';
@@ -1715,7 +1733,7 @@ function detectBeat(history, theoreticalBeat, ivKey) {
   peaks.forEach(p => {
     let alpha = ac[p.lag - 1], beta = ac[p.lag], gamma = ac[p.lag + 1]; let denom = alpha - 2 * beta + gamma; let pLag = p.lag;
     if (Math.abs(denom) > 1e-5) pLag = p.lag + 0.5 * (alpha - gamma) / denom; let rate = fps / pLag; 
-    let allowedDev = Math.max(1.0, theoreticalBeat * 0.35); if (ivKey.includes('OCT') || ivKey === 'P12' || ivKey === 'P15' || ivKey === '2x OCT') allowedDev = 4.0; if (Math.abs(rate - theoreticalBeat) > allowedDev) return; 
+    let allowedDev = Math.max(1.0, theoreticalBeat * 0.35); if (ivKey.includes('OCT') || ivKey === 'P12' || ivKey === 'P15' || ivKey === 'OCT+2') allowedDev = 4.0; if (Math.abs(rate - theoreticalBeat) > allowedDev) return; 
     let score = p.ac; 
     if (ivKey !== 'P4' && ivKey !== 'P5' && !ivKey.includes('OCT')) { let ratio = rate / theoreticalBeat; let distanceDev = theoreticalBeat === 0 ? 0 : Math.abs(Math.log2(ratio)); let proximityWeight = theoreticalBeat === 0 ? 1.0 : Math.exp(-0.5 * Math.pow(distanceDev / 0.8, 2)); if (rate < 0.15 || rate > 43.0) proximityWeight = 0.0; score *= proximityWeight; } 
     else { if (rate < 0.15 || rate > 25.0) score *= 0.0; }
@@ -1725,7 +1743,7 @@ function detectBeat(history, theoreticalBeat, ivKey) {
   return maxScore > 0.005 ? bestCandidate : null;
 }
 
-$('clearBtn').addEventListener('click', () => { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], '2x OCT': [], M17: [], P12: [] }; savePersistence(); resetCapture(); renderLogTable(); updateGuide(); renderDynExpanders(); });
+$('clearBtn').addEventListener('click', () => { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] }; savePersistence(); resetCapture(); renderLogTable(); updateGuide(); renderDynExpanders(); });
 
 document.querySelectorAll('.iv-tab').forEach(t => { 
   t.addEventListener('click', () => { 
