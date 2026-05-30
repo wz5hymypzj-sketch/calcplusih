@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V45</title>
+<title>DAN'S BEAT SPEED DETECTOR - V46</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -106,7 +106,7 @@
 
   .param-strip {
     display: flex; align-items: center; justify-content: space-between; border: 2px solid #000; 
-    border-radius: 4px; padding: 6px 10px; margin-bottom: 6px; background: #fafafa; flex-shrink: 0;
+    border-radius: 4px; padding: 6px 10px; margin-bottom: 6px; background: #fafafa; flex-shrink: 0; position: relative;
   }
   .param-side { display: flex; flex-direction: column; gap: 2px; }
   .param-lbl { font-size: 0.65rem; color: #555; text-transform: uppercase; font-weight: 800; }
@@ -126,6 +126,8 @@
     border-radius: 50%; background: #e0e0e0; border: 2px solid #000; transition: background 0.05s, box-shadow 0.05s;
   }
   #captureStateLbl { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; font-weight: 900; color: #666; text-transform: uppercase; }
+  #bloomIndicator { position: absolute; bottom: 8px; right: 10px; font-size: 0.65rem; font-weight: 900; color: #aaa; text-transform: uppercase; }
+  #btnEarOverride { position: absolute; bottom: 8px; left: 10px; font-size: 0.6rem; padding: 2px 4px; }
 
   /* STRICT FLEXBOX BOUNDARIES TO PREVENT SCROLL BLOWOUT */
   .layout-wrapper { display: flex; flex-direction: column; width: 100%; flex: 1; min-height: 0; overflow: hidden; }
@@ -355,6 +357,8 @@
       <div class="readout-box">
         <div id="signalLight"></div>
         <div id="captureStateLbl">IDLE</div>
+        <button class="ctrl-btn" id="btnEarOverride" onclick="lockEarOverride()">LOCK EAR</button>
+        <div id="bloomIndicator">UNISON: --</div>
         <div class="val-large" id="avgVal">—</div>
         <div class="val-lbl">AVERAGE BPS</div>
         <div class="textbook-bps" id="lblTarget">~—</div>
@@ -380,7 +384,7 @@
       <div id="ihContainer" style="display: none;">
         <div style="padding: 8px;">
             <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Stretch Curve Profiler</h3>
-            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample the keys below to map this piano's wire stiffness scale. This builds a custom fundamental grid and instantly corrects target beat speeds across the app.</p>
+            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample the keys below to map this piano's wire stiffness scale. The Break Manager automatically segments smoothing to respect scale jumps.</p>
             <div class="action-row" style="justify-content: center; gap: 6px;" id="ihBtns">
                 <button class="action-btn" onclick="sampleIH(24)" id="ihBtn-24">C1</button>
                 <button class="action-btn" onclick="sampleIH(29)" id="ihBtn-29">F1</button>
@@ -456,6 +460,17 @@
             <p>Aim for ~<span id="guideStep3Target">6.93</span> bps.</p>
             <div class="action-row"><button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button></div>
             <div class="guide-result guide-res-wait" id="guideRes3">Awaiting logs...</div>
+          </div>
+          <div class="guide-step">
+            <h3>Step 3.5: Break Manager</h3>
+            <div class="tuning-target">Assess E3/F3 Crossover</div>
+            <p>Distribute error safely if M3 howls across the break.</p>
+            <div class="action-row">
+               <button class="action-btn" data-midi="52" data-iv="M3" data-label="E3 M3 G#3" onclick="handleAction(this, 52, 'M3')">E3 M3 G#3</button>
+               <button class="action-btn" data-midi="52" data-iv="P4" data-label="E3 P4 A3" onclick="handleAction(this, 52, 'P4')">E3 P4 A3</button>
+               <button class="action-btn" data-midi="52" data-iv="P5" data-label="E3 P5 B3" onclick="handleAction(this, 52, 'P5')">E3 P5 B3</button>
+            </div>
+            <div class="guide-result guide-res-wait" id="guideResBreak">Log E3 intervals...</div>
           </div>
           <div class="guide-step">
             <h3>Step 4: Prove F4 Octave</h3>
@@ -554,7 +569,7 @@
           <div class="guide-step" style="background: #fdfdfd; border-color: #000; padding-bottom:12px;">
             <h3 style="background:#000; color:#fff;">Step 13: High Treble Expansion</h3>
             <div class="tuning-target" style="margin-bottom:8px;">Tuning: C6 to C8</div>
-            <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">In the top two octaves, stop listening to beats. Strike the key firmly and listen to the "ring" of the whole piano to ensure the treble excites the lower string resonances. Tune double octaves and 12ths for resonance.</p>
+            <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">The app automatically shifts to targeting Pure 12ths (3:1 melodic stretch) in the high treble. Stop listening for beats; trust the target and listen for the singing resonance.</p>
           </div>
         </div>
 
@@ -583,7 +598,7 @@
               <span class="dynamic-target" id="dynDownTarget">E3</span>
               <button class="dynamic-btn" id="btnDownPlus" onclick="changeExpandNote(1, false)">+</button>
             </div>
-            <p style="text-align:center;">Tune to octave above. Click buttons to verify:</p>
+            <p style="text-align:center;">Tune to octave above. <b style="color:#d00000;">Concert Check: Ensure M10 & M17 roll smoothly.</b></p>
             <div class="action-row" id="dynDownListenBtns"></div>
             <div class="action-row" id="dynDownBtns"></div>
             <div class="guide-result guide-res-wait" id="dynDownRes">Log intervals to analyze...</div>
@@ -804,7 +819,7 @@ function getPolynomial(xData, yData) {
     }
 }
 
-// Feature A & 2: Bass Break Selector & Polynomial Smoothing
+// Feature 1: Segmented Polynomial Smoothing (Break Manager)
 function smoothIHData() {
     let keys = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b);
     if (keys.length === 0) return;
@@ -812,21 +827,28 @@ function smoothIHData() {
     let breakSelect = document.getElementById('bassBreakSelect');
     let breakMidi = breakSelect ? parseInt(breakSelect.value) : 52; // E3
 
+    // Segment into Bass, Mid (Tenor), and Treble to stop math from smoothing over physical strut jumps
     let bassKeys = keys.filter(k => k <= breakMidi);
-    let mainKeys = keys.filter(k => k > breakMidi);
+    let midKeys = keys.filter(k => k > breakMidi && k <= 69);
+    let trebleKeys = keys.filter(k => k > 69);
 
     let bassCurve = getPolynomial(bassKeys, bassKeys.map(k => Math.log(ihProfile[k])));
-    let mainCurve = getPolynomial(mainKeys, mainKeys.map(k => Math.log(ihProfile[k])));
+    let midCurve = getPolynomial(midKeys, midKeys.map(k => Math.log(ihProfile[k])));
+    let trebleCurve = getPolynomial(trebleKeys, trebleKeys.map(k => Math.log(ihProfile[k])));
 
     for(let m=0; m<=108; m++) {
-        let B = m <= breakMidi ? bassCurve(m) : mainCurve(m);
+        let B;
+        if (m <= breakMidi) B = bassCurve(m);
+        else if (m <= 69) B = midCurve(m);
+        else B = trebleCurve(m);
+        
         if (B < 1e-6) B = 1e-6;
         if (B > 0.05) B = 0.05;
         smoothedIH[m] = B;
     }
 }
 
-// Feature 3: Dynamic Octave Stretch Weighting
+// Feature 2: Pure 12th Treble Engine and Segment Weighting
 function buildTuningCurve() {
     tuningCurve[69] = 440.0;
     
@@ -875,17 +897,21 @@ function buildTuningCurve() {
         
         let bBot = smoothedIH[botMidi];
         let bTop = smoothedIH[topMidi];
+        let b12th = smoothedIH[Math.min(108, botMidi + 19)]; // IH for pure 12th math
 
         let r42 = (2/4) * (Math.sqrt(1 + 4*bTop) / Math.sqrt(1 + 16*bBot));
         let r21 = (1/2) * (Math.sqrt(1 + 1*bTop) / Math.sqrt(1 + 4*bBot));
         
+        // The Pure 12th Engine equivalent octave stretch
+        let r31_equiv = (1/2) * Math.pow( 3 * Math.sqrt(1 + 9*bBot) / Math.sqrt(1 + 1*b12th), 12/19 );
+        
         let fBot = tuningCurve[botMidi];
         
-        let w42 = 1, w21 = 0;
-        if (botMidi >= 81) { w42 = 0; w21 = 1; }
-        else if (botMidi >= 69) { w42 = 0.5; w21 = 0.5; }
+        let w42 = 1, w21 = 0, w31 = 0;
+        if (botMidi >= 81) { w42 = 0; w21 = 0; w31 = 1; } // High Treble: Pure 12th Melodic Stretch
+        else if (botMidi >= 69) { w42 = 0.5; w21 = 0; w31 = 0.5; }
 
-        let finalRatio = (r42 * w42) + (r21 * w21);
+        let finalRatio = (r42 * w42) + (r21 * w21) + (r31_equiv * w31);
         let fTop = fBot / finalRatio;
 
         tuningCurve[topMidi] = fTop;
@@ -905,11 +931,8 @@ function getMidiHarmonicStretch(midi, partial) {
 
 function getConfig(lowerMidi, ivKey) {
   const iv = IV[ivKey]; const upperMidi = lowerMidi + iv.sem;
-  
-  // Gets the exact fundamental (either Dynamic Stretched if customIH, or flat 12-TET if not)
   const fLo = freq(lowerMidi), fHi = freq(upperMidi);
   
-  // Applies the overtone stretch to those fundamentals for partial collision
   let stretchLo = getMidiHarmonicStretch(lowerMidi, iv.lp);
   let stretchHi = getMidiHarmonicStretch(upperMidi, iv.up);
 
@@ -954,6 +977,7 @@ let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];
 let transientSamplesLeft = 0, lastAttackTime = 0;
 let loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] };
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
+let decaySlope = 0; // Unison Bloom tracker
 
 let isIHScanning = false;
 let ihScanMidi = -1;
@@ -973,10 +997,10 @@ let sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
 
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV45')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV46')) || {};
 
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV45');
+  const saved = localStorage.getItem('danDetectorLogsV46');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -1010,7 +1034,7 @@ function loadPersistence() {
 
 function savePersistence() { 
     let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve) };
-    localStorage.setItem('danDetectorLogsV45', JSON.stringify(state)); 
+    localStorage.setItem('danDetectorLogsV46', JSON.stringify(state)); 
 }
 
 function updateDynamicGuideTexts() {
@@ -1085,7 +1109,7 @@ window.importTuning = function() {
         let data = JSON.parse(dataStr);
         if(data.logs) {
             savedTunings[name] = data;
-            localStorage.setItem('danTunerSavesV45', JSON.stringify(savedTunings));
+            localStorage.setItem('danTunerSavesV46', JSON.stringify(savedTunings));
             renderSavedFiles();
             $('importDataInput').value = '';
             $('importNameInput').value = '';
@@ -1103,7 +1127,7 @@ window.saveCurrentTuning = function() {
     let name = $('saveNameInput').value.trim();
     if(!name) { alert('Please enter a name for the tuning.'); return; }
     savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve) };
-    localStorage.setItem('danTunerSavesV45', JSON.stringify(savedTunings));
+    localStorage.setItem('danTunerSavesV46', JSON.stringify(savedTunings));
     $('saveNameInput').value = '';
     renderSavedFiles();
 }
@@ -1138,7 +1162,7 @@ window.loadTuning = function(key) {
 window.deleteTuning = function(key) {
     if(confirm('Delete ' + key + '?')) {
         delete savedTunings[key];
-        localStorage.setItem('danTunerSavesV45', JSON.stringify(savedTunings));
+        localStorage.setItem('danTunerSavesV46', JSON.stringify(savedTunings));
         renderSavedFiles();
     }
 }
@@ -1221,6 +1245,22 @@ window.handleListen = function(btn, midi, ivKey) {
     
     document.querySelectorAll('.listen-btn').forEach(b => b.classList.remove('active-listen'));
     btn.classList.add('active-listen');
+}
+
+// Feature 5: Trust the Ear Override
+window.lockEarOverride = function() {
+    if (smoothedPitch > 0) {
+         tuningCurve[lowerMidi] = smoothedPitch;
+         let btn = $('btnEarOverride');
+         let oldTxt = btn.textContent;
+         btn.textContent = "LOCKED!";
+         btn.style.background = "#00aa00"; btn.style.color = "#fff";
+         setTimeout(() => { btn.textContent = oldTxt; btn.style.background = "#fff"; btn.style.color = "#000"; }, 2000);
+         refreshUI();
+         savePersistence();
+    } else {
+         alert("Turn on TUNER (Step 1) and play note clearly to lock ear tuning offset.");
+    }
 }
 
 window.wipeAndTarget = function(midi, ivKey) {
@@ -1536,7 +1576,7 @@ function updateActionButtons() {
   });
 }
 
-function updateGuide() { checkStep2(); checkStep3(); checkStep4(); checkStep5(); checkStep6(); checkStep7(); checkStep8(); checkStep9(); checkStep10(); checkStep11(); updateActionButtons(); }
+function updateGuide() { checkStep2(); checkStep3(); checkBreak(); checkStep4(); checkStep5(); checkStep6(); checkStep7(); checkStep8(); checkStep9(); checkStep10(); checkStep11(); updateActionButtons(); }
 
 function checkStep2() {
   let m3 = getLogVal('M3', 'F3'), m10 = getLogVal('M10', 'F3'); let res = $('guideRes2');
@@ -1558,6 +1598,21 @@ function checkStep3() {
     res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too slow. A3 is locked. Adjust F3 (FLATTEN).`;
   } else {
     res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too fast. A3 is locked. Adjust F3 (SHARPEN).`;
+  }
+}
+
+// Feature: Break Manager Compromise
+function checkBreak() {
+  let m3 = getLogVal('M3', 'E3'), p4 = getLogVal('P4', 'E3'), p5 = getLogVal('P5', 'E3');
+  let res = $('guideResBreak');
+  if (!res) return;
+  if(!m3 || !p4 || !p5) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log E3 intervals..."; return; }
+  if (m3 > 9.0 || m3 < 5.0) {
+      res.className = 'guide-result guide-res-warn';
+      res.innerHTML = `Break M3 is howling (${m3.toFixed(1)}). Compromise P4/P5 slightly to smooth the M3.`;
+  } else {
+      res.className = 'guide-result guide-res-pass';
+      res.innerHTML = `✔ Break managed successfully. Error safely distributed.`;
   }
 }
 
@@ -1586,34 +1641,6 @@ function checkStep5() {
       html += `Uneven Jump (+${r2.toFixed(0)}%). C#4 is likely ${r2 > target ? 'flat' : 'sharp'}.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeAndTarget(61, 'M3')\">FIX C#4 (M3)</button>`; 
   }
   res.innerHTML = html;
-}
-
-function checkP4P5(val, type, lockedStr, tuneStr, tuneRole) {
-    if (!val) return null;
-    let html = '';
-    let isError = false;
-    if (type === 'P4') {
-        if (val > 1.2) {
-            html = `<span style=\"color:#d00000;\">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Wide)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
-            isError = true;
-        } else if (val < 0.6) {
-            html = `<span style=\"color:#d00000;\">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Narrow)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
-            isError = true;
-        } else {
-            html = `<span style=\"color:#006600;\">${lockedStr} P4 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
-        }
-    } else {
-        if (val > 1.0) {
-            html = `<span style=\"color:#d00000;\">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Fast/Narrow)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'SHARPEN':'FLATTEN'}).</span><br>`;
-            isError = true;
-        } else if (val < 0.3) {
-            html = `<span style=\"color:#d00000;\">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} (Too Slow/Wide)</span><br><span style=\"font-size:0.65rem; color:#444;\">${lockedStr} locked. Adjust ${tuneStr} (${tuneRole==='UPPER'?'FLATTEN':'SHARPEN'}).</span><br>`;
-            isError = true;
-        } else {
-            html = `<span style=\"color:#006600;\">${lockedStr} P5 ${tuneStr}: ${val.toFixed(1)} ✔</span><br>`;
-        }
-    }
-    return { html, isError };
 }
 
 function checkStep6() {
@@ -1838,6 +1865,7 @@ function checkStep11() {
     else { res.className = 'guide-result guide-res-warn'; res.innerHTML = `<span style=\"color:#d00000;\">WARNING: HOWLING INTERVALS FOUND</span><br><br>${msg}<i>Use Auto-Debugger to distribute the error safely.</i>`; }
 }
 
+// Feature 6: Enhanced Temperament Grader
 window.checkStep12 = function() {
     let res = $('guideRes12');
     res.innerHTML = '<div style=\"text-align:center; padding: 10px;\">Analyzing Temperament Matrix...</div>';
@@ -1896,11 +1924,20 @@ window.checkStep12 = function() {
             let val = getLogVal(item.i, noteName(item.m));
             if (val && val > 1.4) {
                 let topNote = item.m + IV[item.i].sem;
-                errors.push({
-                    note: topNote, dir: item.i === 'P4' ? 'FLATTEN' : 'SHARPEN', 
-                    reason: `Slow down howling ${noteName(item.m)} ${item.i}`,
-                    cluster: [{m:item.m, i:item.i}, {m:topNote-4, i:'M3'}]
-                });
+                
+                // Concert Tech Priority: Check if M3 progression perfectly covers this knot.
+                // If there are NO M3 errors tied to this top note, FORGIVE the P4/P5.
+                let hasAssociatedM3Error = errors.some(e => e.note === topNote && e.reason.includes('M3'));
+                
+                if (!hasAssociatedM3Error) {
+                    // Forgive it: progression is king.
+                } else {
+                    errors.push({
+                        note: topNote, dir: item.i === 'P4' ? 'FLATTEN' : 'SHARPEN', 
+                        reason: `Slow down howling ${noteName(item.m)} ${item.i}`,
+                        cluster: [{m:item.m, i:item.i}, {m:topNote-4, i:'M3'}]
+                    });
+                }
             }
         });
 
@@ -2202,6 +2239,22 @@ function renderLoop(ts) {
       if (snr > 1.5 && envelopeRunning > 0.0005) sigLight.style.background = '#00ff00'; 
       else sigLight.style.background = '#e0e0e0';
       return; 
+  }
+
+  // Feature 4: Unison Bloom Tracker
+  if (captureState === 'LOCKED') {
+      let bloomEl = $('bloomIndicator');
+      if (envHistory.length > 10 && bloomEl) {
+          let diffs = 0;
+          for(let i=1; i<envHistory.length; i++) diffs += (envHistory[i].val - envHistory[i-1].val);
+          decaySlope = diffs / envHistory.length;
+          
+          if (decaySlope > -0.0001) { bloomEl.textContent = 'BLOOMING'; bloomEl.style.color = '#00aa00'; }
+          else { bloomEl.textContent = 'DECAYING'; bloomEl.style.color = '#d00000'; }
+      }
+  } else { 
+      let bloomEl = $('bloomIndicator'); 
+      if(bloomEl) { bloomEl.textContent = 'UNISON: --'; bloomEl.style.color = '#aaa'; }
   }
 
   const cfg = getConfig(lowerMidi, curIv); const snr = envelopeRunning / noiseFloor; const threshold = getDynamicThresholds(lowerMidi, curIv);
