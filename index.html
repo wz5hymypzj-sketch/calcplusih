@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V50.0</title>
+<title>DAN'S BEAT SPEED DETECTOR - V52.0</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -280,7 +280,7 @@
         <button class="top-btn" id="nav-DET" onclick="selectMode('DET')">LOGS</button>
         <button class="top-btn" id="nav-GUIDE" onclick="selectMode('GUIDE')">GUIDE</button>
         <button class="top-btn" id="nav-PRAISE" onclick="selectMode('PRAISE')">PR</button>
-        <button class="top-btn" id="btnIHCycle" onclick="cycleIH()">IH: DEF</button>
+        <button class="top-btn" id="btnIHCycle" onclick="cycleIH()">IH</button>
         <button class="top-btn" id="nav-FILES" onclick="toggleFiles(true)">💾</button>
         <button class="top-btn" id="btnPause">🎙️</button>
         <button class="top-btn" id="btnPassThrough">🔇</button>
@@ -353,7 +353,7 @@
              
              <div class="readout-box" style="width:100%; margin-bottom:12px; padding:16px 6px;">
                  <div class="val-large" id="prMeasureCents" style="font-size:3.5rem;">---</div>
-                 <div class="val-lbl" id="prMeasureHz">Target: --- Hz</div>
+                 <div class="val-lbl" id="prMeasureNoteLbl">---</div>
              </div>
              
              <button class="action-btn" onclick="logPRAnchor()" style="width:100%; padding:14px; font-size:1.1rem; margin-bottom:12px; background:#0066ff; color:#fff; box-shadow: 0 4px 0 #0044bb;">LOG CURRENT PITCH</button>
@@ -634,7 +634,7 @@ window.selectMode = function(mode) {
 }
 
 // Global Variables
-let audioCtx, micStream, analyserFull, tunerFilter, analyserTuner, gainNode, monitorGain, scriptNode;
+let audioCtx, micStream, analyserFull, analyserTuner, gainNode, monitorGain, scriptNode;
 let filters = [];
 let isRunning = false, micPaused = false, monitorOn = false, rafId = null, currentChunkSize = 512; 
 let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];    
@@ -645,19 +645,17 @@ let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
 let decaySlope = 0; 
 let loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] };
 
-// Inharmonicity Presets
+// Inharmonicity Presets (Railsback Curve Empirical Anchors)
 const ihPresets = [ 
-    { l: 'DEF', b: 0 }, 
-    { l: '36"', b: 0.00120 }, 
-    { l: '40"', b: 0.00090 }, 
-    { l: '45"', b: 0.00060 }, 
-    { l: '52"', b: 0.00040 }, 
-    { l: '7ft', b: 0.00025 }, 
-    { l: '9ft', b: 0.00015 } 
+    { l: 'IH', b: -24, t: 24 },      // Default: Upright (52")
+    { l: '36"', b: -48, t: 40 }, 
+    { l: '40"', b: -38, t: 35 }, 
+    { l: '45"', b: -30, t: 30 }, 
+    { l: '52"', b: -24, t: 24 }, 
+    { l: '7ft', b: -18, t: 18 }, 
+    { l: '9ft', b: -12, t: 12 } 
 ];
 let currentIHIndex = 0;
-let smoothedIH = new Float32Array(109); 
-let useCustomIH = false;
 
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
@@ -676,12 +674,11 @@ let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV50_0')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV52_0')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
 const noteName = m => NOTES[m % 12] + (Math.floor(m / 12) - 1);
-function freq(m) { return tuningCurve[m] || 440 * Math.pow(2, (m - 69) / 12); }
 
 const IV = {
   M3:  { sem:4,  lp:5, up:4, name:'Major Third' }, 
@@ -696,12 +693,17 @@ const IV = {
   M17: { sem:28, lp:5, up:1, name:'Major 17th' }
 };
 
+// Calculate playable bounds for intervals based on 88-key piano
 Object.keys(IV).forEach(key => {
   let min = 108, max = 21;
   for (let m = 21; m <= 108; m++) {
     if (m + IV[key].sem > 108) continue;
-    let fLo = freq(m), fHi = freq(m + IV[key].sem);
+    
+    // Theoretical check just to establish the playable window (min/max midi)
+    let fLo = 440 * Math.pow(2, (m - 69) / 12);
+    let fHi = 440 * Math.pow(2, (m + IV[key].sem - 69) / 12);
     let beat = Math.abs(IV[key].up * fHi - IV[key].lp * fLo);
+    
     let isPerfect = key.includes('OCT');
     if (isPerfect || (beat >= 0.15 && beat <= 25.0)) { 
       if (m < min) min = m; if (m > max) max = m; 
@@ -732,9 +734,8 @@ window.startAudioEngine = async function() {
         analyserFull.fftSize = 16384; 
         analyserFull.smoothingTimeConstant = 0.0; 
         
-        tunerFilter = audioCtx.createBiquadFilter(); tunerFilter.type = 'bandpass'; tunerFilter.frequency.value = 440.0; tunerFilter.Q.value = 3.0; 
         analyserTuner = audioCtx.createAnalyser(); analyserTuner.fftSize = 4096;
-        src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
+        src.connect(analyserTuner); // Pitch Tuner gets raw audio 
 
         const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
         gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
@@ -755,7 +756,7 @@ window.startAudioEngine = async function() {
 }
 
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV50_0');
+  const saved = localStorage.getItem('danDetectorLogsV52_0');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -779,7 +780,7 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danDetectorLogsV50_0', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danDetectorLogsV52_0', JSON.stringify(state)); }
 loadPersistence();
 
 window.toggleFiles = function(show) { 
@@ -809,9 +810,9 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV50_0', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danTunerSavesV50_0', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
         loggedIntervals = data.logs; 
@@ -824,7 +825,7 @@ window.loadTuning = function(key) {
         renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV50_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
 window.startNewTuning = function() { if(confirm('Clear all logs and resets?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; prLoggedOffsets = {}; prMode = 'MEASURE'; currentIHIndex = 0; applyIHPreset(); toggleFiles(false); } }
 
 // IH CYCLE LOGIC
@@ -836,15 +837,43 @@ window.cycleIH = function() {
 
 function applyIHPreset() {
     let preset = ihPresets[currentIHIndex];
-    $('btnIHCycle').textContent = 'IH: ' + preset.l;
-    
-    // Apply constant B to the whole scale. The math naturally scales stretch for higher partials.
-    for(let m=0; m<=108; m++) { smoothedIH[m] = preset.b; }
-    useCustomIH = preset.b > 0;
+    $('btnIHCycle').textContent = preset.l;
     
     buildTuningCurve();
+    
+    // Auto-refresh the Pitch Raise screen targets if we are on it
+    if (mainMode === 'PRAISE') {
+        if (prMode === 'MEASURE') { renderPRAnchors(); }
+        else { updatePRSweepUI(); }
+    }
+    
     updateDynamicGuideTexts();
     setTarget(lowerMidi, curIv);
+}
+
+// EMPIRICAL RAILSBACK CURVE GENERATOR
+function buildTuningCurve() {
+    let preset = ihPresets[currentIHIndex];
+    let maxBassCents = preset.b; 
+    let maxTrebleCents = preset.t; 
+    let exponent = 2.5; // Creates a smooth S/J curve
+    
+    for(let m = 21; m <= 108; m++) {
+        let centsOffset = 0;
+        
+        if (m < 69) { 
+            // Bass: interpolate down to A0 (Midi 21)
+            let fraction = (69 - m) / (69 - 21);
+            centsOffset = maxBassCents * Math.pow(fraction, exponent);
+        } else if (m > 69) { 
+            // Treble: interpolate up to C8 (Midi 108)
+            let fraction = (m - 69) / (108 - 69);
+            centsOffset = maxTrebleCents * Math.pow(fraction, exponent);
+        }
+        
+        let theoreticalF = 440.0 * Math.pow(2, (m - 69) / 12);
+        tuningCurve[m] = theoreticalF * Math.pow(2, centsOffset / 1200);
+    }
 }
 
 // PITCH RAISE UI LOGIC
@@ -881,7 +910,7 @@ window.renderPRAnchors = function() {
         };
         container.appendChild(b);
     });
-    $('prMeasureHz').textContent = `Target: ${tuningCurve[prMeasureMidi].toFixed(1)} Hz`;
+    $('prMeasureNoteLbl').textContent = noteName(prMeasureMidi);
 }
 
 window.logPRAnchor = function() {
@@ -964,20 +993,25 @@ function updatePRSweepUI() {
     $('prOverpullInfo').textContent = `Actual Overpull: ${overpullCents > 0 ? '+' : ''}${overpullCents.toFixed(1)}c`;
     $('prSweepTargetF').textContent = `Target: ${targetF.toFixed(2)} Hz`;
     
-    if(tunerFilter) tunerFilter.frequency.value = targetF;
     $('prSweepCents').textContent = '---';
     $('prSweepCents').style.color = '#000';
 }
 
 function processTunerPitch(rawPitch, targetF, elId) {
-    if(rawPitch > targetF * 0.85 && rawPitch < targetF * 1.15) {
+    let isSilent = (envelopeRunning < 0.005);
+
+    if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) {
         pitchHistory.push(rawPitch);
-        if(pitchHistory.length > 5) pitchHistory.shift();
+        if(pitchHistory.length > 20) pitchHistory.shift(); 
+        
         let sorted = [...pitchHistory].sort((a,b) => a-b);
         let medianPitch = sorted[Math.floor(sorted.length/2)];
         
-        if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 2.0) smoothedPitch = medianPitch;
-        else smoothedPitch = (smoothedPitch * 0.7) + (medianPitch * 0.3);
+        if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 5.0) {
+            smoothedPitch = medianPitch;
+        } else {
+            smoothedPitch = (smoothedPitch * 0.85) + (medianPitch * 0.15);
+        }
         
         let cents = 1200 * Math.log2(smoothedPitch / targetF);
         let el = $(elId);
@@ -1005,26 +1039,26 @@ function runTuner() {
   if (mainMode === 'PRAISE') {
       if (prMode === 'MEASURE') {
           let targetF = tuningCurve[prMeasureMidi];
-          if(tunerFilter) tunerFilter.frequency.value = targetF;
           processTunerPitch(rawPitch, targetF, 'prMeasureCents');
       } else {
           let baseF = tuningCurve[prCurrentMidi];
           let overpullCents = prOverpullArray[prCurrentMidi] || 0;
           let targetF = baseF * Math.pow(2, overpullCents / 1200);
-          if(tunerFilter) tunerFilter.frequency.value = targetF;
           processTunerPitch(rawPitch, targetF, 'prSweepCents');
       }
   } 
   else {
-      let targetF = tunerFilter ? tunerFilter.frequency.value : 440.0;
-      if(rawPitch > targetF * 0.95 && rawPitch < targetF * 1.05) { 
+      let targetF = 440.0; // Standard A4 setting for generic Tuner workspace
+      let isSilent = (envelopeRunning < 0.005);
+
+      if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) { 
         pitchHistory.push(rawPitch);
-        if(pitchHistory.length > 5) pitchHistory.shift(); 
+        if(pitchHistory.length > 20) pitchHistory.shift(); 
         let sorted = [...pitchHistory].sort((a,b) => a-b);
         let medianPitch = sorted[Math.floor(sorted.length/2)];
         
-        if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 2.0) smoothedPitch = medianPitch;
-        else smoothedPitch = (smoothedPitch * 0.8) + (medianPitch * 0.2);
+        if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 5.0) smoothedPitch = medianPitch;
+        else smoothedPitch = (smoothedPitch * 0.85) + (medianPitch * 0.15);
 
         let cents = 1200 * Math.log2(smoothedPitch / targetF);
         let color = Math.abs(cents) < 1.5 ? '#00aa00' : '#d00000';
@@ -1033,7 +1067,11 @@ function runTuner() {
         $('tunerReadout').innerHTML = `<span style="font-size:1.4rem; font-weight:900; line-height:1.2;">${smoothedPitch.toFixed(1)} Hz</span><br><span style="color:${color}; font-weight:900; font-size:0.9rem;">${text}</span>`;
       } else { 
         if(pitchHistory.length > 0) pitchHistory.shift();
-        if(pitchHistory.length === 0) smoothedPitch = -1; 
+        if(pitchHistory.length === 0) {
+            smoothedPitch = -1; 
+            $('tunerReadout').innerHTML = '--- Hz';
+            $('tunerReadout').className = 'guide-result guide-res-wait';
+        }
       }
   }
   
@@ -1041,53 +1079,28 @@ function runTuner() {
 }
 
 
-function buildTuningCurve() {
-    tuningCurve[69] = 440.0;
-    
-    for(let oct = 0; oct < 4; oct++) {
-        let topMidi = 69 - oct*12; let botMidi = topMidi - 12; if(botMidi < 21) break;
-        let bTop = smoothedIH[topMidi], bBot = smoothedIH[botMidi];
-        let r42 = (2/4) * (Math.sqrt(1 + 4*bTop) / Math.sqrt(1 + 16*bBot)); let r63 = (3/6) * (Math.sqrt(1 + 9*bTop) / Math.sqrt(1 + 36*bBot)); let r84 = (4/8) * (Math.sqrt(1 + 16*bTop) / Math.sqrt(1 + 64*bBot));
-        let fTop = tuningCurve[topMidi], w42 = 1, w63 = 0, w84 = 0; 
-        
-        let isHighIH = smoothedIH[60] > 0.00040;
-        
-        if (topMidi <= 45) { w42 = 0; w63 = 0.3; w84 = 0.7; } 
-        else if (topMidi <= 57) { 
-            if (isHighIH) { w42 = 0.0; w63 = 1.0; } 
-            else { w42 = 0.4; w63 = 0.6; } 
-        } else if (topMidi <= 69) {
-            if (isHighIH) { w42 = 0.4; w63 = 0.6; } 
-            else { w42 = 1.0; w63 = 0.0; }
-        }
-        
-        let finalRatio = (r42 * w42) + (r63 * w63) + (r84 * w84); let fBot = fTop * finalRatio; tuningCurve[botMidi] = fBot;
-        let step = Math.pow(fTop / fBot, 1/12); for(let k = 1; k < 12; k++) { tuningCurve[botMidi + k] = fBot * Math.pow(step, k); }
-    }
-    for(let oct = 0; oct < 3; oct++) {
-        let botMidi = 69 + oct*12; let topMidi = botMidi + 12; if(topMidi > 108) topMidi = 108; 
-        let bBot = smoothedIH[botMidi], bTop = smoothedIH[topMidi], b12th = smoothedIH[Math.min(108, botMidi + 19)];
-        let r42 = (2/4) * (Math.sqrt(1 + 4*bTop) / Math.sqrt(1 + 16*bBot)); let r21 = (1/2) * (Math.sqrt(1 + 1*bTop) / Math.sqrt(1 + 4*bBot)); let r31_equiv = (1/2) * Math.pow( 3 * Math.sqrt(1 + 9*bBot) / Math.sqrt(1 + 1*b12th), 12/19 );
-        let fBot = tuningCurve[botMidi], w42 = 1, w21 = 0, w31 = 0;
-        if (botMidi >= 81) { w42 = 0; w21 = 0; w31 = 1; } else if (botMidi >= 69) { w42 = 0.5; w21 = 0; w31 = 0.5; }
-        let finalRatio = (r42 * w42) + (r21 * w21) + (r31_equiv * w31); let fTop = fBot / finalRatio; tuningCurve[topMidi] = fTop;
-        let step = Math.pow(fTop / fBot, 1/12); let semitones = topMidi - botMidi; for(let k = 1; k < semitones; k++) { tuningCurve[botMidi + k] = fBot * Math.pow(step, k); }
-    }
-}
-
-function getMidiHarmonicStretch(midi, partial) { 
-    if (!useCustomIH) return 1.0; 
-    let B = smoothedIH[midi];
-    return Math.sqrt((1 + B * partial * partial) / (1 + B)); 
-}
-
 function getConfig(lowerMidi, ivKey) {
-  const iv = IV[ivKey]; const upperMidi = lowerMidi + iv.sem; const fLo = freq(lowerMidi), fHi = freq(upperMidi);
-  let stretchLo = getMidiHarmonicStretch(lowerMidi, iv.lp), stretchHi = getMidiHarmonicStretch(upperMidi, iv.up);
-  const pLo = iv.lp * fLo * stretchLo, pHi = iv.up * fHi * stretchHi, center = (pLo + pHi) / 2, theoBeat = Math.abs(pHi - pLo);
-  let margin = Math.max(22, theoBeat * 1.2 + 8) * 1.20; if (ivKey === 'M10' || ivKey === 'M17') margin *= 1.8; if (lowerMidi < 40) margin *= 1.4; 
+  const iv = IV[ivKey]; 
+  const upperMidi = lowerMidi + iv.sem; 
+  
+  // Directly use the highly accurate generated Railsback curve
+  const fLo = tuningCurve[lowerMidi]; 
+  const fHi = tuningCurve[upperMidi];
+  
+  // The filter targets the theoretical perfect harmonic of the stretched fundamental
+  const pLo = iv.lp * fLo; 
+  const pHi = iv.up * fHi; 
+  
+  const center = (pLo + pHi) / 2; 
+  const theoBeat = Math.abs(pHi - pLo);
+  
+  let margin = Math.max(22, theoBeat * 1.2 + 8) * 1.20; 
+  if (ivKey === 'M10' || ivKey === 'M17') margin *= 1.8; 
+  if (lowerMidi < 40) margin *= 1.4; 
+  
   return { lowerMidi, upperMidi, fLo, fHi, pLo, pHi, center, theoBeat, bpLo: center - margin, bpHi: center + margin, iv, ivKey };
 }
+
 function getDynamicThresholds(midiNote, ivKey) {
   let minEnv = 0.002, minSnr = 2.0;   
   if (midiNote > 60) { let boostFactor = Math.min(1, (midiNote - 60) / 36); minEnv = 0.002 - (boostFactor * 0.0015); minSnr = 2.0 - (boostFactor * 1.0); }
@@ -1166,7 +1179,7 @@ $('btnPassThrough').onclick = () => {
 
 $('btnTunerToggle').onclick = () => {
   tunerActive = !tunerActive; const btn = $('btnTunerToggle'), out = $('tunerReadout');
-  if(tunerActive) { if(tunerFilter) tunerFilter.frequency.value = 440.0; btn.textContent = 'TUNER: ON'; btn.style.background = '#000'; btn.style.color = '#fff'; out.className = 'guide-result guide-res-pass'; smoothedPitch = -1; pitchHistory = []; tunerDataArray = new Float32Array(analyserTuner.fftSize); runTuner(); } 
+  if(tunerActive) { btn.textContent = 'TUNER: ON'; btn.style.background = '#000'; btn.style.color = '#fff'; out.className = 'guide-result guide-res-pass'; smoothedPitch = -1; pitchHistory = []; tunerDataArray = new Float32Array(analyserTuner.fftSize); runTuner(); } 
   else { btn.textContent = 'TUNER: OFF'; btn.style.background = '#fff'; btn.style.color = '#000'; out.className = 'guide-result guide-res-wait'; out.innerHTML = '--- Hz'; }
 }
 
