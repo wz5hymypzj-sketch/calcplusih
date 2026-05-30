@@ -947,14 +947,13 @@ function getPolynomial(xData, yData) {
         return (m) => Math.exp(slope * m + intercept); 
     }
 
-    // --- THE FIX: DYNAMIC CENTERING TO PREVENT MATRIX COLLAPSE ---
     let xCenter = 0;
     for (let i = 0; i < n; i++) xCenter += xData[i];
     xCenter /= n;
 
     let sumX=0, sumY=0, sumX2=0, sumX3=0, sumX4=0, sumXY=0, sumX2Y=0;
     for(let i=0; i<n; i++) { 
-        let x = xData[i] - xCenter; // Shift X to center
+        let x = xData[i] - xCenter;
         let y = yData[i]; 
         sumX += x; sumX2 += x*x; sumX3 += x*x*x; sumX4 += x*x*x*x; 
         sumY += y; sumXY += x*y; sumX2Y += x*x*y; 
@@ -970,7 +969,7 @@ function getPolynomial(xData, yData) {
         let b = det([[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]])/D; 
         let c = det([[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]])/D; 
         return (m) => {
-            let xm = m - xCenter; // Apply same shift to requested key
+            let xm = m - xCenter; 
             return Math.exp(a + b*xm + c*xm*xm); 
         };
     } else { 
@@ -1019,13 +1018,12 @@ function buildTuningCurve() {
         
         let isHighIH = smoothedIH[60] > 0.00040;
         
-        // Dynamically blend 6:3 octaves higher up to accurately stretch high IH pianos
         if (topMidi <= 45) { w42 = 0; w63 = 0.3; w84 = 0.7; } 
         else if (topMidi <= 57) { 
             if (isHighIH) { w42 = 0.0; w63 = 1.0; } 
             else { w42 = 0.4; w63 = 0.6; } 
         } else if (topMidi <= 69) {
-            if (isHighIH) { w42 = 0.4; w63 = 0.6; } // Spread the wide octave into the temperament
+            if (isHighIH) { w42 = 0.4; w63 = 0.6; }
             else { w42 = 1.0; w63 = 0.0; }
         }
         
@@ -1156,6 +1154,31 @@ function captureIHFrame(midi) {
     if (B < 0 || B > 0.05) return null;
     
     return { B: B, fA: fA, fB: fB, f_actual: f_actual, n: n, m: m };
+}
+
+// --- MISSING FUNCTION ADDED HERE ---
+function checkAllIHSampled() {
+    let req = [36, 41, 48, 53, 60, 65, 72];
+    let allSampled = true;
+    for(let i=0; i<req.length; i++) {
+        if(ihProfile[req[i]] === undefined) {
+            allSampled = false;
+            break;
+        }
+    }
+    
+    let btn = $('btnCalculateIH');
+    if(btn) {
+        if(allSampled) {
+            btn.disabled = false;
+            btn.style.background = '#000';
+            btn.style.color = '#fff';
+        } else {
+            btn.disabled = true;
+            btn.style.background = '';
+            btn.style.color = '';
+        }
+    }
 }
 
 function finalizeIHCapture(midi) {
