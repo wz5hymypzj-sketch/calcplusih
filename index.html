@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V49.1</title>
+<title>DAN'S BEAT SPEED DETECTOR - V49.2</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -381,6 +381,10 @@
                 <button class="ctrl-btn fix-btn" style="flex:1; margin:0;" onclick="resetStretchCurve()">RESET</button>
             </div>
             <div id="stretchClassification" style="margin-top:10px; font-weight:bold; font-size:0.85rem; text-align:center;"></div>
+            
+            <div style="text-align:center; margin-top:8px;">
+                <button id="btnCopyDiag" onclick="copyDiagnostics()" class="ctrl-btn" style="font-size:0.6rem; padding: 2px 8px;">COPY</button>
+            </div>
         </div>
       </div>
 
@@ -678,9 +682,9 @@ let loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], 
 // Inharmonicity variables (FFT Peak Picking)
 let ihPartials = [1, 4];
 let ihScanMidi = -1;
-let ihProfile = {}; let smoothedIH = new Float32Array(109); let useCustomIH = false;
+let ihProfile = {}; let ihRawData = {}; let smoothedIH = new Float32Array(109); let useCustomIH = false;
 let ihStage = 'IDLE'; 
-let ihStrikeFlag = false; // Prevents race condition during strike detection
+let ihStrikeFlag = false; 
 
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
@@ -696,7 +700,7 @@ let prCurrentMidi = 21; // start at A0
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV49_1')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV49_2')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -750,15 +754,13 @@ window.startAudioEngine = async function() {
         
         // Setup Full Analyser for High-Res IH FFTs
         analyserFull = audioCtx.createAnalyser(); 
-        analyserFull.fftSize = 16384; // Massive resolution
-        analyserFull.smoothingTimeConstant = 0.0; // We want raw instant peaks
+        analyserFull.fftSize = 16384; 
+        analyserFull.smoothingTimeConstant = 0.0; 
         
-        // Setup Tuner path
         tunerFilter = audioCtx.createBiquadFilter(); tunerFilter.type = 'bandpass'; tunerFilter.frequency.value = 440.0; tunerFilter.Q.value = 3.0; 
         analyserTuner = audioCtx.createAnalyser(); analyserTuner.fftSize = 4096;
         src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
 
-        // Standard beat measurement filters
         const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
         gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
         monitorGain = audioCtx.createGain(); monitorGain.gain.value = monitorOn && !micPaused ? 25.0 : 0.0;
@@ -777,9 +779,8 @@ window.startAudioEngine = async function() {
     }
 }
 
-// PERSISTENCE & FILE SYSTEM
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV49_1');
+  const saved = localStorage.getItem('danDetectorLogsV49_2');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -801,7 +802,7 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV49_1', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV49_2', JSON.stringify(state)); }
 loadPersistence();
 
 window.toggleFiles = function(show) { 
@@ -831,9 +832,9 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV49_1', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV49_2', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV49_1', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV49_2', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
         loggedIntervals = data.logs; ihProfile = data.ih || {}; useCustomIH = data.customIH || false; if(data.curve) tuningCurve = new Float32Array(data.curve); if(data.prOffsets) prOffsets = data.prOffsets; if(data.prOverpull) prOverpullArray = new Float32Array(data.prOverpull); savePersistence();
@@ -841,7 +842,7 @@ window.loadTuning = function(key) {
         renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV49_1', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV49_2', JSON.stringify(savedTunings)); renderSavedFiles(); } }
 window.startNewTuning = function() { if(confirm('Clear all logs?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; resetStretchCurve(); toggleFiles(false); } }
 
 // PITCH RAISE UI LOGIC
@@ -939,7 +940,7 @@ function runTuner() {
 function getPolynomial(xData, yData) {
     let n = xData.length; 
     if (n === 0) return (m) => 0.0005; 
-    if (n === 1) return (m) => Math.exp(yData[0]); // Flat line fallback
+    if (n === 1) return (m) => Math.exp(yData[0]); 
     if (n === 2) { 
         let slope = (yData[1] - yData[0]) / (xData[1] - xData[0]); 
         let intercept = yData[0] - slope * xData[0]; 
@@ -970,7 +971,6 @@ function smoothIHData() {
     let breakSelect = $('bassBreakSelect'); 
     let breakMidi = breakSelect ? parseInt(breakSelect.value) : 52;
     
-    // TWO-PART PIECEWISE MATH (Bass vs Plain Wire)
     let bassKeys = keys.filter(k => k <= breakMidi); 
     let wireKeys = keys.filter(k => k > breakMidi); 
     
@@ -1010,7 +1010,12 @@ function buildTuningCurve() {
     }
 }
 
-function getMidiHarmonicStretch(midi, partial) { if (!useCustomIH) return 1.0; return Math.sqrt(1 + smoothedIH[midi] * partial * partial); }
+function getMidiHarmonicStretch(midi, partial) { 
+    if (!useCustomIH) return 1.0; 
+    let B = smoothedIH[midi];
+    return Math.sqrt((1 + B * partial * partial) / (1 + B)); 
+}
+
 function getConfig(lowerMidi, ivKey) {
   const iv = IV[ivKey]; const upperMidi = lowerMidi + iv.sem; const fLo = freq(lowerMidi), fHi = freq(upperMidi);
   let stretchLo = getMidiHarmonicStretch(lowerMidi, iv.lp), stretchHi = getMidiHarmonicStretch(upperMidi, iv.up);
@@ -1049,7 +1054,6 @@ window.lockEarOverride = function() { if (smoothedPitch > 0) { tuningCurve[lower
 window.wipeAndTarget = function(midi, ivKey) { deleteEntry(ivKey, midi); setTarget(midi, ivKey); }
 window.wipeCluster = function(targetMidi, targetIv, wipeArray) { wipeArray.forEach(item => { if (loggedIntervals[item.i]) { loggedIntervals[item.i] = loggedIntervals[item.i].filter(e => e.midi !== item.m); } }); savePersistence(); renderLogTable(); updateGuide(); updateDynRes(); setTarget(targetMidi, targetIv); }
 
-
 // --- NEW INSTANT FFT PEAK PICKER FOR INHARMONICITY ---
 function getExactPeak(fftData, sampleRate, targetFreq, centsRange) {
     let binWidth = sampleRate / analyserFull.fftSize;
@@ -1063,10 +1067,8 @@ function getExactPeak(fftData, sampleRate, targetFreq, centsRange) {
     for(let i = bMin; i <= bMax; i++) {
         if(fftData[i] > maxVal) { maxVal = fftData[i]; maxBin = i; }
     }
-    // Reject if too quiet (noise floor check)
     if(maxBin === -1 || maxVal < -90) return null;
     
-    // Quadratic Interpolation for exact frequency
     let alpha = fftData[maxBin - 1];
     let beta = fftData[maxBin];
     let gamma = fftData[maxBin + 1];
@@ -1083,10 +1085,9 @@ window.sampleIH = function(midi) {
     if(!analyserFull) return; 
     ihScanMidi = midi; 
     
-    // Define partials based on physical realities of the strings
-    if (midi <= 41) { ihPartials = [4, 8]; }       // Deep wound bass
-    else if (midi <= 48) { ihPartials = [2, 4]; }  // Upper bass / break
-    else { ihPartials = [1, 4]; }                  // Plain wire
+    if (midi <= 41) { ihPartials = [4, 8]; }       
+    else if (midi <= 48) { ihPartials = [2, 4]; }  
+    else { ihPartials = [1, 4]; }                  
     
     ihStrikeFlag = false; 
     ihStage = 'WAIT_STRIKE';
@@ -1103,7 +1104,6 @@ function captureIHFFT(midi) {
     let n = ihPartials[0];
     let m = ihPartials[1];
     
-    // Search for lower partial (widest net)
     let peakA = getExactPeak(fftData, audioCtx.sampleRate, f0 * n, 150);
     if (!peakA) {
         $('ihResult').className = 'guide-result guide-res-warn';
@@ -1111,10 +1111,7 @@ function captureIHFFT(midi) {
         return;
     }
     
-    // Extrapolate exact fundamental from peakA
     let f_actual = peakA.freq / n;
-    
-    // Search for upper partial near the exact target
     let peakB = getExactPeak(fftData, audioCtx.sampleRate, f_actual * m, 150);
     if (!peakB) {
         $('ihResult').className = 'guide-result guide-res-warn';
@@ -1125,7 +1122,6 @@ function captureIHFFT(midi) {
     let fA = peakA.freq;
     let fB = peakB.freq;
     
-    // Exact mathematical formula for B (Inharmonicity Coefficient)
     let ratio = (fB / m) / (fA / n);
     let R2 = ratio * ratio;
     let denom = m*m - R2 * n*n;
@@ -1139,7 +1135,8 @@ function captureIHFFT(midi) {
     }
     
     ihProfile[midi] = B;
-    prOffsets[midi] = 1200 * Math.log2(f_actual / f0); // Log flatness for Auto Pitch Raise
+    ihRawData[midi] = { n: n, m: m, fA: fA, fB: fB };
+    prOffsets[midi] = 1200 * Math.log2(f_actual / f0); 
     
     $('ihResult').className = 'guide-result guide-res-pass'; 
     $('ihResult').innerHTML = `<b>${noteName(midi)}</b> logged!<br><span style="font-size:0.65rem;">B = ${B.toFixed(6)}</span>`; 
@@ -1166,7 +1163,6 @@ window.applyStretchCurve = function() {
     $('stretchClassification').innerHTML = classText + `<br><span style="font-size:0.65rem;font-weight:normal;color:#666;">Smoothed Ref iH: ${bC4.toFixed(6)}</span>`;
     buildTuningCurve(); updateDynamicGuideTexts(); setTarget(lowerMidi, curIv);
     
-    // Auto-Calculate Pitch Raise Target Offsets
     let bassSum = 0, bassCount = 0, midSum = 0, midCount = 0, trebSum = 0, trebCount = 0;
     Object.keys(prOffsets).forEach(k => {
         let m = parseInt(k), val = prOffsets[k];
@@ -1186,10 +1182,43 @@ window.applyStretchCurve = function() {
 }
 
 window.resetStretchCurve = function() {
-    ihProfile = {}; prOffsets = {}; useCustomIH = false; for(let m=0; m<=108; m++) { tuningCurve[m] = 440 * Math.pow(2, (m - 69) / 12); smoothedIH[m] = 0; prOverpullArray[m] = 0; }
+    ihProfile = {}; ihRawData = {}; prOffsets = {}; useCustomIH = false; for(let m=0; m<=108; m++) { tuningCurve[m] = 440 * Math.pow(2, (m - 69) / 12); smoothedIH[m] = 0; prOverpullArray[m] = 0; }
     $('stretchClassification').innerHTML = ""; $('ihResult').className = 'guide-result guide-res-wait'; $('ihResult').innerHTML = 'Select a note to sample...';
     let btn = $('btnCalculateIH'); btn.innerHTML = 'CALCULATE TARGETS'; btn.disabled = true; btn.style.background = '#000'; btn.style.color = '#fff'; document.querySelectorAll('#ihBtns .action-btn').forEach(b => b.classList.remove('logged'));
     updateDynamicGuideTexts(); setTarget(lowerMidi, curIv); savePersistence();
+}
+
+window.copyDiagnostics = function() {
+    let str = "--- IH DIAGNOSTIC DUMP ---\n[RAW MEASUREMENTS]\n";
+    let req = [36, 41, 48, 53, 60, 65, 72];
+    req.forEach(m => {
+        if(ihProfile[m]) {
+            let raw = ihRawData[m];
+            if (raw) {
+                str += `${noteName(m)} (${m}) | Partials: ${raw.n}/${raw.m} | PeakA: ${raw.fA.toFixed(1)} Hz | PeakB: ${raw.fB.toFixed(1)} Hz | Raw B: ${ihProfile[m].toFixed(6)}\n`;
+            } else {
+                str += `${noteName(m)} (${m}) | Raw B: ${ihProfile[m].toFixed(6)}\n`;
+            }
+        }
+    });
+    str += "\n[CURVE MATH]\n";
+    let bC4 = smoothedIH[60] || 0;
+    str += `Smoothed C4 Ref: ${bC4.toFixed(6)}\n`;
+    
+    if(useCustomIH) {
+        let f3m3 = getConfig(53, 'M3');
+        str += `Calculated F3-A3 Target: ${f3m3.theoBeat.toFixed(2)} bps\n`;
+        let f3f4 = getConfig(53, 'OCT_42');
+        str += `Calculated F3-F4 (4:2): ${f3f4.theoBeat.toFixed(2)} bps\n`;
+        let f3a3_f = tuningCurve[53];
+        let a3_f = tuningCurve[57];
+        str += `Fundamentals -> F3: ${f3a3_f.toFixed(2)} Hz, A3: ${a3_f.toFixed(2)} Hz\n`;
+    }
+    
+    navigator.clipboard.writeText(str).then(() => {
+        let btn = $('btnCopyDiag'); let old = btn.innerText;
+        btn.innerText = 'COPIED!'; setTimeout(()=> btn.innerText = old, 2000);
+    }).catch(err => { prompt("Copy this data:", str); });
 }
 
 $('btnPause').onclick = async () => {
