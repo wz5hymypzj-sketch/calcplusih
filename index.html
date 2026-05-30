@@ -804,7 +804,11 @@ function loadPersistence() {
     try { 
       let parsed = JSON.parse(saved); 
       if (parsed.logs) {
-          loggedIntervals = parsed.logs; 
+          // Merge safely to prevent overwriting missing keys with undefined
+          Object.keys(parsed.logs).forEach(k => {
+              loggedIntervals[k] = parsed.logs[k];
+          });
+          
           if (parsed.lockedPins) lockedPins = parsed.lockedPins;
           if (parsed.prOffsets) prLoggedOffsets = parsed.prOffsets;
           if (parsed.prOverpull) prOverpullArray = new Float32Array(parsed.prOverpull);
@@ -1366,7 +1370,9 @@ $('btnBigUp').addEventListener('click', () => { if (!isRunning || lowerMidi >= I
 window.addEventListener('keydown', (e) => { if (!isRunning) return; if (e.key === 'ArrowRight') { e.preventDefault(); $('btnBigUp').click(); } else if (e.key === 'ArrowLeft') { e.preventDefault(); $('btnBigDown').click(); } });
 
 function finalizeLog() {
-  if (lockedAverage === null) return; const cfg = getConfig(lowerMidi, curIv); let entry = loggedIntervals[curIv].find(x => x.midi === lowerMidi);
+  if (lockedAverage === null) return; const cfg = getConfig(lowerMidi, curIv); 
+  if(!loggedIntervals[curIv]) loggedIntervals[curIv] = []; 
+  let entry = loggedIntervals[curIv].find(x => x.midi === lowerMidi);
   if (!entry) { entry = { midi: lowerMidi, noteName: noteName(lowerMidi), strikes: [], measured: 0, target: cfg.theoBeat }; loggedIntervals[curIv].push(entry); }
   entry.strikes.push(lockedAverage); let sortedStrikes = [...entry.strikes].sort((a,b) => a-b); entry.measured = sortedStrikes[Math.floor(sortedStrikes.length/2)];
   savePersistence(); renderLogTable(); updateGuide(); renderDynExpanders();
@@ -1393,7 +1399,11 @@ function renderLogTable() {
   } else { tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#666;">Logs automatically upon solid capture</td></tr>'; }
 }
 
-function getLogVal(iv, noteNameStr) { let e = loggedIntervals[iv].find(x => x.noteName === noteNameStr); return e ? e.measured : null; }
+function getLogVal(iv, noteNameStr) { 
+    if (!loggedIntervals[iv]) return null;
+    let e = loggedIntervals[iv].find(x => x.noteName === noteNameStr); 
+    return e ? e.measured : null; 
+}
 function updateActionButtons() { document.querySelectorAll('.action-btn:not(.listen-btn)').forEach(btn => { let iv = btn.dataset.iv, midiStr = btn.dataset.midi; if(!iv || !midiStr) return; let midi = parseInt(midiStr), label = btn.dataset.label, val = getLogVal(iv, noteName(midi)); if (val !== null) { btn.innerHTML = `${label}<br><span style="font-size:0.95em; font-weight:900;">[${val.toFixed(2)}]</span>`; btn.classList.add('logged'); } else { btn.innerHTML = label; btn.classList.remove('logged'); } }); }
 
 // Elastic UI Pin generator
