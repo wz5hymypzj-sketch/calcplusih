@@ -40,7 +40,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V56.3</title>
+<title>DAN'S BEAT SPEED DETECTOR - V57.0</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -189,7 +189,7 @@
   .guide-step { border: 2px solid #000; border-radius: 6px; padding: 8px; background: #fff; flex-shrink: 0; }
   .guide-step h3 { font-size: 0.85rem; color: #000; margin-bottom: 4px; text-transform: uppercase; font-weight: 900; background: #eee; padding: 4px; border-radius: 2px; text-align: center; }
   .guide-step p { font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; color: #444; line-height: 1.2; text-align: center; }
-  .tuning-target { font-weight: 700; color: #000; text-align: center; margin-bottom: 6px; font-size: 0.75rem; }
+  .tuning-target { font-weight: 700; color: #000; text-align: center; margin-bottom: 6px; font-size: 0.75rem; text-transform: uppercase;}
   
   .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; justify-content: center; }
   .action-btn { background: #e0f0ff; border: 1px solid #0066ff; color: #0044bb; font-size: 0.75rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 0 #0066ff; transition: transform 0.05s, box-shadow 0.05s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px;}
@@ -441,13 +441,13 @@
         <div class="guide-pane active" id="gPane-TEMP">
           <div class="guide-step">
             <h3>Step 1: Set Pitch</h3>
-            <div class="tuning-target">Tuning: A4</div>
+            <div class="tuning-target">Goal: Tune A4</div>
             <button class="ctrl-btn" id="btnTunerToggle" style="width:100%; margin-bottom:4px; font-size:0.8rem;">TUNER: OFF</button>
             <div class="guide-result guide-res-wait" id="tunerReadout" style="min-height: 38px; display:flex; align-items:center; justify-content:center; flex-direction:column;">--- Hz</div>
           </div>
           <div class="guide-step">
             <h3>Step 2: Prove A3 Octave</h3>
-            <div class="tuning-target">Tuning: A3</div>
+            <div class="tuning-target">Goal: Tune A3</div>
             <div class="action-row">
               <button class="action-btn listen-btn" onclick="handleListen(this, 57, 'OCT_21')">2:1</button>
               <button class="action-btn listen-btn recommended" onclick="handleListen(this, 57, 'OCT_42')">4:2</button>
@@ -461,14 +461,14 @@
           </div>
           <div class="guide-step">
             <h3>Step 3: Set F3 Anchor</h3>
-            <div class="tuning-target">Tuning: F3</div>
+            <div class="tuning-target">Goal: Tune F3</div>
             <p>Aim for ~<span id="guideStep3Target">6.93</span> bps.</p>
             <div class="action-row"><button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button></div>
             <div class="guide-result guide-res-wait" id="guideRes3">Awaiting logs...</div>
           </div>
           <div class="guide-step">
             <h3>Step 4: Prove F4 Octave</h3>
-            <div class="tuning-target">Tuning: F4</div>
+            <div class="tuning-target">Goal: Tune F4</div>
             <div class="action-row">
               <button class="action-btn listen-btn recommended" onclick="handleListen(this, 53, 'OCT_42')">4:2</button>
             </div>
@@ -480,7 +480,8 @@
           </div>
           <div class="guide-step">
             <h3>Step 5: 'F' Skeleton (Contiguous 3rds)</h3>
-            <div class="tuning-target">Tuning: C#4</div>
+            <div class="tuning-target">Goal: Tune C#4</div>
+            <p style="font-size:0.75rem; color:#444; margin-bottom:8px;">Adjust C#4 until the F3-A3-C#4-F4 Major 3rd ladder climbs evenly in speed. F3, A3, and F4 are already locked.</p>
             <div class="action-row">
               <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button>
               <button class="action-btn" data-midi="57" data-iv="M3" data-label="A3 M3 C#4" onclick="handleAction(this, 57, 'M3')">A3 M3 C#4</button>
@@ -490,37 +491,74 @@
           </div>
           <div class="guide-step">
             <h3>Step 6: 'F#' Skeleton</h3>
-            <div class="tuning-target">Tuning: F#3, A#3</div>
+            <div class="tuning-target">Goal: Tune F#3, A#3, and D4</div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune F#3 (from C#4):</p>
             <div class="action-row">
               <button class="action-btn" data-midi="54" data-iv="P5" data-label="F#3 P5 C#4" onclick="handleAction(this, 54, 'P5')">F#3 P5 C#4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune A#3 (from F3):</p>
+            <div class="action-row">
               <button class="action-btn" data-midi="53" data-iv="P4" data-label="F3 P4 A#3" onclick="handleAction(this, 53, 'P4')">F3 P4 A#3</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune D4 (from A3):</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="57" data-iv="P4" data-label="A3 P4 D4" onclick="handleAction(this, 57, 'P4')">A3 P4 D4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Verify M3 Progression:</p>
+            <div class="action-row">
               <button class="action-btn" data-midi="54" data-iv="M3" data-label="F#3 M3 A#3" onclick="handleAction(this, 54, 'M3')">F#3 M3 A#3</button>
+              <button class="action-btn" data-midi="58" data-iv="M3" data-label="A#3 M3 D4" onclick="handleAction(this, 58, 'M3')">A#3 M3 D4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes6">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>Step 7: 'G' Skeleton</h3>
-            <div class="tuning-target">Tuning: G3, B3</div>
+            <h3>Step 7: 'G#' Skeleton</h3>
+            <div class="tuning-target">Goal: Tune G#3, C4, and E4</div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune G#3 (from C#4):</p>
             <div class="action-row">
-              <button class="action-btn" data-midi="55" data-iv="P5" data-label="G3 P5 D4" onclick="handleAction(this, 55, 'P5')">G3 P5 D4</button>
-              <button class="action-btn" data-midi="54" data-iv="P4" data-label="F#3 P4 B3" onclick="handleAction(this, 54, 'P4')">F#3 P4 B3</button>
-              <button class="action-btn" data-midi="55" data-iv="M3" data-label="G3 M3 B3" onclick="handleAction(this, 55, 'M3')">G3 M3 B3</button>
+              <button class="action-btn" data-midi="56" data-iv="P4" data-label="G#3 P4 C#4" onclick="handleAction(this, 56, 'P4')">G#3 P4 C#4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune C4 (from F3):</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="53" data-iv="P5" data-label="F3 P5 C4" onclick="handleAction(this, 53, 'P5')">F3 P5 C4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune E4 (from A3):</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="57" data-iv="P5" data-label="A3 P5 E4" onclick="handleAction(this, 57, 'P5')">A3 P5 E4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Verify M3 Progression:</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="56" data-iv="M3" data-label="G#3 M3 C4" onclick="handleAction(this, 56, 'M3')">G#3 M3 C4</button>
+              <button class="action-btn" data-midi="60" data-iv="M3" data-label="C4 M3 E4" onclick="handleAction(this, 60, 'M3')">C4 M3 E4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes7">Awaiting logs...</div>
           </div>
           <div class="guide-step">
-            <h3>Step 8: 'G#' Skeleton</h3>
-            <div class="tuning-target">Tuning: G#3, C4</div>
+            <h3>Step 8: 'G' Skeleton</h3>
+            <div class="tuning-target">Goal: Tune G3, B3, and D#4</div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune G3 (from C4):</p>
             <div class="action-row">
-              <button class="action-btn" data-midi="56" data-iv="P5" data-label="G#3 P5 D#4" onclick="handleAction(this, 56, 'P5')">G#3 P5 D#4</button>
               <button class="action-btn" data-midi="55" data-iv="P4" data-label="G3 P4 C4" onclick="handleAction(this, 55, 'P4')">G3 P4 C4</button>
-              <button class="action-btn" data-midi="56" data-iv="M3" data-label="G#3 M3 C4" onclick="handleAction(this, 56, 'M3')">G#3 M3 C4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune B3 (from E4):</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="59" data-iv="P4" data-label="B3 P4 E4" onclick="handleAction(this, 59, 'P4')">B3 P4 E4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Tune D#4 (from A#3):</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="58" data-iv="P4" data-label="A#3 P4 D#4" onclick="handleAction(this, 58, 'P4')">A#3 P4 D#4</button>
+            </div>
+            <p style="font-size:0.75rem; font-weight:bold; color:#555; text-align:left; margin-bottom:2px;">Verify M3 Progression:</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="55" data-iv="M3" data-label="G3 M3 B3" onclick="handleAction(this, 55, 'M3')">G3 M3 B3</button>
+              <button class="action-btn" data-midi="59" data-iv="M3" data-label="B3 M3 D#4" onclick="handleAction(this, 59, 'M3')">B3 M3 D#4</button>
             </div>
             <div class="guide-result guide-res-wait" id="guideRes8">Awaiting logs...</div>
           </div>
           <div class="guide-step">
             <h3>Step 9: Chromatic M3 Sweep</h3>
-            <div class="tuning-target">Targeting Refinements</div>
+            <div class="tuning-target">Goal: Ensure Steady M3 Acceleration</div>
+            <p style="font-size:0.7rem; color:#444; margin-bottom:8px;">Listen to every M3 chromatically. The beat speed should steadily increase. If it suddenly dips or spikes, you have an error.</p>
             <div class="action-row">
               <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button>
               <button class="action-btn" data-midi="54" data-iv="M3" data-label="F#3 M3 A#3" onclick="handleAction(this, 54, 'M3')">F#3 M3 A#3</button>
@@ -536,7 +574,7 @@
           </div>
           <div class="guide-step">
             <h3>Step 10: Chromatic M6 Sweep</h3>
-            <div class="tuning-target">Inside/Outside Architecture</div>
+            <div class="tuning-target">Goal: Ensure Steady M6 Acceleration</div>
             <div class="action-row">
               <button class="action-btn" data-midi="53" data-iv="M6" data-label="F3 M6 D4" onclick="handleAction(this, 53, 'M6')">F3 M6 D4</button>
               <button class="action-btn" data-midi="54" data-iv="M6" data-label="F#3 M6 D#4" onclick="handleAction(this, 54, 'M6')">F#3 M6 D#4</button>
@@ -547,8 +585,7 @@
           </div>
           <div class="guide-step">
             <h3>Step 11: Final P4/P5 Polish</h3>
-            <div class="tuning-target">Bulletproof The Temperament</div>
-            <p style="font-size:0.7rem; color:#666; margin-bottom:8px;">All P4s and P5s should beat slowly. Ensure all are logged to unlock the Grader.</p>
+            <div class="tuning-target">Goal: Ensure All 4ths and 5ths Beat Slowly</div>
             <div class="action-row">
               <button class="action-btn" data-midi="53" data-iv="P4" data-label="F3 P4 A#3" onclick="handleAction(this, 53, 'P4')">F3 P4 A#3</button>
               <button class="action-btn" data-midi="53" data-iv="P5" data-label="F3 P5 C4" onclick="handleAction(this, 53, 'P5')">F3 P5 C4</button>
@@ -569,8 +606,7 @@
           </div>
           <div class="guide-step" style="background: #fdfdfd; border-color: #000; padding-bottom:12px;">
             <h3 style="background:#000; color:#fff;">Step 12: Temperament Grader</h3>
-            <div class="tuning-target" style="margin-bottom:8px;">The Auto-Debugger</div>
-            <p style="font-size:0.7rem; color:#444; margin-bottom:12px;">Matrixes all M3s, M6s, 4ths and 5ths to find conflicting pieces of the puzzle and guides you to the safest compromises.</p>
+            <div class="tuning-target" style="margin-bottom:8px;">Goal: Let the app matrix your logged intervals. If the sequence is broken, it will map the knots and tell you exactly which pin to adjust to distribute the error.</div>
             <button class="ctrl-btn grade-btn" onclick="checkStep12()">ANALYZE TEMPERAMENT</button>
             <div id="guideRes12"></div>
           </div>
@@ -1408,9 +1444,53 @@ function checkStep2() { let m3 = getLogVal('M3', 'F3'), m10 = getLogVal('M10', '
 function checkStep3() { let m3 = getLogVal('M3', 'F3'); let res = $('guideRes3'); if(!m3) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; } let target = getConfig(53, 'M3').theoBeat; if (m3 >= target - 0.25 && m3 <= target + 0.25) { res.className = 'guide-result guide-res-pass'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>✔ Solid anchor.<br>${getPinButton(53, 'F3')}`; } else if (m3 < target - 0.25) { res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too slow. A3 is locked. Adjust F3 (FLATTEN).`; } else { res.className = 'guide-result guide-res-warn'; res.innerHTML = `F3-A3(M3): ${m3.toFixed(2)} bps<br>Too fast. A3 is locked. Adjust F3 (SHARPEN).`; } }
 function checkStep4() { let m3 = getLogVal('M3', 'C#3'), m10 = getLogVal('M10', 'C#3'); let res = $('guideRes4'); if(!m3 || !m10) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; } let diff = m10 - m3; let html = `M3: ${m3.toFixed(2)} | M10: ${m10.toFixed(2)}<br>`; if(diff >= -0.2 && diff <= 0.3) { res.className = 'guide-result guide-res-pass'; html += `✔ Solid 4:2 Octave!<br>${getPinButton(65, 'F4')}`; } else if (diff > 0.3) { res.className = 'guide-result guide-res-warn'; html += `Octave too wide. F3 is locked. Adjust F4 (FLATTEN).`; } else { res.className = 'guide-result guide-res-warn'; html += `Octave too narrow. F3 is locked. Adjust F4 (SHARPEN).`; } res.innerHTML = html; }
 function checkStep5() { let f3 = getLogVal('M3', 'F3'), a3 = getLogVal('M3', 'A3'), c4 = getLogVal('M3', 'C#4'); let res = $('guideRes5'); if(!f3 || !a3 || !c4) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Awaiting logs..."; return; } let r1 = ((a3 - f3) / f3) * 100, r2 = ((c4 - a3) / a3) * 100; let html = `F3&rarr;A3: +${r1.toFixed(0)}% | A3&rarr;C#4: +${r2.toFixed(0)}%<br>`; let target = 28, tol = 8; if (Math.abs(r2 - target) <= tol) { res.className = 'guide-result guide-res-pass'; html += `✔ PROPORTIONAL SPACING!<br>${getPinButton(61, 'C#4')}`; } else { res.className = 'guide-result guide-res-warn'; html += `Uneven Jump (+${r2.toFixed(0)}%). C#4 is likely ${r2 > target ? 'flat' : 'sharp'}.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeAndTarget(61, 'M3')\">FIX C#4 (M3)</button>`; } res.innerHTML = html; }
-function checkStep6() { let p5 = getLogVal('P5', 'F#3'), p4_f = getLogVal('P4', 'F3'), m3f = getLogVal('M3', 'F#3'); let res = $('guideRes6'); let html = ''; if (!p5 && !p4_f && !m3f) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place F#3 and A#3..."; return; } let err = false; if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">F#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust F#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F#3 P5: ${p5.toFixed(1)} ✔</span><br>`; } if (p4_f) { if (p4_f < 0.6 || p4_f > 1.4) { html += `<span style=\"color:#d00000;\">F3 P4 (A#3): ${p4_f.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust A#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F3 P4 (A#3): ${p4_f.toFixed(1)} ✔</span><br>`; } if(!m3f) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3 to check dip...</i>"; return; } let m3_prev = getLogVal('M3', 'F3'); if (m3_prev && m3f <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> F#3 M3 (${m3f.toFixed(1)}) is slower than F3 M3 (${m3_prev.toFixed(1)}). F#3 is FLAT or A#3 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(54, 'M3', [{m:54,i:'M3'}])\">FIX F#3 / A#3</button>`; return; } res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`; }
-function checkStep7() { let p5 = getLogVal('P5', 'G3'), p4_b = getLogVal('P4', 'F#3'), m3_b = getLogVal('M3', 'G3'); let res = $('guideRes7'); let html = ''; if (!p5 && !p4_b && !m3_b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G3 and B3..."; return; } let err = false; if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">G3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust G3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">G3 P5: ${p5.toFixed(1)} ✔</span><br>`; } if (p4_b) { if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style=\"color:#d00000;\">F#3 P4 (B3): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust B3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F#3 P4 (B3): ${p4_b.toFixed(1)} ✔</span><br>`; } if(!m3_b) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3 to check dip...</i>"; return; } let m3_prev = getLogVal('M3', 'F#3'); if (m3_prev && m3_b <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> G3 M3 (${m3_b.toFixed(1)}) is slower than F#3 M3 (${m3_prev.toFixed(1)}). G3 is FLAT or B3 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(55, 'M3', [{m:55,i:'M3'}])\">FIX G3 / B3</button>`; return; } res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`; }
-function checkStep8() { let p5 = getLogVal('P5', 'G#3'), p4_b = getLogVal('P4', 'G3'), m3_b = getLogVal('M3', 'G#3'); let res = $('guideRes8'); let html = ''; if (!p5 && !p4_b && !m3_b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G#3 and C4..."; return; } let err = false; if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">G#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust G#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">G#3 P5: ${p5.toFixed(1)} ✔</span><br>`; } if (p4_b) { if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style=\"color:#d00000;\">G3 P4 (C4): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust C4 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">G3 P4 (C4): ${p4_b.toFixed(1)} ✔</span><br>`; } if(!m3_b) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3 to check dip...</i>"; return; } let m3_prev = getLogVal('M3', 'G3'); if (m3_prev && m3_b <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> G#3 M3 (${m3_b.toFixed(1)}) is slower than G3 M3 (${m3_prev.toFixed(1)}). G#3 is FLAT or C4 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(56, 'M3', [{m:56,i:'M3'}])\">FIX G#3 / C4</button>`; return; } res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`; }
+function checkStep6() { 
+    let p5 = getLogVal('P5', 'F#3'), p4_f = getLogVal('P4', 'F3'), p4_a = getLogVal('P4', 'A3');
+    let m3_fs = getLogVal('M3', 'F#3'), m3_as = getLogVal('M3', 'A#3');
+    let res = $('guideRes6'); let html = '';
+    if (!p5 && !p4_f && !p4_a && !m3_fs && !m3_as) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place F#3, A#3, and D4..."; return; }
+    let err = false;
+    if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style="color:#d00000;">F#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br>`; err = true; } else html += `<span style="color:#006600;">F#3 P5: ${p5.toFixed(1)} ✔</span><br>`; }
+    if (p4_f) { if (p4_f < 0.6 || p4_f > 1.4) { html += `<span style="color:#d00000;">F3 P4 (A#3): ${p4_f.toFixed(1)} (Aim 0.6-1.2)</span><br>`; err = true; } else html += `<span style="color:#006600;">F3 P4 (A#3): ${p4_f.toFixed(1)} ✔</span><br>`; }
+    if (p4_a) { if (p4_a < 0.6 || p4_a > 1.4) { html += `<span style="color:#d00000;">A3 P4 (D4): ${p4_a.toFixed(1)} (Aim 0.6-1.2)</span><br>`; err = true; } else html += `<span style="color:#006600;">A3 P4 (D4): ${p4_a.toFixed(1)} ✔</span><br>`; }
+    
+    if(!m3_fs || !m3_as) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3s to check dip...</i>"; return; }
+    let m3_prev = getLogVal('M3', 'F3');
+    if (m3_prev && m3_fs <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> F#3 M3 (${m3_fs.toFixed(1)}) &le; F3 M3 (${m3_prev.toFixed(1)}). F#3 FLAT or A#3 SHARP.`; return; }
+    if (m3_as <= m3_fs) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> A#3 M3 (${m3_as.toFixed(1)}) &le; F#3 M3 (${m3_fs.toFixed(1)}). A#3 FLAT or D4 SHARP.`; return; }
+    
+    res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`;
+}
+function checkStep7() { 
+    let p4_gs = getLogVal('P4', 'G#3'), p5_f = getLogVal('P5', 'F3'), p5_a = getLogVal('P5', 'A3');
+    let m3_gs = getLogVal('M3', 'G#3'), m3_c = getLogVal('M3', 'C4');
+    let res = $('guideRes7'); let html = '';
+    if (!p4_gs && !p5_f && !p5_a && !m3_gs && !m3_c) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G#3, C4, and E4..."; return; }
+    let err = false;
+    if (p4_gs) { if (p4_gs < 0.6 || p4_gs > 1.4) { html += `<span style="color:#d00000;">G#3 P4: ${p4_gs.toFixed(1)} (Aim 0.6-1.2)</span><br>`; err = true; } else html += `<span style="color:#006600;">G#3 P4: ${p4_gs.toFixed(1)} ✔</span><br>`; }
+    if (p5_f) { if (p5_f < 0.3 || p5_f > 1.0) { html += `<span style="color:#d00000;">F3 P5 (C4): ${p5_f.toFixed(1)} (Aim 0.3-0.8)</span><br>`; err = true; } else html += `<span style="color:#006600;">F3 P5 (C4): ${p5_f.toFixed(1)} ✔</span><br>`; }
+    if (p5_a) { if (p5_a < 0.3 || p5_a > 1.0) { html += `<span style="color:#d00000;">A3 P5 (E4): ${p5_a.toFixed(1)} (Aim 0.3-0.8)</span><br>`; err = true; } else html += `<span style="color:#006600;">A3 P5 (E4): ${p5_a.toFixed(1)} ✔</span><br>`; }
+
+    if(!m3_gs || !m3_c) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3s to check dip...</i>"; return; }
+    if (m3_c <= m3_gs) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> C4 M3 (${m3_c.toFixed(1)}) &le; G#3 M3 (${m3_gs.toFixed(1)}). C4 FLAT or E4 SHARP.`; return; }
+
+    res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`;
+}
+function checkStep8() { 
+    let p4_g = getLogVal('P4', 'G3'), p4_b = getLogVal('P4', 'B3'), p4_as = getLogVal('P4', 'A#3');
+    let m3_g = getLogVal('M3', 'G3'), m3_b = getLogVal('M3', 'B3');
+    let res = $('guideRes8'); let html = '';
+    if (!p4_g && !p4_b && !p4_as && !m3_g && !m3_b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G3, B3, and D#4..."; return; }
+    let err = false;
+    if (p4_g) { if (p4_g < 0.6 || p4_g > 1.4) { html += `<span style="color:#d00000;">G3 P4 (C4): ${p4_g.toFixed(1)} (Aim 0.6-1.2)</span><br>`; err = true; } else html += `<span style="color:#006600;">G3 P4 (C4): ${p4_g.toFixed(1)} ✔</span><br>`; }
+    if (p4_b) { if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style="color:#d00000;">B3 P4 (E4): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br>`; err = true; } else html += `<span style="color:#006600;">B3 P4 (E4): ${p4_b.toFixed(1)} ✔</span><br>`; }
+    if (p4_as) { if (p4_as < 0.6 || p4_as > 1.4) { html += `<span style="color:#d00000;">A#3 P4 (D#4): ${p4_as.toFixed(1)} (Aim 0.6-1.2)</span><br>`; err = true; } else html += `<span style="color:#006600;">A#3 P4 (D#4): ${p4_as.toFixed(1)} ✔</span><br>`; }
+
+    if(!m3_g || !m3_b) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3s to check dip...</i>"; return; }
+    if (m3_b <= m3_g) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style="color:#d00000;">DIP DETECTED:</b> B3 M3 (${m3_b.toFixed(1)}) &le; G3 M3 (${m3_g.toFixed(1)}). B3 FLAT or D#4 SHARP.`; return; }
+
+    res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`;
+}
 function checkStep9() { let seq = [ {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, {m: 56, n: 'G#3'}, {m: 57, n: 'A3'}, {m: 58, n: 'A#3'}, {m: 59, n: 'B3'}, {m: 60, n: 'C4'}, {m: 61, n: 'C#4'} ]; let vals = []; let res = $('guideRes9'); for(let i=0; i<seq.length; i++) { let v = getLogVal('M3', seq[i].n); if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M3s...`; return; } vals.push({note: seq[i].n, midi: seq[i].m, val: v}); } let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`; let issues = []; for(let i=1; i<vals.length; i++) { let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100; if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); else if (pct < 3) issues.push({type: 'FLATLINE', low: vals[i-1], high: vals[i], pct: pct}); else if (pct > 9) issues.push({type: 'SPIKE', low: vals[i-1], high: vals[i], pct: pct}); } if(issues.length === 0) { res.className = 'guide-result guide-res-pass'; html += `✔ PROGRESSION EVEN!`; } else { res.className = 'guide-result guide-res-warn'; let issue = issues[0]; if (issue.type === 'DIP') { html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; } else { html += `<b style=\"font-size:0.8rem; color:#b38000;\">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; } html += `<span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger to diagnose exact pin.</span>`; } res.innerHTML = html; }
 function checkStep10() { let seq = [ {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, {m: 56, n: 'G#3'} ]; let vals = []; let res = $('guideRes10'); for(let i=0; i<seq.length; i++) { let v = getLogVal('M6', seq[i].n); if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M6s...`; return; } vals.push({note: seq[i].n, midi: seq[i].m, val: v}); } let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`; let issues = []; for(let i=1; i<vals.length; i++) { let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100; if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); else if (pct < 3) issues.push({type: 'FLATLINE', low: vals[i-1], high: vals[i], pct: pct}); else if (pct > 9) issues.push({type: 'SPIKE', low: vals[i-1], high: vals[i], pct: pct}); } if(issues.length === 0) { res.className = 'guide-result guide-res-pass'; html += `✔ M6 SWEEP EVEN!`; } else { res.className = 'guide-result guide-res-warn'; let issue = issues[0]; if (issue.type === 'DIP') { html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; } else { html += `<b style=\"font-size:0.8rem; color:#b38000;\">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; } html += `<span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger.</span>`; } res.innerHTML = html; }
 
@@ -1502,7 +1582,7 @@ function renderDynExpanders() {
       lBtnsU += `<button class="action-btn listen-btn ${recU==='OCT_63'?'recommended':''}" onclick="handleListen(this, ${mU-12}, 'OCT_63')">6:3</button>`;
   }
   if(mU-19 >= 21) lBtnsU += `<button class="action-btn listen-btn ${recU==='P12'?'recommended':''}" onclick="handleListen(this, ${mU-19}, 'P12')">P12</button>`;
-  if(mU-24 >= 21) lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mU-24}, 'OCT+2')">OCT+2</button>`;
+  if(mU-24 >= 21) lBtnsU += `<button class="action-btn listen-btn ${recU==='OCT+2'?'recommended':''}" onclick="handleListen(this, ${mU-24}, 'OCT+2')">OCT+2</button>`;
   $('dynUpListenBtns').innerHTML = lBtnsU;
 
   let proofsU = '', guardsU = '';
@@ -1538,7 +1618,7 @@ function renderDynExpanders() {
       lBtnsD += `<button class="action-btn listen-btn ${recD==='OCT_63'?'recommended':''}" onclick="handleListen(this, ${mD}, 'OCT_63')">6:3</button>`;
   }
   if(mD+19 <= 108) lBtnsD += `<button class="action-btn listen-btn ${recD==='P12'?'recommended':''}" onclick="handleListen(this, ${mD}, 'P12')">P12</button>`;
-  if(mD+24 <= 108) lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mD}, 'OCT+2')">OCT+2</button>`;
+  if(mD+24 <= 108) lBtnsD += `<button class="action-btn listen-btn ${recD==='OCT+2'?'recommended':''}" onclick="handleListen(this, ${mD}, 'OCT+2')">OCT+2</button>`;
   $('dynDownListenBtns').innerHTML = lBtnsD;
 
   let proofsD = '', guardsD = '';
