@@ -6,12 +6,44 @@
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dan's Tuner">
+<meta name="apple-mobile-web-app-title" content="DBSD Tuner">
 <link rel="manifest" href="manifest.json">
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='2' y='2' width='96' height='96' fill='%23ffffff' stroke='%23000000' stroke-width='4' rx='12'/%3E%3Cg transform='translate(50, 50) scale(0.55, 1.9)'%3E%3Ctext x='0' y='12' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-weight='900' font-style='italic' font-size='42' text-anchor='middle' fill='%23ff0000' stroke='%23000000' stroke-width='1.5'%3EDBSD%3C/text%3E%3C/g%3E%3C/svg%3E">
 
-<title>DAN'S BEAT SPEED DETECTOR - V55.1</title>
+<script>
+  (function() {
+      var canvas = document.createElement('canvas');
+      canvas.width = 180; canvas.height = 180;
+      var ctx = canvas.getContext('2d');
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 180, 180);
+      // Border
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#000000';
+      ctx.strokeRect(4, 4, 172, 172);
+      // Text logic (tall and skinny)
+      ctx.fillStyle = '#ff0000';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2.5;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'italic 900 65px -apple-system, BlinkMacSystemFont, sans-serif';
+      // Compress horizontally, stretch vertically
+      ctx.scale(0.65, 2.0);
+      ctx.strokeText('DBSD', 138, 48); // Scaled coordinates
+      ctx.fillText('DBSD', 138, 48);
+      
+      // Inject for iOS Add to Home Screen
+      var link = document.createElement('link');
+      link.rel = 'apple-touch-icon';
+      link.href = canvas.toDataURL('image/png');
+      document.head.appendChild(link);
+  })();
+</script>
+
+<title>DAN'S BEAT SPEED DETECTOR - V56.0</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -685,8 +717,7 @@ let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
-const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV55_1')) || {};
+const savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV56_0')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -768,7 +799,7 @@ window.startAudioEngine = async function() {
 }
 
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV55_1');
+  const saved = localStorage.getItem('danDetectorLogsV56_0');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -794,7 +825,7 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, lockedPins: lockedPins, ihPresetIndex: currentIHIndex, prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danDetectorLogsV55_1', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, lockedPins: lockedPins, ihPresetIndex: currentIHIndex, prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danDetectorLogsV56_0', JSON.stringify(state)); }
 loadPersistence();
 
 window.toggleFiles = function(show) { 
@@ -824,9 +855,9 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV55_1', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV56_0', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, lockedPins: lockedPins, ihPresetIndex: currentIHIndex, prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danTunerSavesV55_1', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, lockedPins: lockedPins, ihPresetIndex: currentIHIndex, prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danTunerSavesV56_0', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
         loggedIntervals = data.logs; 
@@ -839,7 +870,7 @@ window.loadTuning = function(key) {
         renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV55_1', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV56_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
 window.startNewTuning = function() { if(confirm('Clear all logs and resets?')) { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], '2x OCT': [], M17: [], P12: [] }; prLoggedOffsets = {}; prMode = 'MEASURE'; currentIHIndex = 0; lockedPins = {69: 0.0}; applyIHPreset(); toggleFiles(false); } }
 
 // IH CYCLE LOGIC
@@ -861,7 +892,7 @@ function applyIHPreset() {
     }
     
     updateDynamicGuideTexts();
-    renderDynExpanders(); // Refresh zones based on new IH size
+    renderDynExpanders(); 
     setTarget(lowerMidi, curIv);
 }
 
@@ -1453,10 +1484,10 @@ function renderDynExpanders() {
   let proofsU = '', guardsU = '';
   if (zoneU === 'U1') {
       proofsU += makeBtn(mU-16, 'M10') + makeBtn(mU-16, 'M3');
-      guardsU += makeBtn(mU-5, 'P4') + makeBtn(mU-7, 'P5');
+      guardsU += makeBtn(mU-4, 'M3') + makeBtn(mU-5, 'P4') + makeBtn(mU-7, 'P5');
   } else if (zoneU === 'U2') {
       proofsU += makeBtn(mU-4, 'M3') + makeBtn(mU-12, 'm3');
-      guardsU += makeBtn(mU-16, 'M10') + makeBtn(mU-28, 'M17');
+      guardsU += makeBtn(mU-9, 'M6') + makeBtn(mU-16, 'M10') + makeBtn(mU-28, 'M17');
   } else if (zoneU === 'U3') {
       proofsU += `<div style="font-size:0.75rem; text-align:center; padding:8px; color:#555;">Tune Pure 12th by ear. <br>Proof is resonance.</div>`;
       guardsU += makeBtn(mU-16, 'M10') + makeBtn(mU-28, 'M17');
@@ -1487,7 +1518,7 @@ function renderDynExpanders() {
   let proofsD = '', guardsD = '';
   if (zoneD === 'D1') {
       proofsD += makeBtn(mD, 'M3') + makeBtn(mD, 'M10');
-      guardsD += makeBtn(mD, 'P4') + makeBtn(mD, 'P5');
+      guardsD += makeBtn(mD, 'M6') + makeBtn(mD, 'P4') + makeBtn(mD, 'P5');
   } else if (zoneD === 'D2') {
       proofsD += makeBtn(mD, 'M6') + makeBtn(mD+9, 'm3');
       guardsD += makeBtn(mD, 'M10') + makeBtn(mD, 'M3');
@@ -1504,33 +1535,43 @@ function renderDynExpanders() {
 
 function updateDynAnalyzerUp(m, zone) {
     let res = $('dynUpAnalyzer');
-    let html = `<div class="grade-title">Smart Analyzer: ${noteName(m)} (${zone})</div>`;
+    let html = `<div class="grade-title">Analyzer: ${noteName(m)} (${zone})</div>`;
 
     if (zone === 'U1') {
-        let m10 = getLogVal('M10', noteName(m-16)); let m3 = getLogVal('M3', noteName(m-16));
+        let m10 = getLogVal('M10', noteName(m-16)); let m10_prev = getLogVal('M10', noteName(m-17));
+        let m3 = getLogVal('M3', noteName(m-16));
         let p4 = getLogVal('P4', noteName(m-5)); let p5 = getLogVal('P5', noteName(m-7));
 
-        if(!m10 || !m3) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (M3 and M10) to analyze.</div>`; return; }
+        if(!m10 || !m3) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (M3 & M10) to analyze.</div>`; return; }
 
         let diff = m10 - m3;
-        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ M10 > M3 (${diff.toFixed(1)}). Octave wide. <b style="color:#d00000;">FLATTEN</b> ${noteName(m)}.</div>`; }
-        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ M10 < M3 (${diff.toFixed(1)}). Octave narrow. <b style="color:#d00000;">SHARPEN</b> ${noteName(m)}.</div>`; }
+        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ 4:2 WIDE (M10 > M3). <b style="color:#d00000;">FLATTEN</b>.</div>`; }
+        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ 4:2 NARROW (M10 < M3). <b style="color:#d00000;">SHARPEN</b>.</div>`; }
         else {
-            if ((p4 && p4 > 1.5) || (p5 && p5 > 1.5)) html += `<div class="grade-desc">⚠️ 4:2 is Pure, but P4/P5 is howling. <b style="color:#d00000;">FLATTEN</b> slightly to compromise.</div>`;
-            else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ PERFECT FIT. All checks passed.</div>`;
+            if (m10 && m10_prev && m10 <= m10_prev) html += `<div class="grade-desc">⚠️ 4:2 PURE but M10 ≤ M10-1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else if ((p4 && p4 > 1.5) || (p5 && p5 > 1.5)) html += `<div class="grade-desc">⚠️ 4:2 PURE but P4/P5 HOWLING. <b style="color:#d00000;">FLATTEN</b>.</div>`;
+            else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ 4:2 PURE & ACCELERATING.</div>`;
         }
     } else if (zone === 'U2') {
         let m3_min = getLogVal('m3', noteName(m-12)); let m3_maj = getLogVal('M3', noteName(m-4));
-        if(!m3_min || !m3_maj) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (m3 and M3) to analyze.</div>`; return; }
+        let m17 = getLogVal('M17', noteName(m-28)); let m17_prev = getLogVal('M17', noteName(m-29));
+        let m10 = getLogVal('M10', noteName(m-16)); let m10_prev = getLogVal('M10', noteName(m-17));
+
+        if(!m3_min || !m3_maj) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (m3 & M3) to analyze.</div>`; return; }
 
         let diff = m3_maj - m3_min;
-        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ M3 > m3 (${diff.toFixed(1)}). Octave wide. <b style="color:#d00000;">FLATTEN</b> ${noteName(m)}.</div>`; }
-        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ M3 < m3 (${diff.toFixed(1)}). Octave narrow. <b style="color:#d00000;">SHARPEN</b> ${noteName(m)}.</div>`; }
-        else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ PERFECT 2:1 FIT.</div>`;
+        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ 2:1 WIDE (M3 > m3). <b style="color:#d00000;">FLATTEN</b>.</div>`; }
+        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ 2:1 NARROW (M3 < m3). <b style="color:#d00000;">SHARPEN</b>.</div>`; }
+        else {
+            if (m17 && m17_prev && m17 <= m17_prev) html += `<div class="grade-desc">⚠️ 2:1 PURE but M17 ≤ M17-1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else if (m10 && m10_prev && m10 <= m10_prev) html += `<div class="grade-desc">⚠️ 2:1 PURE but M10 ≤ M10-1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ 2:1 PURE & ACCELERATING.</div>`;
+        }
     } else {
-        let m17 = getLogVal('M17', noteName(m-28));
-        if (m17 && m17 > 15) html += `<div class="grade-desc">⚠️ M17 is spiking (${m17.toFixed(1)} bps). Stretch may be too wide. <b style="color:#d00000;">FLATTEN</b> slightly.</div>`;
-        else html += `<div class="grade-desc">Tune Pure 12th. Watch M17 guardrail for smooth acceleration.</div>`;
+        let m17 = getLogVal('M17', noteName(m-28)); let m17_prev = getLogVal('M17', noteName(m-29));
+        if (m17 && m17_prev && m17 <= m17_prev) html += `<div class="grade-desc">⚠️ M17 ≤ M17-1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+        else if (m17 && m17 > 15) html += `<div class="grade-desc">⚠️ M17 SPIKING (>15bps). <b style="color:#d00000;">FLATTEN</b>.</div>`;
+        else html += `<div class="grade-desc">Tune Pure 12th. Check M17 progression.</div>`;
     }
     html += getPinButton(m, noteName(m));
     res.innerHTML = html;
@@ -1538,30 +1579,40 @@ function updateDynAnalyzerUp(m, zone) {
 
 function updateDynAnalyzerDown(m, zone) {
     let res = $('dynDownAnalyzer');
-    let html = `<div class="grade-title">Smart Analyzer: ${noteName(m)} (${zone})</div>`;
+    let html = `<div class="grade-title">Analyzer: ${noteName(m)} (${zone})</div>`;
 
     if (zone === 'D1') {
         let m10 = getLogVal('M10', noteName(m)); let m3 = getLogVal('M3', noteName(m));
         let p4 = getLogVal('P4', noteName(m));
+        let m6 = getLogVal('M6', noteName(m)); let m6_up = getLogVal('M6', noteName(m+1));
+        let m10_up = getLogVal('M10', noteName(m+1));
 
-        if(!m10 || !m3) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (M3 and M10) to analyze.</div>`; return; }
+        if(!m10 || !m3) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (M3 & M10) to analyze.</div>`; return; }
 
         let diff = m10 - m3;
-        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ M10 > M3 (${diff.toFixed(1)}). Octave wide. <b style="color:#d00000;">SHARPEN</b> ${noteName(m)}.</div>`; }
-        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ M10 < M3 (${diff.toFixed(1)}). Octave narrow. <b style="color:#d00000;">FLATTEN</b> ${noteName(m)}.</div>`; }
+        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ 4:2 WIDE (M10 > M3). <b style="color:#d00000;">SHARPEN</b>.</div>`; }
+        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ 4:2 NARROW (M10 < M3). <b style="color:#d00000;">FLATTEN</b>.</div>`; }
         else {
-            if (p4 && p4 > 1.5) html += `<div class="grade-desc">⚠️ 4:2 is Pure, but P4 is howling. <b style="color:#d00000;">SHARPEN</b> slightly to compromise.</div>`;
-            else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ PERFECT FIT.</div>`;
+            if (m10 && m10_up && m10 >= m10_up) html += `<div class="grade-desc">⚠️ 4:2 PURE but M10 ≥ M10+1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else if (m6 && m6_up && m6 >= m6_up) html += `<div class="grade-desc">⚠️ 4:2 PURE but M6 ≥ M6+1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else if (p4 && p4 > 1.5) html += `<div class="grade-desc">⚠️ 4:2 PURE but P4 HOWLING. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ 4:2 PURE & DECELERATING.</div>`;
         }
     } else {
         let m6 = getLogVal('M6', noteName(m)); let m3_min = getLogVal('m3', noteName(m+9));
+        let m10 = getLogVal('M10', noteName(m)); let m10_up = getLogVal('M10', noteName(m+1));
+        let m6_up = getLogVal('M6', noteName(m+1));
 
-        if(!m6 || !m3_min) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (M6 and m3) to analyze.</div>`; return; }
+        if(!m6 || !m3_min) { res.innerHTML = html + `<div class="grade-desc">Log Proofs (M6 & m3) to analyze.</div>`; return; }
 
         let diff = m6 - m3_min;
-        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ M6 > m3 (${diff.toFixed(1)}). Octave wide. <b style="color:#d00000;">SHARPEN</b> ${noteName(m)}.</div>`; }
-        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ M6 < m3 (${diff.toFixed(1)}). Octave narrow. <b style="color:#d00000;">FLATTEN</b> ${noteName(m)}.</div>`; }
-        else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ PERFECT 6:3 FIT.</div>`;
+        if (diff > 0.3) { html += `<div class="grade-desc">⚠️ 6:3 WIDE (M6 > m3). <b style="color:#d00000;">SHARPEN</b>.</div>`; }
+        else if (diff < -0.3) { html += `<div class="grade-desc">⚠️ 6:3 NARROW (M6 < m3). <b style="color:#d00000;">FLATTEN</b>.</div>`; }
+        else {
+            if (m10 && m10_up && m10 >= m10_up) html += `<div class="grade-desc">⚠️ 6:3 PURE but M10 ≥ M10+1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else if (m6 && m6_up && m6 >= m6_up) html += `<div class="grade-desc">⚠️ 6:3 PURE but M6 ≥ M6+1. <b style="color:#d00000;">SHARPEN</b>.</div>`;
+            else html += `<div class="grade-desc" style="color:#00aa00; font-weight:bold;">✔ 6:3 PURE & DECELERATING.</div>`;
+        }
     }
     html += getPinButton(m, noteName(m));
     res.innerHTML = html;
@@ -1617,7 +1668,6 @@ function renderLoop(ts) {
       if (captureState === 'WAIT' && now - captureStartTime > 800) { captureState = 'CAPTURING'; $('captureStateLbl').textContent = 'RECORDING...'; $('captureStateLbl').style.color = '#d00000'; }
       if (captureState === 'CAPTURING') {
           
-          // DO NOT LOG BEATS FOR OCTAVES. JUST LISTEN.
           if (curIv.includes('OCT') || curIv === 'P12') {
               avgEl.textContent = 'PURE';
               if (snr > threshold.snr && envelopeRunning > threshold.env) {
