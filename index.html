@@ -9,31 +9,28 @@
 <meta name="apple-mobile-web-app-title" content="DBSD Tuner">
 <link rel="manifest" href="manifest.json">
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='2' y='2' width='96' height='96' fill='%23ffffff' stroke='%23000000' stroke-width='4' rx='12'/%3E%3Cg transform='translate(50, 50) scale(0.55, 1.9)'%3E%3Ctext x='0' y='12' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-weight='900' font-style='italic' font-size='42' text-anchor='middle' fill='%23ff0000' stroke='%23000000' stroke-width='1.5'%3EDBSD%3C/text%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='0' y='0' width='100' height='100' fill='%23ffffff'/%3E%3Cg transform='translate(50, 50) scale(0.65, 2.2)'%3E%3Ctext x='0' y='4' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-weight='900' font-style='italic' font-size='45' text-anchor='middle' fill='%23ff0000' stroke='%23000000' stroke-width='2'%3EDBSD%3C/text%3E%3C/g%3E%3C/svg%3E">
 
 <script>
   (function() {
+      // iOS Homescreen Icon Generator - Max size, no borders
       var canvas = document.createElement('canvas');
-      canvas.width = 180; canvas.height = 180;
+      canvas.width = 192; canvas.height = 192;
       var ctx = canvas.getContext('2d');
       // Background
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 180, 180);
-      // Border
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = '#000000';
-      ctx.strokeRect(4, 4, 172, 172);
-      // Text logic (tall and skinny)
+      ctx.fillRect(0, 0, 192, 192);
+      // Text logic (tall and skinny, max size)
       ctx.fillStyle = '#ff0000';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 4;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = 'italic 900 65px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.font = 'italic 900 80px -apple-system, BlinkMacSystemFont, sans-serif';
       // Compress horizontally, stretch vertically
-      ctx.scale(0.65, 2.0);
-      ctx.strokeText('DBSD', 138, 48); // Scaled coordinates
-      ctx.fillText('DBSD', 138, 48);
+      ctx.scale(0.65, 2.2);
+      ctx.strokeText('DBSD', 147, 43); // Scaled coordinates to hit center
+      ctx.fillText('DBSD', 147, 43);
       
       // Inject for iOS Add to Home Screen
       var link = document.createElement('link');
@@ -43,7 +40,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V56.0</title>
+<title>DAN'S BEAT SPEED DETECTOR - V56.1</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -717,7 +714,8 @@ let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
-const savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV56_0')) || {};
+const avgEl = $('avgVal'), sigLight = $('signalLight'); // RESTORED! Fixes the crashes!
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV56_0')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -806,6 +804,7 @@ function loadPersistence() {
       if (parsed.logs) {
           // Merge safely to prevent overwriting missing keys with undefined
           Object.keys(parsed.logs).forEach(k => {
+              if(!loggedIntervals[k]) loggedIntervals[k] = [];
               loggedIntervals[k] = parsed.logs[k];
           });
           
