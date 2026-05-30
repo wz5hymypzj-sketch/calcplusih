@@ -731,8 +731,7 @@ let prCurrentMidi = 21; // start at A0
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
-const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV50')) || {};
+const savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV50')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -784,7 +783,10 @@ window.startAudioEngine = async function() {
         if (audioCtx.state === 'suspended') await audioCtx.resume();
         const src = audioCtx.createMediaStreamSource(micStream);
         
-        analyserFull = audioCtx.createAnalyser(); analyserFull.fftSize = 16384; analyserFull.smoothingTimeConstant = 0.5; // High res for FFT Buckets
+        analyserFull = audioCtx.createAnalyser(); 
+        analyserFull.fftSize = 32768; // Doubled resolution for pinpoint accuracy
+        analyserFull.smoothingTimeConstant = 0.1; // Dropped from 0.5 to stop the hammer thud from blurring the math
+        
         tunerFilter = audioCtx.createBiquadFilter(); tunerFilter.type = 'bandpass'; tunerFilter.frequency.value = 440.0; tunerFilter.Q.value = 3.0; 
         analyserTuner = audioCtx.createAnalyser(); analyserTuner.fftSize = 4096;
         src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
@@ -1070,8 +1072,10 @@ window.sampleIH = function(midi) {
     isIHScanning = true;
     ihScanMidi = midi;
     
-    // Adaptive Partials: 1/2 for High Treble to solve F5/C6 missing partials
-    if (midi <= 36) { ihPartials = [4, 8]; } else if (midi <= 72) { ihPartials = [2, 4]; } else { ihPartials = [1, 2]; }
+    // Adaptive Partials: Wider gaps for more robust math. Fundamentals are strong in the mid-range.
+    if (midi <= 36) { ihPartials = [4, 8]; } 
+    else if (midi <= 65) { ihPartials = [1, 4]; } // Changed from [2,4] to [1,4] for much safer math
+    else { ihPartials = [1, 2]; }
     
     let f0 = 440 * Math.pow(2, (midi - 69) / 12);
     let bucketA = f0 * ihPartials[0];
@@ -1079,33 +1083,48 @@ window.sampleIH = function(midi) {
     
     let hasCaptured = false;
     let scanStartTime = performance.now();
+    let localLastEnv = 0; // Baseline tracker
 
     const checkStrike = () => {
         if (!isIHScanning || hasCaptured) return;
         
         let now = performance.now();
-        // 500ms DEAF PERIOD to ignore finger tap noise on glass
+        let currentEnv = envelopeRunning;
+        
+        // 500ms DEAF PERIOD to ignore finger tap noise on the glass screen
         if (now - scanStartTime < 500) {
+            localLastEnv = currentEnv; // Keep updating baseline while deaf
             requestAnimationFrame(checkStrike);
             return;
         }
         
-        if (envelopeRunning > 0.005) {
+        // TRANSIENT DETECTION: Must jump 1.8x over recent baseline and be sufficiently loud
+        if (currentEnv > 0.015 && currentEnv > localLastEnv * 1.8) {
             hasCaptured = true;
             $('ihResult').innerHTML = `Strike detected! Analyzing spectrum...`;
             
             setTimeout(() => {
                 analyserFull.getFloatFrequencyData(ihData1);
                 
-                let fA_actual = getPeakInBucket(ihData1, audioCtx.sampleRate, bucketA, 0.10);
-                let fB_actual = getPeakInBucket(ihData1, audioCtx.sampleRate, bucketB, 0.10);
+                // Tightened tolerance from 10% to 6% so it doesn't grab adjacent harmonics by mistake
+                let fA_actual = getPeakInBucket(ihData1, audioCtx.sampleRate, bucketA, 0.06);
+                let fB_actual = getPeakInBucket(ihData1, audioCtx.sampleRate, bucketB, 0.06);
                 
                 if (fA_actual && fB_actual) {
                     let n = ihPartials[0], m = ihPartials[1];
                     let ratio = (fB_actual / m) / (fA_actual / n);
                     let R2 = ratio * ratio;
                     let B = (R2 - 1) / (m*m - R2 * n*n); 
-                    if (B < 0) B = 0; 
+                    
+                    // Prevent impossible negative B values (caused by bad FFT reads) from breaking the curve
+                    if (B <= 0) {
+                        $('ihResult').className = 'guide-result guide-res-warn'; 
+                        $('ihResult').innerHTML = `Negative stretch detected (noise).<br>Try striking firmer.`;
+                        scanStartTime = performance.now(); // Reset deaf period
+                        hasCaptured = false; 
+                        requestAnimationFrame(checkStrike); // Resume hunting!
+                        return;
+                    }
                     
                     ihProfile[midi] = B;
                     
@@ -1115,16 +1134,18 @@ window.sampleIH = function(midi) {
                     $('ihResult').className = 'guide-result guide-res-pass'; 
                     $('ihResult').innerHTML = `<b>${noteName(midi)} stretch point & pitch logged!</b>`; 
                     $('ihBtn-'+midi).classList.add('logged'); 
+                    isIHScanning = false; // Only stop scanning on success
                     checkAllIHSampled();
                 } else {
                     $('ihResult').className = 'guide-result guide-res-warn'; 
                     $('ihResult').innerHTML = `Could not find clear partials.<br>Try striking firmer.`;
                     scanStartTime = performance.now(); // Reset deaf period
                     hasCaptured = false; 
+                    requestAnimationFrame(checkStrike); // Resume hunting if it failed!
                 }
-                isIHScanning = false;
-            }, 300); 
+            }, 350); // Give it 350ms for the chaotic attack noise to settle into a clean tone
         } else {
+            localLastEnv = currentEnv; // Update baseline
             if (isIHScanning) requestAnimationFrame(checkStrike);
         }
     };
