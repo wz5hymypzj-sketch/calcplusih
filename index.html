@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V48</title>
+<title>DAN'S BEAT SPEED DETECTOR - V49</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -56,16 +56,24 @@
   }
   .overlay-title { margin-bottom: 15px; text-transform: uppercase; font-style: italic; font-weight: 900; border-bottom: 3px solid #000; padding-bottom: 5px; }
 
-  /* MAIN MENU */
-  #mainMenuOverlay .menu-btn {
-      width: 100%; padding: 18px; margin-bottom: 12px; font-size: 1.3rem; font-weight: 900;
-      border: 3px solid #000; border-radius: 8px; background: #fff; cursor: pointer;
-      text-transform: uppercase; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      box-shadow: 0 4px 0 #000; transition: transform 0.1s, box-shadow 0.1s;
+  /* V49 FLOATING DROPDOWN MENU */
+  #menuGlassPane {
+      display: none; position: fixed; inset: 0; z-index: 8999; background: transparent;
   }
-  #mainMenuOverlay .menu-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #000; background: #f0f0f0; }
+  #dropdownMenu {
+      display: none; position: absolute; top: 56px; left: 8px; right: 8px; z-index: 9000;
+      background: #ffffff; border: 3px solid #000; border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      flex-direction: column; padding: 8px; gap: 6px;
+  }
+  .menu-btn {
+      width: 100%; padding: 14px; font-size: 1.1rem; font-weight: 900;
+      border: 2px solid #000; border-radius: 6px; background: #fff; cursor: pointer;
+      text-transform: uppercase; display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s, color 0.1s;
+  }
+  .menu-btn:active { background: #000; color: #fff; }
 
-  .header { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 6px; flex-shrink: 0; width: 100%; }
+  .header { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 6px; flex-shrink: 0; width: 100%; position: relative;}
   h1 { 
     color: #ff0000; font-size: clamp(1.2rem, 5.5vw, 2rem); white-space: normal; font-weight: 900; 
     font-style: italic; text-align: center; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; width: 100%; margin-bottom: 4px;
@@ -253,17 +261,13 @@
   <button id="bigStartBtn">ENTER</button>
 </div>
 
-<div id="mainMenuOverlay" class="overlay-panel">
-    <h2 class="overlay-title">Workspace Selection</h2>
-    <p style="font-size:0.8rem; color:#555; margin-bottom:15px; text-align:center;">Select your active module.</p>
-    
+<div id="menuGlassPane" onclick="toggleMenu(false)"></div>
+<div id="dropdownMenu">
+    <button class="menu-btn" onclick="selectMode('LOGS')">LOGS</button>
     <button class="menu-btn" onclick="selectMode('GUIDE')">GUIDE</button>
-    <button class="menu-btn" onclick="selectMode('DET')">LOGS</button>
-    <button class="menu-btn" onclick="selectMode('PRAISE')">PITCH RAISE</button>
     <button class="menu-btn" onclick="selectMode('IH')">STRETCH</button>
-    <button class="menu-btn" onclick="toggleFiles(true)" style="background:#e0f0ff; border-color:#0066ff; color:#0044bb;">FILES</button>
-
-    <button class="ctrl-btn" onclick="toggleMenu(false)" style="padding:16px; font-size:1.2rem; border-width:3px; margin-top:auto; box-shadow: 0 4px 0 #000; font-weight:900;">CLOSE MENU</button>
+    <button class="menu-btn" onclick="selectMode('PRAISE')">PITCH RAISE</button>
+    <button class="menu-btn" onclick="toggleFiles(true)" style="background:#e0f0ff; border-color:#0066ff; color:#0044bb;">SAVE / LOAD</button>
 </div>
 
 <div id="filesOverlay" class="overlay-panel">
@@ -288,7 +292,7 @@
      <button class="ctrl-btn" onclick="toggleImportUI()" style="flex:1; padding:12px; font-size:0.9rem;" id="btnShowImport">IMPORT TEXT</button>
    </div>
 
-   <button class="ctrl-btn" onclick="toggleFiles(false)" style="padding:16px; font-size:1.2rem; border-width:3px; box-shadow: 0 4px 0 #000; font-weight:900; flex-shrink:0;">BACK TO MENU</button>
+   <button class="ctrl-btn" onclick="toggleFiles(false)" style="padding:16px; font-size:1.2rem; border-width:3px; box-shadow: 0 4px 0 #000; font-weight:900; flex-shrink:0;">CLOSE</button>
 </div>
 
 
@@ -348,7 +352,7 @@
   <div class="right-panel">
     <div class="workspace">
       
-      <div id="ws-DET" class="workspace-layer">
+      <div id="ws-LOGS" class="workspace-layer">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 4px 8px;">
           <span style="font-size: 0.8rem; font-weight: bold; text-transform: uppercase; color: #333;">Progression Log</span>
           <button class="ctrl-btn" id="clearBtn">Clear Data</button>
@@ -407,25 +411,27 @@
           <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Pitch Raise Suite</h3>
 
           <div id="prLockScreen" style="text-align:center; padding: 20px; color: #666;">
-              <p style="font-weight:bold; margin-bottom:10px;">PITCH RAISE LOCKED</p>
-              <p style="font-size:0.75rem;">Complete the Stretch Curve Profiler first. The app will automatically measure the piano's flatness while you sample IH.</p>
+              <p style="font-weight:bold; margin-bottom:10px; font-size:1.2rem; color:#d00000;">PITCH RAISE LOCKED</p>
+              <p style="font-size:0.85rem; line-height:1.4;">Complete the Stretch Curve Profiler first. The app secretly measures the piano's flatness while you sample IH and auto-calculates the perfect overpull matrix.</p>
           </div>
 
           <div id="prActiveScreen" style="display:none; flex-direction:column; align-items:center;">
               <p style="font-size:0.7rem; color:#666; margin-bottom:8px; text-align:center; font-weight:bold;">MUTE OUTSIDES. TUNE CENTER STRING TO 0.0c.</p>
               
-              <div class="dynamic-controls" style="width:100%; margin-bottom: 12px;">
+              <div class="dynamic-controls" style="width:100%; margin-bottom: 12px; background:#f0f0f0; border:2px solid #000;">
                   <button class="dynamic-btn" onclick="changePRNote(-1)">-</button>
-                  <span class="dynamic-target" id="prSweepNote" style="font-size:2rem; min-width:60px;">A0</span>
+                  <span class="dynamic-target" id="prSweepNote" style="font-size:2.5rem; min-width:80px; color:#000;">A0</span>
                   <button class="dynamic-btn" onclick="changePRNote(1)">+</button>
               </div>
               
-              <div style="font-size:0.85rem; font-weight:700; color:#555; margin-bottom:12px;" id="prOverpullInfo">Overpull: +0.0c</div>
+              <div style="font-size:0.85rem; font-weight:900; color:#0066ff; margin-bottom:12px; background:#e0f0ff; padding:4px 8px; border-radius:4px; border:1px solid #0066ff;" id="prOverpullInfo">Overpull: +0.0c</div>
               
-              <div class="readout-box" style="width:100%; margin-bottom:12px;">
-                  <div class="val-large" id="prSweepCents" style="font-size:3.5rem;">---</div>
+              <div class="readout-box" style="width:100%; margin-bottom:12px; border-width:4px;">
+                  <div class="val-large" id="prSweepCents" style="font-size:4.5rem; letter-spacing: -2px;">---</div>
                   <div class="val-lbl" id="prSweepTargetF">Target: --- Hz</div>
               </div>
+              
+              <button class="ctrl-btn" onclick="changePRNote(12)" style="width:100%; padding:12px; font-size:0.9rem;">+ OCTAVE JUMP</button>
           </div>
       </div>
 
@@ -659,18 +665,23 @@ async function getBuiltInMicConstraints() {
 let mainMode = 'GUIDE'; 
 
 window.toggleMenu = function(show) {
-    if(show) { $('mainMenuOverlay').style.display = 'flex'; } 
-    else { $('mainMenuOverlay').style.display = 'none'; }
+    if(show) { 
+        $('menuGlassPane').style.display = 'block';
+        $('dropdownMenu').style.display = 'flex'; 
+    } else { 
+        $('menuGlassPane').style.display = 'none';
+        $('dropdownMenu').style.display = 'none'; 
+    }
 }
 
 window.selectMode = function(mode) {
     mainMode = mode;
     document.querySelectorAll('.workspace-layer').forEach(l => l.style.display = 'none');
-    if(mode === 'GUIDE' || mode === 'DET' || mode === 'IH' || mode === 'PRAISE') {
+    if(mode === 'GUIDE' || mode === 'LOGS' || mode === 'IH' || mode === 'PRAISE') {
         $('ws-' + mode).style.display = (mode === 'GUIDE' ? 'flex' : 'block');
     }
+    
     let lbl = mode;
-    if(mode === 'DET') lbl = 'LOGS';
     if(mode === 'IH') lbl = 'STRETCH';
     if(mode === 'PRAISE') lbl = 'P.RAISE';
     $('activeModeLbl').textContent = lbl;
@@ -699,13 +710,10 @@ let decaySlope = 0;
 let loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] };
 
 // Inharmonicity Two-Stage variables
-let ihFilter1 = null, ihFilter4 = null, ihAnalyser1 = null, ihAnalyser4 = null;
-let ihData1 = null, ihData4 = null;
+let ihData1 = null; 
 let ihPartials = [1, 4];
-let isIHScanning = false, ihScanMidi = -1, ihPitches1 = [], ihPitches4 = [], ihRafId = null;
+let isIHScanning = false, ihScanMidi = -1, ihRafId = null;
 let ihProfile = {}; let smoothedIH = new Float32Array(109); let useCustomIH = false;
-let ihStage = 'IDLE'; 
-let prePitches = [];
 
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
@@ -721,7 +729,7 @@ let prCurrentMidi = 21; // start at A0
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV48')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV49')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -773,15 +781,12 @@ window.startAudioEngine = async function() {
         if (audioCtx.state === 'suspended') await audioCtx.resume();
         const src = audioCtx.createMediaStreamSource(micStream);
         
-        analyserFull = audioCtx.createAnalyser(); analyserFull.fftSize = 4096; analyserFull.smoothingTimeConstant = 0.7;
+        analyserFull = audioCtx.createAnalyser(); analyserFull.fftSize = 16384; analyserFull.smoothingTimeConstant = 0.5; // High res for FFT Buckets
         tunerFilter = audioCtx.createBiquadFilter(); tunerFilter.type = 'bandpass'; tunerFilter.frequency.value = 440.0; tunerFilter.Q.value = 3.0; 
         analyserTuner = audioCtx.createAnalyser(); analyserTuner.fftSize = 4096;
         src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
-
-        ihFilter1 = audioCtx.createBiquadFilter(); ihFilter1.type = 'bandpass'; ihFilter1.Q.value = 5.0; ihAnalyser1 = audioCtx.createAnalyser(); ihAnalyser1.fftSize = 4096; src.connect(ihFilter1); ihFilter1.connect(ihAnalyser1);
-        ihFilter4 = audioCtx.createBiquadFilter(); ihFilter4.type = 'bandpass'; ihFilter4.Q.value = 5.0; ihAnalyser4 = audioCtx.createAnalyser(); ihAnalyser4.fftSize = 4096; src.connect(ihFilter4); ihFilter4.connect(ihAnalyser4);
         
-        ihData1 = new Float32Array(ihAnalyser1.fftSize); ihData4 = new Float32Array(ihAnalyser4.fftSize);
+        ihData1 = new Float32Array(analyserFull.frequencyBinCount);
 
         const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
         gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
@@ -803,7 +808,7 @@ window.startAudioEngine = async function() {
 
 // PERSISTENCE & FILE SYSTEM
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV48');
+  const saved = localStorage.getItem('danDetectorLogsV49');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -825,7 +830,7 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV48', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV49', JSON.stringify(state)); }
 loadPersistence();
 
 window.toggleFiles = function(show) { let overlay = $('filesOverlay'); if(show) { overlay.style.display = 'flex'; renderSavedFiles(); } else { overlay.style.display = 'none'; toggleMenu(true); } }
@@ -844,9 +849,9 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV48', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV48', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
         loggedIntervals = data.logs; ihProfile = data.ih || {}; useCustomIH = data.customIH || false; if(data.curve) tuningCurve = new Float32Array(data.curve); if(data.prOffsets) prOffsets = data.prOffsets; if(data.prOverpull) prOverpullArray = new Float32Array(data.prOverpull); savePersistence();
@@ -854,7 +859,7 @@ window.loadTuning = function(key) {
         renderLogTable(); updateGuide(); toggleFiles(false); toggleMenu(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV48', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); renderSavedFiles(); } }
 window.startNewTuning = function() { if(confirm('Clear all logs?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; resetStretchCurve(); toggleFiles(false); toggleMenu(false); } }
 
 // PITCH RAISE UI LOGIC
@@ -1030,27 +1035,98 @@ window.lockEarOverride = function() { if (smoothedPitch > 0) { tuningCurve[lower
 window.wipeAndTarget = function(midi, ivKey) { deleteEntry(ivKey, midi); setTarget(midi, ivKey); }
 window.wipeCluster = function(targetMidi, targetIv, wipeArray) { wipeArray.forEach(item => { if (loggedIntervals[item.i]) { loggedIntervals[item.i] = loggedIntervals[item.i].filter(e => e.midi !== item.m); } }); savePersistence(); renderLogTable(); updateGuide(); updateDynRes(); setTarget(targetMidi, targetIv); }
 
-
-// --- TWO-STAGE INHARMONICITY SCANNER ---
-function runIHScanner() {
-    if (!isIHScanning || !isRunning || micPaused) return;
+// --- V49 FFT PEAK HUNTER FOR IH ---
+function getPeakInBucket(dataArray, sampleRate, targetFreq, tolerancePct) {
+    let binSize = sampleRate / analyserFull.fftSize;
+    let minFreq = targetFreq * (1 - tolerancePct);
+    let maxFreq = targetFreq * (1 + tolerancePct);
+    let minBin = Math.floor(minFreq / binSize);
+    let maxBin = Math.ceil(maxFreq / binSize);
     
-    if (ihStage === 'PRE') {
-        if(tunerDataArray && analyserTuner) {
-            analyserTuner.getFloatTimeDomainData(tunerDataArray);
-            let rawPitch = getPitchYin(tunerDataArray, audioCtx.sampleRate);
-            let f0 = 440 * Math.pow(2, (ihScanMidi - 69) / 12);
-            if (rawPitch > f0 * 0.80 && rawPitch < f0 * 1.20) prePitches.push(rawPitch);
-        }
-    } else if (ihStage === 'CAPTURE') {
-        ihAnalyser1.getFloatTimeDomainData(ihData1); ihAnalyser4.getFloatTimeDomainData(ihData4);
-        let p1 = getPitchYin(ihData1, audioCtx.sampleRate), p4 = getPitchYin(ihData4, audioCtx.sampleRate);
-        let measuredF = prePitches.length > 0 ? prePitches[Math.floor(prePitches.length/2)] : 440 * Math.pow(2, (ihScanMidi - 69) / 12);
-        let fA = measuredF * ihPartials[0], fB = measuredF * ihPartials[1];
-        if (p1 > fA * 0.9 && p1 < fA * 1.1) ihPitches1.push(p1); 
-        if (p4 > fB * 0.9 && p4 < fB * 1.1) ihPitches4.push(p4);
+    let maxVal = -Infinity;
+    let maxBinIdx = -1;
+    for (let i = minBin; i <= maxBin; i++) {
+        if (dataArray[i] > maxVal) { maxVal = dataArray[i]; maxBinIdx = i; }
     }
-    ihRafId = requestAnimationFrame(runIHScanner);
+    if (maxBinIdx === -1 || maxVal < -80) return null; // Too quiet
+    
+    // Parabolic Interpolation for exact frequency
+    let alpha = dataArray[maxBinIdx - 1];
+    let beta = dataArray[maxBinIdx];
+    let gamma = dataArray[maxBinIdx + 1];
+    let p = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma);
+    let exactFreq = (maxBinIdx + p) * binSize;
+    
+    return exactFreq;
+}
+
+window.sampleIH = function(midi) {
+    if (!analyserFull) return;
+    
+    // Reset state
+    $('ihResult').className = 'guide-result guide-res-wait'; 
+    $('ihResult').innerHTML = `Waiting for strike on ${noteName(midi)}...`;
+    isIHScanning = true;
+    ihScanMidi = midi;
+    
+    // Adaptive Partials
+    if (midi <= 36) { ihPartials = [4, 8]; } else if (midi <= 48) { ihPartials = [2, 4]; } else { ihPartials = [1, 4]; }
+    
+    let f0 = 440 * Math.pow(2, (midi - 69) / 12);
+    let bucketA = f0 * ihPartials[0];
+    let bucketB = f0 * ihPartials[1];
+    
+    let captureTimer = null;
+    let hasCaptured = false;
+
+    // We will hook into the main renderLoop's volume envelope. 
+    // When envelope spikes, we wait 300ms, snap the FFT, and calculate.
+    
+    const checkStrike = () => {
+        if (!isIHScanning || hasCaptured) return;
+        
+        // Wait for volume spike (handled by renderLoop's envelopeRunning)
+        if (envelopeRunning > 0.005) {
+            hasCaptured = true;
+            $('ihResult').innerHTML = `Strike detected! Analyzing spectrum...`;
+            
+            setTimeout(() => {
+                analyserFull.getFloatFrequencyData(ihData1);
+                
+                // We use a wide 10% bucket to catch flat/sharp pianos easily
+                let fA_actual = getPeakInBucket(ihData1, audioCtx.sampleRate, bucketA, 0.10);
+                let fB_actual = getPeakInBucket(ihData1, audioCtx.sampleRate, bucketB, 0.10);
+                
+                if (fA_actual && fB_actual) {
+                    // Universal Inharmonicity Algebraic Formula
+                    let n = ihPartials[0], m = ihPartials[1];
+                    let ratio = (fB_actual / m) / (fA_actual / n);
+                    let R2 = ratio * ratio;
+                    let B = (R2 - 1) / (m*m - R2 * n*n); 
+                    if (B < 0) B = 0; 
+                    
+                    ihProfile[midi] = B;
+                    
+                    // Secret Pitch Raise Pre-measure (using the lower partial)
+                    let centsFlat = 1200 * Math.log2(fA_actual / bucketA);
+                    prOffsets[midi] = centsFlat;
+                    
+                    $('ihResult').className = 'guide-result guide-res-pass'; 
+                    $('ihResult').innerHTML = `<b>${noteName(midi)} stretch point & pitch logged!</b>`; 
+                    $('ihBtn-'+midi).classList.add('logged'); 
+                    checkAllIHSampled();
+                } else {
+                    $('ihResult').className = 'guide-result guide-res-warn'; 
+                    $('ihResult').innerHTML = `Could not find clear partials.<br>Try striking firmer.`;
+                    hasCaptured = false; // Reset to listen again
+                }
+                isIHScanning = false;
+            }, 300); // 300ms delay after strike
+        } else {
+            if (isIHScanning) requestAnimationFrame(checkStrike);
+        }
+    };
+    checkStrike();
 }
 
 function checkAllIHSampled() { let required = [24, 29, 36, 41, 48, 53, 60, 65, 72, 77, 84]; let allGood = required.every(m => ihProfile[m] !== undefined); if (allGood) { $('btnCalculateIH').disabled = false; $('btnCalculateIH').style.background = '#00aa00'; $('btnCalculateIH').style.borderColor = '#00aa00'; } }
@@ -1086,47 +1162,6 @@ window.resetStretchCurve = function() {
     $('stretchClassification').innerHTML = ""; $('ihResult').className = 'guide-result guide-res-wait'; $('ihResult').innerHTML = 'Select a note to sample...';
     let btn = $('btnCalculateIH'); btn.innerHTML = 'CALCULATE TARGETS'; btn.disabled = true; btn.style.background = '#000'; btn.style.color = '#fff'; document.querySelectorAll('#ihBtns .action-btn').forEach(b => b.classList.remove('logged'));
     updateDynamicGuideTexts(); setTarget(lowerMidi, curIv); savePersistence();
-}
-
-window.sampleIH = function(midi) {
-    if(!ihFilter1 || !ihFilter4) return; ihScanMidi = midi; let f0 = 440 * Math.pow(2, (midi - 69) / 12); 
-    if (midi <= 36) { ihPartials = [6, 10]; } else if (midi <= 48) { ihPartials = [2, 4]; } else { ihPartials = [1, 4]; }                  
-    
-    ihStage = 'PRE'; prePitches = []; ihPitches1 = []; ihPitches4 = [];
-    
-    if(!tunerActive) { tunerActive = true; tunerDataArray = new Float32Array(analyserTuner.fftSize); }
-    if(tunerFilter) { tunerFilter.frequency.value = f0; tunerFilter.Q.value = 1.0; } // Wide net
-    
-    if (ihRafId) cancelAnimationFrame(ihRafId); isIHScanning = true; runIHScanner();
-    $('ihResult').className = 'guide-result guide-res-wait'; $('ihResult').innerHTML = `Pre-measuring actual pitch for ${noteName(midi)}...`;
-    
-    // Stage 1: Pre-measure (1000ms)
-    setTimeout(() => {
-        if(!isIHScanning || ihStage !== 'PRE') return;
-        let measuredF = f0;
-        if (prePitches.length > 5) {
-            prePitches.sort((a,b)=>a-b); measuredF = prePitches[Math.floor(prePitches.length/2)];
-            let centsFlat = 1200 * Math.log2(measuredF / f0); prOffsets[midi] = centsFlat; 
-        } else { prOffsets[midi] = 0; }
-        
-        ihStage = 'CAPTURE';
-        let fA = measuredF * ihPartials[0], fB = measuredF * ihPartials[1]; 
-        ihFilter1.frequency.value = fA; ihFilter1.Q.value = 4.0;
-        ihFilter4.frequency.value = fB; ihFilter4.Q.value = 4.0;
-        
-        let partialText = ihPartials[0] + 'th & ' + ihPartials[1] + 'th'; if(ihPartials[0]===1) partialText = 'Fundamental & 4th'; if(ihPartials[0]===2) partialText = '2nd & 4th';
-        $('ihResult').innerHTML = `Pitch found. Scanning ${partialText} Partial...`;
-        
-        // Stage 2: Capture (2000ms)
-        setTimeout(() => {
-            isIHScanning = false; ihStage = 'IDLE';
-            if(ihPitches1.length > 5 && ihPitches4.length > 5) {
-                ihPitches1.sort((a,b)=>a-b); ihPitches4.sort((a,b)=>a-b); let medA = ihPitches1[Math.floor(ihPitches1.length/2)]; let medB = ihPitches4[Math.floor(ihPitches4.length/2)];
-                let n = ihPartials[0], m = ihPartials[1], ratio = (medB / m) / (medA / n), R2 = ratio * ratio, B = (R2 - 1) / (m*m - R2 * n*n); if (B < 0) B = 0; ihProfile[midi] = B;
-                $('ihResult').className = 'guide-result guide-res-pass'; $('ihResult').innerHTML = `<b>${noteName(midi)} stretch point & pitch logged!</b>`; $('ihBtn-'+midi).classList.add('logged'); checkAllIHSampled();
-            } else { $('ihResult').className = 'guide-result guide-res-warn'; $('ihResult').innerHTML = `Could not lock partials for ${noteName(midi)}.<br>Try again louder.`; }
-        }, 2000); 
-    }, 1000); 
 }
 
 $('btnPause').onclick = async () => {
@@ -1182,15 +1217,15 @@ function renderLogTable() {
   if (entries.length > 0) {
     entries.sort((a, b) => a.midi - b.midi);
     for (let i = 0; i < entries.length; i++) {
-      entries[i].pctStr = '-'; entries[i].isWrong = false; entries[i].isWarn = false;
+      entries[i].pctStr = '-'; entries[i].isWrong = false;
       if (i > 0) {
         const pct = ((entries[i].measured - entries[i-1].measured) / entries[i-1].measured) * 100; entries[i].pctStr = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
-        if (entries[i].midi === entries[i-1].midi + 1) { if (pct <= 0) entries[i].isWrong = true; else if (pct < 3 || pct > 9) entries[i].isWarn = true; }
+        if (entries[i].midi === entries[i-1].midi + 1) { if (pct <= 0) entries[i].isWrong = true; } // Removed yellow flatline/spike warnings
       }
     }
     tb.innerHTML += `<tr style="background:#f4f4f4; border-bottom:1px solid #000;"><td colspan="6" style="text-align:center; font-weight:800; font-size:0.8rem; padding:4px;">${curIv} PROGRESSION</td></tr>`;
     for (let i = entries.length - 1; i >= 0; i--) {
-      const c = entries[i]; const rowStyle = c.isWrong ? 'background-color: #ffeaea; color: #d00000; font-weight: 700;' : (c.isWarn ? 'background-color: #fff8cc; color: #b38000; font-weight: 700;' : ''); const strikeCountStr = c.strikes.length > 1 ? ` <span style="font-size:0.6rem; color:#666;">(${c.strikes.length}x)</span>` : '';
+      const c = entries[i]; const rowStyle = c.isWrong ? 'background-color: #ffeaea; color: #d00000; font-weight: 700;' : ''; const strikeCountStr = c.strikes.length > 1 ? ` <span style="font-size:0.6rem; color:#666;">(${c.strikes.length}x)</span>` : '';
       tb.innerHTML += `<tr style="${rowStyle}"><td><b>${curIv}</b></td><td style="font-weight:800;">${c.noteName}</td><td style="font-weight:700; font-size:0.85rem;">${c.measured.toFixed(2)}${strikeCountStr}</td><td style="font-weight:700;">${c.pctStr}</td><td class="w">~${c.target.toFixed(2)}</td><td><button class="btn-del" onclick="deleteEntry('${curIv}', ${c.midi})">X</button></td></tr>`;
     }
   } else { tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#666;">Logs automatically upon solid capture</td></tr>'; }
@@ -1208,8 +1243,8 @@ function checkStep5() { let f3 = getLogVal('M3', 'F3'), a3 = getLogVal('M3', 'A3
 function checkStep6() { let p5 = getLogVal('P5', 'F#3'), p4_f = getLogVal('P4', 'F3'), m3f = getLogVal('M3', 'F#3'); let res = $('guideRes6'); let html = ''; if (!p5 && !p4_f && !m3f) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place F#3 and A#3..."; return; } let err = false; if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">F#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust F#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F#3 P5: ${p5.toFixed(1)} ✔</span><br>`; } if (p4_f) { if (p4_f < 0.6 || p4_f > 1.4) { html += `<span style=\"color:#d00000;\">F3 P4 (A#3): ${p4_f.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust A#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F3 P4 (A#3): ${p4_f.toFixed(1)} ✔</span><br>`; } if(!m3f) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3 to check dip...</i>"; return; } let m3_prev = getLogVal('M3', 'F3'); if (m3_prev && m3f <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> F#3 M3 (${m3f.toFixed(1)}) is slower than F3 M3 (${m3_prev.toFixed(1)}). F#3 is FLAT or A#3 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(54, 'M3', [{m:54,i:'M3'}])\">FIX F#3 / A#3</button>`; return; } res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`; }
 function checkStep7() { let p5 = getLogVal('P5', 'G3'), p4_b = getLogVal('P4', 'F#3'), m3_b = getLogVal('M3', 'G3'); let res = $('guideRes7'); let html = ''; if (!p5 && !p4_b && !m3_b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G3 and B3..."; return; } let err = false; if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">G3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust G3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">G3 P5: ${p5.toFixed(1)} ✔</span><br>`; } if (p4_b) { if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style=\"color:#d00000;\">F#3 P4 (B3): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust B3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">F#3 P4 (B3): ${p4_b.toFixed(1)} ✔</span><br>`; } if(!m3_b) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3 to check dip...</i>"; return; } let m3_prev = getLogVal('M3', 'F#3'); if (m3_prev && m3_b <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> G3 M3 (${m3_b.toFixed(1)}) is slower than F#3 M3 (${m3_prev.toFixed(1)}). G3 is FLAT or B3 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(55, 'M3', [{m:55,i:'M3'}])\">FIX G3 / B3</button>`; return; } res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`; }
 function checkStep8() { let p5 = getLogVal('P5', 'G#3'), p4_b = getLogVal('P4', 'G3'), m3_b = getLogVal('M3', 'G#3'); let res = $('guideRes8'); let html = ''; if (!p5 && !p4_b && !m3_b) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log intervals to place G#3 and C4..."; return; } let err = false; if (p5) { if (p5 < 0.3 || p5 > 1.0) { html += `<span style=\"color:#d00000;\">G#3 P5: ${p5.toFixed(1)} (Aim 0.3-0.8)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust G#3 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">G#3 P5: ${p5.toFixed(1)} ✔</span><br>`; } if (p4_b) { if (p4_b < 0.6 || p4_b > 1.4) { html += `<span style=\"color:#d00000;\">G3 P4 (C4): ${p4_b.toFixed(1)} (Aim 0.6-1.2)</span><br><span style=\"font-size:0.65rem; color:#444;\">Adjust C4 pin.</span><br>`; err = true; } else html += `<span style=\"color:#006600;\">G3 P4 (C4): ${p4_b.toFixed(1)} ✔</span><br>`; } if(!m3_b) { res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-wait'; res.innerHTML = html + "<br><i>Log M3 to check dip...</i>"; return; } let m3_prev = getLogVal('M3', 'G3'); if (m3_prev && m3_b <= m3_prev) { res.className = 'guide-result guide-res-warn'; res.innerHTML = html + `<br><b style=\"color:#d00000;\">DIP DETECTED:</b> G#3 M3 (${m3_b.toFixed(1)}) is slower than G3 M3 (${m3_prev.toFixed(1)}). G#3 is FLAT or C4 is SHARP.<br><button class=\"ctrl-btn fix-btn\" style=\"margin-top:4px;\" onclick=\"wipeCluster(56, 'M3', [{m:56,i:'M3'}])\">FIX G#3 / C4</button>`; return; } res.className = err ? 'guide-result guide-res-warn' : 'guide-result guide-res-pass'; res.innerHTML = html + `<br>✔ No M3 Dip Detected.`; }
-function checkStep9() { let seq = [ {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, {m: 56, n: 'G#3'}, {m: 57, n: 'A3'}, {m: 58, n: 'A#3'}, {m: 59, n: 'B3'}, {m: 60, n: 'C4'}, {m: 61, n: 'C#4'} ]; let vals = []; let res = $('guideRes9'); for(let i=0; i<seq.length; i++) { let v = getLogVal('M3', seq[i].n); if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M3s...`; return; } vals.push({note: seq[i].n, midi: seq[i].m, val: v}); } let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`; let issues = []; for(let i=1; i<vals.length; i++) { let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100; if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); else if (pct < 3) issues.push({type: 'FLATLINE', low: vals[i-1], high: vals[i], pct: pct}); else if (pct > 9) issues.push({type: 'SPIKE', low: vals[i-1], high: vals[i], pct: pct}); } if(issues.length === 0) { res.className = 'guide-result guide-res-pass'; html += `✔ PROGRESSION EVEN!`; } else { res.className = 'guide-result guide-res-warn'; let issue = issues[0]; if (issue.type === 'DIP') { html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; } else { html += `<b style=\"font-size:0.8rem; color:#b38000;\">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; } html += `<span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger to diagnose exact pin.</span>`; } res.innerHTML = html; }
-function checkStep10() { let seq = [ {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, {m: 56, n: 'G#3'} ]; let vals = []; let res = $('guideRes10'); for(let i=0; i<seq.length; i++) { let v = getLogVal('M6', seq[i].n); if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M6s...`; return; } vals.push({note: seq[i].n, midi: seq[i].m, val: v}); } let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`; let issues = []; for(let i=1; i<vals.length; i++) { let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100; if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); else if (pct < 3) issues.push({type: 'FLATLINE', low: vals[i-1], high: vals[i], pct: pct}); else if (pct > 9) issues.push({type: 'SPIKE', low: vals[i-1], high: vals[i], pct: pct}); } if(issues.length === 0) { res.className = 'guide-result guide-res-pass'; html += `✔ M6 SWEEP EVEN!`; } else { res.className = 'guide-result guide-res-warn'; let issue = issues[0]; if (issue.type === 'DIP') { html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br>`; } else { html += `<b style=\"font-size:0.8rem; color:#b38000;\">${issue.type} AT ${issue.high.note}:</b> ${issue.pct>0?'+':''}${issue.pct.toFixed(1)}%<br>`; } html += `<span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger.</span>`; } res.innerHTML = html; }
+function checkStep9() { let seq = [ {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, {m: 56, n: 'G#3'}, {m: 57, n: 'A3'}, {m: 58, n: 'A#3'}, {m: 59, n: 'B3'}, {m: 60, n: 'C4'}, {m: 61, n: 'C#4'} ]; let vals = []; let res = $('guideRes9'); for(let i=0; i<seq.length; i++) { let v = getLogVal('M3', seq[i].n); if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M3s...`; return; } vals.push({note: seq[i].n, midi: seq[i].m, val: v}); } let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`; let issues = []; for(let i=1; i<vals.length; i++) { let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100; if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); } if(issues.length === 0) { res.className = 'guide-result guide-res-pass'; html += `✔ PROGRESSION EVEN!`; } else { res.className = 'guide-result guide-res-warn'; let issue = issues[0]; html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br><span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger.</span>`; } res.innerHTML = html; }
+function checkStep10() { let seq = [ {m: 53, n: 'F3'}, {m: 54, n: 'F#3'}, {m: 55, n: 'G3'}, {m: 56, n: 'G#3'} ]; let vals = []; let res = $('guideRes10'); for(let i=0; i<seq.length; i++) { let v = getLogVal('M6', seq[i].n); if(!v) { res.className = 'guide-result guide-res-wait'; res.innerHTML = `Awaiting all M6s...`; return; } vals.push({note: seq[i].n, midi: seq[i].m, val: v}); } let str = vals.map(v => v.val.toFixed(1)).join(' &rarr; '); let html = `<div style=\"font-size:0.65rem; margin-bottom:6px;\">${str}</div>`; let issues = []; for(let i=1; i<vals.length; i++) { let pct = ((vals[i].val - vals[i-1].val) / vals[i-1].val) * 100; if (pct <= 0) issues.push({type: 'DIP', low: vals[i-1], high: vals[i], pct: pct}); } if(issues.length === 0) { res.className = 'guide-result guide-res-pass'; html += `✔ M6 SWEEP EVEN!`; } else { res.className = 'guide-result guide-res-warn'; let issue = issues[0]; html += `<b style=\"font-size:0.8rem; color:#d00000;\">DIP AT ${issue.high.note}:</b> ${issue.low.val.toFixed(1)} &rarr; ${issue.high.val.toFixed(1)}<br><span style=\"font-size:0.7rem; color:#444;\">Run Auto-Debugger.</span>`; } res.innerHTML = html; }
 function checkStep11() { let pList = [ {m:53, i:'P4', n:'F3 P4 A#3'}, {m:53, i:'P5', n:'F3 P5 C4'}, {m:54, i:'P4', n:'F#3 P4 B3'}, {m:54, i:'P5', n:'F#3 P5 C#4'}, {m:55, i:'P4', n:'G3 P4 C4'}, {m:55, i:'P5', n:'G3 P5 D4'}, {m:56, i:'P4', n:'G#3 P4 C#4'}, {m:56, i:'P5', n:'G#3 P5 D#4'}, {m:57, i:'P4', n:'A3 P4 D4'}, {m:57, i:'P5', n:'A3 P5 E4'}, {m:58, i:'P4', n:'A#3 P4 D#4'}, {m:58, i:'P5', n:'A#3 P5 F4'}, {m:59, i:'P4', n:'B3 P4 E4'}, {m:60, i:'P4', n:'C4 P4 F4'} ]; let btnContainer = $('finalPolishBtns'); if (!btnContainer.hasChildNodes()) { pList.forEach(item => { let b = document.createElement('button'); b.className = 'action-btn'; b.dataset.midi = item.m; b.dataset.iv = item.i; b.dataset.label = item.n; b.innerHTML = item.n; b.onclick = function() { handleAction(this, item.m, item.i); }; btnContainer.appendChild(b); }); updateActionButtons(); } let res = $('guideRes11'); let badCount = 0; let loggedCount = 0; let msg = ''; pList.forEach(item => { let val = getLogVal(item.i, noteName(item.m)); if (val !== null) { loggedCount++; if (val > 1.5) { badCount++; msg += `<b>${item.n}</b> is too fast (${val.toFixed(1)} bps)<br>`; } } }); if (loggedCount === 0) { res.className = 'guide-result guide-res-wait'; res.innerHTML = "Log 4ths and 5ths to hunt for howling intervals."; } else if (badCount === 0 && loggedCount === pList.length) { res.className = 'guide-result guide-res-pass'; res.innerHTML = "✔ ALL 4THS & 5THS ARE QUIET."; } else if (badCount === 0) { res.className = 'guide-result guide-res-pass'; res.innerHTML = "✔ Logged intervals are quiet. Keep checking..."; } else { res.className = 'guide-result guide-res-warn'; res.innerHTML = `<span style=\"color:#d00000;\">WARNING: HOWLING INTERVALS FOUND</span><br><br>${msg}<i>Use Auto-Debugger to distribute the error safely.</i>`; } }
 
 window.checkStep12 = function() {
@@ -1224,12 +1259,6 @@ window.checkStep12 = function() {
                     let culprit = seqM3[i] + 4, reason = `Widen ${noteName(seqM3[i])} M3 (DIP)`, fixDir = 'SHARPEN';
                     let p4_to_top = getLogVal('P4', noteName(culprit - 5)); if (p4_to_top && p4_to_top > 1.2) { culprit = seqM3[i]; reason = `Narrow ${noteName(seqM3[i])} M3 (Top Trapped)`; fixDir = 'FLATTEN'; }
                     errors.push({ note: culprit, dir: fixDir, reason: reason, cluster: [{m:seqM3[i], i:'M3'}, {m:culprit-5, i:'P4'}, {m:culprit-7, i:'P5'}] });
-                } else if (pct > 9) {
-                    let topNote = seqM3[i] + 4, bottomNote = seqM3[i], top_p4 = getLogVal('P4', noteName(topNote - 5)); 
-                    if (top_p4 && top_p4 > 1.2) { errors.push({ note: topNote, dir: 'FLATTEN', reason: `Smooth out M3 SPIKE and quiet fast P4`, cluster: [{m:seqM3[i], i:'M3'}, {m:topNote-5, i:'P4'}] }); } else { errors.push({ note: bottomNote, dir: 'SHARPEN', reason: `Smooth out M3 SPIKE`, cluster: [{m:seqM3[i], i:'M3'}] }); }
-                } else if (pct > 0 && pct < 3) {
-                    let topNote = seqM3[i] + 4, bottomNote = seqM3[i], top_p4 = getLogVal('P4', noteName(topNote - 5)); 
-                    if (top_p4 && top_p4 < 0.6) { errors.push({ note: topNote, dir: 'SHARPEN', reason: `Fix M3 FLATLINE and speed up slow P4`, cluster: [{m:seqM3[i], i:'M3'}, {m:topNote-5, i:'P4'}] }); } else { errors.push({ note: bottomNote, dir: 'FLATTEN', reason: `Fix M3 FLATLINE`, cluster: [{m:seqM3[i], i:'M3'}] }); }
                 }
             }
         }
@@ -1298,7 +1327,7 @@ function renderLoop(ts) {
   if (snr > threshold.snr && envelopeRunning > threshold.env) { sigLight.style.background = '#00ff00'; } else { sigLight.style.background = '#e0e0e0'; }
   
   // CPU OPTIMIZATION: Only run heavy Autocorrelation beat math if in GUIDE or LOGS mode
-  if (mainMode === 'GUIDE' || mainMode === 'DET') {
+  if (mainMode === 'GUIDE' || mainMode === 'LOGS') {
       let now = performance.now(); const fps = audioCtx.sampleRate / currentChunkSize; let minHistFrames = Math.round(fps * 0.5);
       if (captureState === 'WAIT' && now - captureStartTime > 800) { captureState = 'CAPTURING'; $('captureStateLbl').textContent = 'RECORDING...'; $('captureStateLbl').style.color = '#d00000'; }
       if (captureState === 'CAPTURING') {
