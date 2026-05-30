@@ -946,21 +946,41 @@ function getPolynomial(xData, yData) {
         let intercept = yData[0] - slope * xData[0]; 
         return (m) => Math.exp(slope * m + intercept); 
     }
+
+    // --- THE FIX: DYNAMIC CENTERING TO PREVENT MATRIX COLLAPSE ---
+    let xCenter = 0;
+    for (let i = 0; i < n; i++) xCenter += xData[i];
+    xCenter /= n;
+
     let sumX=0, sumY=0, sumX2=0, sumX3=0, sumX4=0, sumXY=0, sumX2Y=0;
-    for(let i=0; i<n; i++) { let x = xData[i], y = yData[i]; sumX += x; sumX2 += x*x; sumX3 += x*x*x; sumX4 += x*x*x*x; sumY += y; sumXY += x*y; sumX2Y += x*x*y; }
-    let M = [[n, sumX, sumX2], [sumX, sumX2, sumX3], [sumX2, sumX3, sumX4]]; let V = [sumY, sumXY, sumX2Y];
+    for(let i=0; i<n; i++) { 
+        let x = xData[i] - xCenter; // Shift X to center
+        let y = yData[i]; 
+        sumX += x; sumX2 += x*x; sumX3 += x*x*x; sumX4 += x*x*x*x; 
+        sumY += y; sumXY += x*y; sumX2Y += x*x*y; 
+    }
+    
+    let M = [[n, sumX, sumX2], [sumX, sumX2, sumX3], [sumX2, sumX3, sumX4]]; 
+    let V = [sumY, sumXY, sumX2Y];
     let det = (m) => m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
     let D = det(M);
+    
     if (Math.abs(D) > 1e-10) { 
         let a = det([[V[0], M[0][1], M[0][2]], [V[1], M[1][1], M[1][2]], [V[2], M[2][1], M[2][2]]])/D; 
         let b = det([[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]])/D; 
         let c = det([[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]])/D; 
-        return (m) => Math.exp(a + b*m + c*m*m); 
+        return (m) => {
+            let xm = m - xCenter; // Apply same shift to requested key
+            return Math.exp(a + b*xm + c*xm*xm); 
+        };
     } else { 
         let denomL = n*sumX2 - sumX*sumX; 
         let slope = (n*sumXY - sumX*sumY) / denomL; 
         let intercept = (sumY - slope*sumX) / n; 
-        return (m) => Math.exp(intercept + slope*m); 
+        return (m) => {
+            let xm = m - xCenter;
+            return Math.exp(intercept + slope*xm); 
+        };
     }
 }
 
