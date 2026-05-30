@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V49.3</title>
+<title>DAN'S BEAT SPEED DETECTOR - V50.0</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -74,6 +74,7 @@
   
   #btnPause { background: #00aa00; font-size: 1rem; border-color: #007700; box-shadow: 0 2px 0 #005500;}
   #btnPassThrough { font-size: 1rem; }
+  #btnIHCycle { background: #ffe600; color: #000; border-color: #ccb800; box-shadow: 0 2px 0 #ccb800; }
 
   button.ctrl-btn {
     background: #ffffff; border: 1px solid #000000; color: #000000; padding: 4px 8px; border-radius: 4px; 
@@ -278,8 +279,8 @@
       <div class="controls-row">
         <button class="top-btn" id="nav-DET" onclick="selectMode('DET')">LOGS</button>
         <button class="top-btn" id="nav-GUIDE" onclick="selectMode('GUIDE')">GUIDE</button>
-        <button class="top-btn" id="nav-IH" onclick="selectMode('IH')">IH</button>
         <button class="top-btn" id="nav-PRAISE" onclick="selectMode('PRAISE')">PR</button>
+        <button class="top-btn" id="btnIHCycle" onclick="cycleIH()">IH: DEF</button>
         <button class="top-btn" id="nav-FILES" onclick="toggleFiles(true)">💾</button>
         <button class="top-btn" id="btnPause">🎙️</button>
         <button class="top-btn" id="btnPassThrough">🔇</button>
@@ -341,76 +342,42 @@
         </table>
       </div>
 
-      <div id="ws-IH" class="workspace-layer">
-        <div style="padding: 8px;">
-            <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Stretch Curve Profiler</h3>
-            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample the critical anchor keys to map this piano's exact wire stiffness.</p>
-            
-            <p style="font-weight:bold; color:#d00000; text-align:center; font-size:0.75rem; margin-bottom: 8px;">MUTE OUTSIDE STRINGS. PLAY CENTER FIRMLY.</p>
-
-            <div class="action-row" style="justify-content: center; gap: 6px;" id="ihBtns">
-                <button class="action-btn" onclick="sampleIH(36)" id="ihBtn-36">C2</button>
-                <button class="action-btn" onclick="sampleIH(41)" id="ihBtn-41">F2</button>
-                <button class="action-btn" onclick="sampleIH(48)" id="ihBtn-48">C3</button>
-                <button class="action-btn" onclick="sampleIH(53)" id="ihBtn-53">F3</button>
-                <button class="action-btn" onclick="sampleIH(60)" id="ihBtn-60">C4</button>
-                <button class="action-btn" onclick="sampleIH(65)" id="ihBtn-65">F4</button>
-                <button class="action-btn" onclick="sampleIH(72)" id="ihBtn-72">C5</button>
-            </div>
-            
-            <div style="display:flex; justify-content:center; align-items:center; margin-top:12px; gap:8px;">
-                <label style="font-size:0.75rem; font-weight:bold;">Bass Break Note: </label>
-                <select id="bassBreakSelect" style="font-size:0.75rem; padding:2px 4px; border:1px solid #000; border-radius:4px;">
-                    <option value="48">C3</option>
-                    <option value="49">C#3</option>
-                    <option value="50">D3</option>
-                    <option value="51">D#3</option>
-                    <option value="52" selected>E3</option>
-                    <option value="53">F3</option>
-                    <option value="54">F#3</option>
-                    <option value="55">G3</option>
-                    <option value="56">G#3</option>
-                    <option value="57">A3</option>
-                </select>
-            </div>
-
-            <div class="guide-result guide-res-wait" id="ihResult" style="margin-top: 12px;">Select a note to sample...</div>
-            
-            <div style="display:flex; gap:10px; margin-top:12px;">
-                <button id="btnCalculateIH" class="ctrl-btn grade-btn" style="flex:2; margin:0;" disabled onclick="applyStretchCurve()">CALCULATE TARGETS</button>
-                <button class="ctrl-btn fix-btn" style="flex:1; margin:0;" onclick="resetStretchCurve()">RESET</button>
-            </div>
-            <div id="stretchClassification" style="margin-top:10px; font-weight:bold; font-size:0.85rem; text-align:center;"></div>
-            
-            <div style="text-align:center; margin-top:8px;">
-                <button id="btnCopyDiag" onclick="copyDiagnostics()" class="ctrl-btn" style="font-size:0.6rem; padding: 2px 8px;">COPY</button>
-            </div>
-        </div>
-      </div>
-
       <div id="ws-PRAISE" class="workspace-layer" style="padding: 8px;">
           <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Pitch Raise Suite</h3>
 
-          <div id="prLockScreen" style="text-align:center; padding: 20px; color: #666;">
-              <p style="font-weight:bold; margin-bottom:10px;">PITCH RAISE LOCKED</p>
-              <p style="font-size:0.75rem;">Complete the Stretch Curve Profiler first. The app will automatically measure the piano's flatness while you sample IH.</p>
+          <div id="prMeasureScreen" style="display:flex; flex-direction:column; align-items:center;">
+             <p style="font-size:0.7rem; color:#555; text-align:center; margin-bottom:12px; font-weight:bold;">1. Select Anchor &nbsp;|&nbsp; 2. Play Note &nbsp;|&nbsp; 3. Log Cents</p>
+             
+             <div class="action-row" id="prAnchorBtns" style="margin-bottom:12px; gap:8px;">
+                 </div>
+             
+             <div class="readout-box" style="width:100%; margin-bottom:12px; padding:16px 6px;">
+                 <div class="val-large" id="prMeasureCents" style="font-size:3.5rem;">---</div>
+                 <div class="val-lbl" id="prMeasureHz">Target: --- Hz</div>
+             </div>
+             
+             <button class="action-btn" onclick="logPRAnchor()" style="width:100%; padding:14px; font-size:1.1rem; margin-bottom:12px; background:#0066ff; color:#fff; box-shadow: 0 4px 0 #0044bb;">LOG CURRENT PITCH</button>
+             <button class="ctrl-btn grade-btn" onclick="calculatePR()" style="margin-bottom:0;">CALCULATE OVERPULL</button>
           </div>
 
           <div id="prActiveScreen" style="display:none; flex-direction:column; align-items:center;">
-              <p style="font-size:0.7rem; color:#666; margin-bottom:8px; text-align:center; font-weight:bold;">MUTE OUTSIDES. TUNE CENTER STRING TO 0.0c.</p>
+              <p style="font-size:0.75rem; color:#d00000; margin-bottom:8px; text-align:center; font-weight:900;">MUTE OUTSIDES. TUNE CENTER TO 0.0c.</p>
               
-              <div class="dynamic-controls" style="width:100%; margin-bottom: 12px;">
+              <div class="dynamic-controls" style="width:100%; margin-bottom: 12px; padding:10px;">
                   <button class="dynamic-btn" onclick="changePRNote(-1)">-</button>
-                  <span class="dynamic-target" id="prSweepNote" style="font-size:2rem; min-width:60px;">A0</span>
+                  <span class="dynamic-target" id="prSweepNote" style="font-size:2.5rem; min-width:80px;">A0</span>
                   <button class="dynamic-btn" onclick="changePRNote(1)">+</button>
               </div>
               
-              <div style="font-size:0.85rem; font-weight:700; color:#555; margin-bottom:12px;" id="prOverpullInfo">Overpull: +0.0c</div>
+              <div style="font-size:1rem; font-weight:900; color:#0066ff; margin-bottom:4px;" id="prOverpullInfo">Actual Overpull: +0.0c</div>
+              <div style="font-size:0.7rem; font-weight:700; color:#888; margin-bottom:12px;" id="prSweepTargetF">Target: --- Hz</div>
               
-              <div class="readout-box" style="width:100%; margin-bottom:12px;">
-                  <div class="val-large" id="prSweepCents" style="font-size:3.5rem;">---</div>
-                  <div class="val-lbl" id="prSweepTargetF">Target: --- Hz</div>
+              <div class="readout-box" style="width:100%; margin-bottom:12px; padding: 20px 6px;">
+                  <div class="val-large" id="prSweepCents" style="font-size:4rem;">---</div>
+                  <div class="val-lbl">ALIGN TO 0.0c</div>
               </div>
+
+              <button class="ctrl-btn fix-btn" onclick="resetPRMeasure()" style="width:100%; padding:12px;">BACK TO MEASUREMENTS</button>
           </div>
       </div>
 
@@ -647,7 +614,7 @@ window.selectMode = function(mode) {
     mainMode = mode;
     document.querySelectorAll('.workspace-layer').forEach(l => l.style.display = 'none');
     
-    if(mode === 'DET' || mode === 'IH' || mode === 'PRAISE') {
+    if(mode === 'DET' || mode === 'PRAISE') {
         $('ws-' + mode).style.display = 'block';
     } else if (mode === 'GUIDE') {
         $('ws-GUIDE').style.display = 'flex';
@@ -657,7 +624,7 @@ window.selectMode = function(mode) {
     if($('nav-' + mode)) $('nav-' + mode).classList.add('active-tab');
     
     if (mode === 'PRAISE') {
-        updatePRState();
+        renderPRAnchors();
         if(!tunerActive) { 
             tunerActive = true; 
             tunerDataArray = new Float32Array(analyserTuner.fftSize); 
@@ -678,15 +645,19 @@ let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
 let decaySlope = 0; 
 let loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] };
 
-// Inharmonicity variables 
-let ihPartials = [1, 4];
-let ihScanMidi = -1;
-let ihProfile = {}; let ihRawData = {}; let smoothedIH = new Float32Array(109); let useCustomIH = false;
-let ihStage = 'IDLE'; 
-let ihStrikeFlag = false; 
-let ihFrames = [];
-let ihCaptureEndTime = 0;
-let ihLastFrameTime = 0;
+// Inharmonicity Presets
+const ihPresets = [ 
+    { l: 'DEF', b: 0 }, 
+    { l: '36"', b: 0.00120 }, 
+    { l: '40"', b: 0.00090 }, 
+    { l: '45"', b: 0.00060 }, 
+    { l: '52"', b: 0.00040 }, 
+    { l: '7ft', b: 0.00025 }, 
+    { l: '9ft', b: 0.00015 } 
+];
+let currentIHIndex = 0;
+let smoothedIH = new Float32Array(109); 
+let useCustomIH = false;
 
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
@@ -695,14 +666,17 @@ let tunerActive = false, tunerDataArray = null;
 let smoothedPitch = -1; let pitchHistory = [];
 
 // Pitch Raise Variables
-let prOffsets = {};
+let prAnchorMidis = [36, 41, 48, 53, 60, 65, 72, 77, 84];
+let prLoggedOffsets = {};
 let prOverpullArray = new Float32Array(109);
+let prMeasureMidi = 48; // Default C3
 let prCurrentMidi = 21; 
+let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV49_3')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV50_0')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -781,29 +755,31 @@ window.startAudioEngine = async function() {
 }
 
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV49_3');
+  const saved = localStorage.getItem('danDetectorLogsV50_0');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
       if (parsed.logs) {
-          loggedIntervals = parsed.logs; ihProfile = parsed.ih || {}; useCustomIH = parsed.customIH || false;
+          loggedIntervals = parsed.logs; 
           if (parsed.curve) tuningCurve = new Float32Array(parsed.curve);
-          if (parsed.prOffsets) prOffsets = parsed.prOffsets;
+          if (parsed.prOffsets) prLoggedOffsets = parsed.prOffsets;
           if (parsed.prOverpull) prOverpullArray = new Float32Array(parsed.prOverpull);
+          if (parsed.prMode) prMode = parsed.prMode;
+          if (parsed.ihPresetIndex !== undefined) {
+              currentIHIndex = parsed.ihPresetIndex;
+              applyIHPreset();
+          }
       }
       renderLogTable(); updateGuide(); 
-      if(useCustomIH) {
-          smoothIHData();
-          document.querySelectorAll('#ihBtns .action-btn').forEach(b => { let m = parseInt(b.id.split('-')[1]); if(ihProfile[m] !== undefined) b.classList.add('logged'); });
-          $('btnCalculateIH').disabled = false; applyStretchCurve();
-      } else {
-          document.querySelectorAll('#ihBtns .action-btn').forEach(b => { let m = parseInt(b.id.split('-')[1]); if(ihProfile[m] !== undefined) b.classList.add('logged'); });
-          checkAllIHSampled();
+      if(prMode === 'ACTIVE') {
+          $('prMeasureScreen').style.display = 'none';
+          $('prActiveScreen').style.display = 'flex';
+          updatePRSweepUI();
       }
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV49_3', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danDetectorLogsV50_0', JSON.stringify(state)); }
 loadPersistence();
 
 window.toggleFiles = function(show) { 
@@ -833,29 +809,141 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV49_3', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV50_0', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV49_3', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danTunerSavesV50_0', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
-        loggedIntervals = data.logs; ihProfile = data.ih || {}; useCustomIH = data.customIH || false; if(data.curve) tuningCurve = new Float32Array(data.curve); if(data.prOffsets) prOffsets = data.prOffsets; if(data.prOverpull) prOverpullArray = new Float32Array(data.prOverpull); savePersistence();
-        if(useCustomIH) { smoothIHData(); document.querySelectorAll('#ihBtns .action-btn').forEach(b => { let m = parseInt(b.id.split('-')[1]); if(ihProfile[m] !== undefined) b.classList.add('logged'); }); $('btnCalculateIH').disabled = false; applyStretchCurve(); } else { resetStretchCurve(); }
+        loggedIntervals = data.logs; 
+        if(data.ihPresetIndex !== undefined) { currentIHIndex = data.ihPresetIndex; applyIHPreset(); }
+        if(data.curve) tuningCurve = new Float32Array(data.curve); 
+        if(data.prOffsets) prLoggedOffsets = data.prOffsets; 
+        if(data.prOverpull) prOverpullArray = new Float32Array(data.prOverpull); 
+        if(data.prMode) prMode = data.prMode;
+        savePersistence();
         renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV49_3', JSON.stringify(savedTunings)); renderSavedFiles(); } }
-window.startNewTuning = function() { if(confirm('Clear all logs?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; resetStretchCurve(); toggleFiles(false); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV50_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.startNewTuning = function() { if(confirm('Clear all logs and resets?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; prLoggedOffsets = {}; prMode = 'MEASURE'; currentIHIndex = 0; applyIHPreset(); toggleFiles(false); } }
+
+// IH CYCLE LOGIC
+window.cycleIH = function() {
+    currentIHIndex = (currentIHIndex + 1) % ihPresets.length;
+    applyIHPreset();
+    savePersistence();
+}
+
+function applyIHPreset() {
+    let preset = ihPresets[currentIHIndex];
+    $('btnIHCycle').textContent = 'IH: ' + preset.l;
+    
+    // Apply constant B to the whole scale. The math naturally scales stretch for higher partials.
+    for(let m=0; m<=108; m++) { smoothedIH[m] = preset.b; }
+    useCustomIH = preset.b > 0;
+    
+    buildTuningCurve();
+    updateDynamicGuideTexts();
+    setTarget(lowerMidi, curIv);
+}
 
 // PITCH RAISE UI LOGIC
-window.updatePRState = function() {
-    if(useCustomIH) {
-        $('prLockScreen').style.display = 'none';
-        $('prActiveScreen').style.display = 'flex';
-        updatePRSweepUI();
-    } else {
-        $('prLockScreen').style.display = 'block';
-        $('prActiveScreen').style.display = 'none';
+window.renderPRAnchors = function() {
+    let container = $('prAnchorBtns');
+    if(!container) return;
+    container.innerHTML = '';
+    prAnchorMidis.forEach(m => {
+        let b = document.createElement('button');
+        b.className = 'action-btn';
+        b.style.minWidth = '42px';
+        b.style.padding = '6px 4px';
+        
+        if(prMeasureMidi === m) {
+            b.style.background = '#000';
+            b.style.color = '#fff';
+            b.style.borderColor = '#000';
+        }
+        
+        if(prLoggedOffsets[m] !== undefined) {
+            if(prMeasureMidi !== m) b.classList.add('logged');
+            b.innerHTML = `${noteName(m)}<br><span style="font-size:0.75em; font-weight:900;">${prLoggedOffsets[m].toFixed(1)}c</span>`;
+        } else {
+            b.textContent = noteName(m);
+        }
+        
+        b.onclick = () => { 
+            prMeasureMidi = m; 
+            pitchHistory = []; 
+            smoothedPitch = -1; 
+            $('prMeasureCents').textContent = '---';
+            $('prMeasureCents').style.color = '#000';
+            renderPRAnchors(); 
+        };
+        container.appendChild(b);
+    });
+    $('prMeasureHz').textContent = `Target: ${tuningCurve[prMeasureMidi].toFixed(1)} Hz`;
+}
+
+window.logPRAnchor = function() {
+    if(smoothedPitch === -1) {
+        alert("Play note clearly first. No stable pitch detected.");
+        return;
     }
+    let targetF = tuningCurve[prMeasureMidi];
+    let cents = 1200 * Math.log2(smoothedPitch / targetF);
+    prLoggedOffsets[prMeasureMidi] = cents;
+    
+    // Auto-advance to next anchor
+    let currentIndex = prAnchorMidis.indexOf(prMeasureMidi);
+    if(currentIndex < prAnchorMidis.length - 1) {
+        prMeasureMidi = prAnchorMidis[currentIndex + 1];
+        pitchHistory = []; smoothedPitch = -1;
+    }
+    renderPRAnchors();
+    savePersistence();
+}
+
+window.calculatePR = function() {
+    let keys = Object.keys(prLoggedOffsets).map(Number).sort((a,b) => a-b);
+    if(keys.length < 2) { alert("Please log at least 2 anchor notes to calculate a curve."); return; }
+
+    for(let m = 21; m <= 108; m++) {
+        let offset = 0;
+        if(m <= keys[0]) offset = prLoggedOffsets[keys[0]];
+        else if(m >= keys[keys.length-1]) offset = prLoggedOffsets[keys[keys.length-1]];
+        else {
+            for(let i=0; i<keys.length-1; i++) {
+                let k1 = keys[i], k2 = keys[i+1];
+                if(m >= k1 && m <= k2) {
+                    let fraction = (m - k1) / (k2 - k1);
+                    offset = prLoggedOffsets[k1] + fraction * (prLoggedOffsets[k2] - prLoggedOffsets[k1]);
+                    break;
+                }
+            }
+        }
+
+        let percent = 0.28; // Mid 
+        if(m <= 48) percent = 0.10; // Bass 
+        else if(m >= 73) percent = 0.18; // Treble 
+
+        // If piano is flat (negative offset), overpull is positive.
+        prOverpullArray[m] = -offset * percent;
+    }
+
+    prMode = 'ACTIVE';
+    $('prMeasureScreen').style.display = 'none';
+    $('prActiveScreen').style.display = 'flex';
+    updatePRSweepUI();
+    savePersistence();
+}
+
+window.resetPRMeasure = function() {
+    prMode = 'MEASURE';
+    $('prActiveScreen').style.display = 'none';
+    $('prMeasureScreen').style.display = 'flex';
+    pitchHistory = []; smoothedPitch = -1;
+    renderPRAnchors();
+    savePersistence();
 }
 
 window.changePRNote = function(dir) {
@@ -863,6 +951,7 @@ window.changePRNote = function(dir) {
     if(prCurrentMidi < 21) prCurrentMidi = 21;
     if(prCurrentMidi > 108) prCurrentMidi = 108;
     pitchHistory = [];
+    smoothedPitch = -1;
     updatePRSweepUI();
 }
 
@@ -872,7 +961,7 @@ function updatePRSweepUI() {
     let overpullCents = prOverpullArray[prCurrentMidi] || 0;
     let targetF = baseF * Math.pow(2, overpullCents / 1200);
     
-    $('prOverpullInfo').textContent = `Overpull: +${overpullCents.toFixed(1)}c`;
+    $('prOverpullInfo').textContent = `Actual Overpull: ${overpullCents > 0 ? '+' : ''}${overpullCents.toFixed(1)}c`;
     $('prSweepTargetF').textContent = `Target: ${targetF.toFixed(2)} Hz`;
     
     if(tunerFilter) tunerFilter.frequency.value = targetF;
@@ -880,34 +969,50 @@ function updatePRSweepUI() {
     $('prSweepCents').style.color = '#000';
 }
 
+function processTunerPitch(rawPitch, targetF, elId) {
+    if(rawPitch > targetF * 0.85 && rawPitch < targetF * 1.15) {
+        pitchHistory.push(rawPitch);
+        if(pitchHistory.length > 5) pitchHistory.shift();
+        let sorted = [...pitchHistory].sort((a,b) => a-b);
+        let medianPitch = sorted[Math.floor(sorted.length/2)];
+        
+        if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 2.0) smoothedPitch = medianPitch;
+        else smoothedPitch = (smoothedPitch * 0.7) + (medianPitch * 0.3);
+        
+        let cents = 1200 * Math.log2(smoothedPitch / targetF);
+        let el = $(elId);
+        
+        el.textContent = (cents > 0 ? '+' : '') + cents.toFixed(1) + 'c';
+        if(Math.abs(cents) < 1.0) el.style.color = '#00aa00';
+        else if (Math.abs(cents) > 5.0) el.style.color = '#d00000';
+        else el.style.color = '#000';
+    } else {
+        if(pitchHistory.length > 0) pitchHistory.shift();
+        if(pitchHistory.length === 0) { 
+            smoothedPitch = -1; 
+            let el = $(elId);
+            el.textContent = '---'; 
+            el.style.color = '#000'; 
+        }
+    }
+}
+
 function runTuner() {
   if(!tunerActive || !isRunning || micPaused) return;
   analyserTuner.getFloatTimeDomainData(tunerDataArray);
   let rawPitch = getPitchYin(tunerDataArray, audioCtx.sampleRate);
   
-  if (mainMode === 'PRAISE' && useCustomIH) {
-      let baseF = tuningCurve[prCurrentMidi];
-      let overpullCents = prOverpullArray[prCurrentMidi] || 0;
-      let targetF = baseF * Math.pow(2, overpullCents / 1200);
-      
-      if(rawPitch > targetF * 0.85 && rawPitch < targetF * 1.15) {
-          pitchHistory.push(rawPitch);
-          if(pitchHistory.length > 5) pitchHistory.shift();
-          let sorted = [...pitchHistory].sort((a,b) => a-b);
-          let medianPitch = sorted[Math.floor(sorted.length/2)];
-          
-          if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 2.0) smoothedPitch = medianPitch;
-          else smoothedPitch = (smoothedPitch * 0.7) + (medianPitch * 0.3);
-          
-          let cents = 1200 * Math.log2(smoothedPitch / targetF);
-          let el = $('prSweepCents');
-          el.textContent = (cents > 0 ? '+' : '') + cents.toFixed(1) + 'c';
-          if(Math.abs(cents) < 1.0) el.style.color = '#00aa00';
-          else if (Math.abs(cents) > 5.0) el.style.color = '#d00000';
-          else el.style.color = '#000';
+  if (mainMode === 'PRAISE') {
+      if (prMode === 'MEASURE') {
+          let targetF = tuningCurve[prMeasureMidi];
+          if(tunerFilter) tunerFilter.frequency.value = targetF;
+          processTunerPitch(rawPitch, targetF, 'prMeasureCents');
       } else {
-          if(pitchHistory.length > 0) pitchHistory.shift();
-          if(pitchHistory.length === 0) { smoothedPitch = -1; $('prSweepCents').textContent = '---'; $('prSweepCents').style.color = '#000'; }
+          let baseF = tuningCurve[prCurrentMidi];
+          let overpullCents = prOverpullArray[prCurrentMidi] || 0;
+          let targetF = baseF * Math.pow(2, overpullCents / 1200);
+          if(tunerFilter) tunerFilter.frequency.value = targetF;
+          processTunerPitch(rawPitch, targetF, 'prSweepCents');
       }
   } 
   else {
@@ -936,77 +1041,6 @@ function runTuner() {
 }
 
 
-// --- MATH & SMOOTHING ---
-function getPolynomial(xData, yData) {
-    let n = xData.length; 
-    if (n === 0) return (m) => 0.0005; 
-    if (n === 1) return (m) => Math.exp(yData[0]); 
-    if (n === 2) { 
-        let slope = (yData[1] - yData[0]) / (xData[1] - xData[0]); 
-        let intercept = yData[0] - slope * xData[0]; 
-        return (m) => Math.exp(slope * m + intercept); 
-    }
-
-    let xCenter = 0;
-    for (let i = 0; i < n; i++) xCenter += xData[i];
-    xCenter /= n;
-
-    let sumX=0, sumY=0, sumX2=0, sumX3=0, sumX4=0, sumXY=0, sumX2Y=0;
-    for(let i=0; i<n; i++) { 
-        let x = xData[i] - xCenter;
-        let y = yData[i]; 
-        sumX += x; sumX2 += x*x; sumX3 += x*x*x; sumX4 += x*x*x*x; 
-        sumY += y; sumXY += x*y; sumX2Y += x*x*y; 
-    }
-    
-    let M = [[n, sumX, sumX2], [sumX, sumX2, sumX3], [sumX2, sumX3, sumX4]]; 
-    let V = [sumY, sumXY, sumX2Y];
-    let det = (m) => m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
-    let D = det(M);
-    
-    if (Math.abs(D) > 1e-10) { 
-        let a = det([[V[0], M[0][1], M[0][2]], [V[1], M[1][1], M[1][2]], [V[2], M[2][1], M[2][2]]])/D; 
-        let b = det([[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]])/D; 
-        let c = det([[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]])/D; 
-        return (m) => {
-            let xm = m - xCenter; 
-            return Math.exp(a + b*xm + c*xm*xm); 
-        };
-    } else { 
-        let denomL = n*sumX2 - sumX*sumX; 
-        let slope = (n*sumXY - sumX*sumY) / denomL; 
-        let intercept = (sumY - slope*sumX) / n; 
-        return (m) => {
-            let xm = m - xCenter;
-            return Math.exp(intercept + slope*xm); 
-        };
-    }
-}
-
-function smoothIHData() {
-    let keys = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b); 
-    if (keys.length === 0) return;
-    
-    let breakSelect = $('bassBreakSelect'); 
-    let breakMidi = breakSelect ? parseInt(breakSelect.value) : 52;
-    
-    let bassKeys = keys.filter(k => k <= breakMidi); 
-    let wireKeys = keys.filter(k => k > breakMidi); 
-    
-    let bassCurve = getPolynomial(bassKeys, bassKeys.map(k => Math.log(ihProfile[k]))); 
-    let wireCurve = getPolynomial(wireKeys, wireKeys.map(k => Math.log(ihProfile[k]))); 
-    
-    for(let m=0; m<=108; m++) { 
-        let B; 
-        if (m <= breakMidi) B = bassCurve(m); 
-        else B = wireCurve(m); 
-        
-        if (B < 1e-6) B = 1e-6; 
-        if (B > 0.05) B = 0.05; 
-        smoothedIH[m] = B; 
-    }
-}
-
 function buildTuningCurve() {
     tuningCurve[69] = 440.0;
     
@@ -1023,7 +1057,7 @@ function buildTuningCurve() {
             if (isHighIH) { w42 = 0.0; w63 = 1.0; } 
             else { w42 = 0.4; w63 = 0.6; } 
         } else if (topMidi <= 69) {
-            if (isHighIH) { w42 = 0.4; w63 = 0.6; }
+            if (isHighIH) { w42 = 0.4; w63 = 0.6; } 
             else { w42 = 1.0; w63 = 0.0; }
         }
         
@@ -1084,206 +1118,6 @@ window.handleListen = function(btn, midi, ivKey) { setTarget(midi, ivKey); captu
 window.lockEarOverride = function() { if (smoothedPitch > 0) { tuningCurve[lowerMidi] = smoothedPitch; let btn = $('btnEarOverride'); let oldTxt = btn.textContent; btn.textContent = "LOCKED!"; btn.style.background = "#00aa00"; btn.style.color = "#fff"; setTimeout(() => { btn.textContent = oldTxt; btn.style.background = "#fff"; btn.style.color = "#000"; }, 2000); refreshUI(); savePersistence(); } else { alert("Turn on TUNER (Step 1) and play note clearly."); } }
 window.wipeAndTarget = function(midi, ivKey) { deleteEntry(ivKey, midi); setTarget(midi, ivKey); }
 window.wipeCluster = function(targetMidi, targetIv, wipeArray) { wipeArray.forEach(item => { if (loggedIntervals[item.i]) { loggedIntervals[item.i] = loggedIntervals[item.i].filter(e => e.midi !== item.m); } }); savePersistence(); renderLogTable(); updateGuide(); updateDynRes(); setTarget(targetMidi, targetIv); }
-
-// --- NEW INSTANT FFT PEAK PICKER FOR INHARMONICITY ---
-function getExactPeak(fftData, sampleRate, targetFreq, centsRange) {
-    let binWidth = sampleRate / analyserFull.fftSize;
-    let fMin = targetFreq * Math.pow(2, -centsRange/1200);
-    let fMax = targetFreq * Math.pow(2, centsRange/1200);
-    let bMin = Math.max(1, Math.floor(fMin / binWidth));
-    let bMax = Math.min(fftData.length - 2, Math.ceil(fMax / binWidth));
-    
-    let maxVal = -Infinity;
-    let maxBin = -1;
-    for(let i = bMin; i <= bMax; i++) {
-        if(fftData[i] > maxVal) { maxVal = fftData[i]; maxBin = i; }
-    }
-    if(maxBin === -1 || maxVal < -90) return null;
-    
-    let alpha = fftData[maxBin - 1];
-    let beta = fftData[maxBin];
-    let gamma = fftData[maxBin + 1];
-    
-    let denom = alpha - 2 * beta + gamma;
-    let p = 0;
-    if (denom !== 0) p = 0.5 * (alpha - gamma) / denom;
-    
-    let exactFreq = (maxBin + p) * binWidth;
-    return { freq: exactFreq, db: beta };
-}
-
-window.sampleIH = function(midi) {
-    if(!analyserFull) return; 
-    ihScanMidi = midi; 
-    
-    // Adaptive Partials
-    if (midi <= 41) { ihPartials = [4, 8]; }       
-    else if (midi <= 48) { ihPartials = [2, 4]; }  
-    else { ihPartials = [1, 4]; }                  
-    
-    ihStrikeFlag = false; 
-    ihStage = 'WAIT_STRIKE';
-    $('ihResult').className = 'guide-result guide-res-wait'; 
-    $('ihResult').innerHTML = `Waiting for strike on ${noteName(midi)}...<br>Play firmly and let it ring.`;
-}
-
-function captureIHFrame(midi) {
-    let fftData = new Float32Array(analyserFull.frequencyBinCount);
-    analyserFull.getFloatFrequencyData(fftData);
-    
-    let f0 = 440 * Math.pow(2, (midi - 69) / 12);
-    let n = ihPartials[0];
-    let m = ihPartials[1];
-    
-    let peakA = getExactPeak(fftData, audioCtx.sampleRate, f0 * n, 150);
-    if (!peakA) return null;
-    
-    let f_actual = peakA.freq / n;
-    let peakB = getExactPeak(fftData, audioCtx.sampleRate, f_actual * m, 150);
-    if (!peakB) return null;
-    
-    let fA = peakA.freq;
-    let fB = peakB.freq;
-    
-    let ratio = (fB / m) / (fA / n);
-    let R2 = ratio * ratio;
-    let denom = m*m - R2 * n*n;
-    let B = 0;
-    if (denom !== 0) B = (R2 - 1) / denom;
-    
-    if (B < 0 || B > 0.05) return null;
-    
-    return { B: B, fA: fA, fB: fB, f_actual: f_actual, n: n, m: m };
-}
-
-// --- MISSING FUNCTION ADDED HERE ---
-function checkAllIHSampled() {
-    let req = [36, 41, 48, 53, 60, 65, 72];
-    let allSampled = true;
-    for(let i=0; i<req.length; i++) {
-        if(ihProfile[req[i]] === undefined) {
-            allSampled = false;
-            break;
-        }
-    }
-    
-    let btn = $('btnCalculateIH');
-    if(btn) {
-        if(allSampled) {
-            btn.disabled = false;
-            btn.style.background = '#000';
-            btn.style.color = '#fff';
-        } else {
-            btn.disabled = true;
-            btn.style.background = '';
-            btn.style.color = '';
-        }
-    }
-}
-
-function finalizeIHCapture(midi) {
-    if (ihFrames.length < 3) {
-        $('ihResult').className = 'guide-result guide-res-warn';
-        $('ihResult').innerHTML = `Not enough stable data (${ihFrames.length} frames).<br>Mute unisons and try again.`;
-        return;
-    }
-
-    ihFrames.sort((a, b) => a.B - b.B);
-    let q1 = Math.floor(ihFrames.length * 0.25);
-    let q3 = Math.floor(ihFrames.length * 0.75);
-    let validFrames = ihFrames.slice(q1, q3 + 1);
-    if (validFrames.length === 0) validFrames = ihFrames;
-
-    let sumB = 0, sumFA = 0, sumFB = 0, sumFActual = 0;
-    validFrames.forEach(f => {
-        sumB += f.B; sumFA += f.fA; sumFB += f.fB; sumFActual += f.f_actual;
-    });
-
-    let avgB = sumB / validFrames.length;
-    let avgFA = sumFA / validFrames.length;
-    let avgFB = sumFB / validFrames.length;
-    let avgFActual = sumFActual / validFrames.length;
-
-    let n = validFrames[0].n;
-    let m = validFrames[0].m;
-    let f0 = 440 * Math.pow(2, (midi - 69) / 12);
-
-    ihProfile[midi] = avgB;
-    ihRawData[midi] = { n: n, m: m, fA: avgFA, fB: avgFB, frames: ihFrames.length, used: validFrames.length };
-    prOffsets[midi] = 1200 * Math.log2(avgFActual / f0);
-
-    $('ihResult').className = 'guide-result guide-res-pass';
-    $('ihResult').innerHTML = `<b>${noteName(midi)}</b> logged! (${validFrames.length}/${ihFrames.length} frames)<br><span style="font-size:0.65rem;">B = ${avgB.toFixed(6)}</span>`;
-    $('ihBtn-'+midi).classList.add('logged');
-
-    checkAllIHSampled();
-    savePersistence();
-}
-
-window.applyStretchCurve = function() {
-    useCustomIH = true; let btn = $('btnCalculateIH'); btn.innerHTML = 'PROFILE ACTIVE ✔'; btn.style.background = '#e6ffe6'; btn.style.color = '#006600'; smoothIHData();
-    let bC4 = smoothedIH[60]; if (!bC4) bC4 = 0.0005; let classText = "";
-    if (bC4 < 0.00015) classText = "Concert Grand (9ft)"; else if (bC4 < 0.00030) classText = "Semi-Concert Grand (7ft)"; else if (bC4 < 0.00050) classText = "Parlor Grand / Tall Upright (52\")"; else if (bC4 < 0.00085) classText = "Studio Upright (45\")"; else if (bC4 < 0.00130) classText = "Console Upright (40-43\")"; else classText = "Drop-Action Spinet (36\")";
-    $('stretchClassification').innerHTML = classText + `<br><span style="font-size:0.65rem;font-weight:normal;color:#666;">Smoothed Ref iH: ${bC4.toFixed(6)}</span>`;
-    buildTuningCurve(); updateDynamicGuideTexts(); setTarget(lowerMidi, curIv);
-    
-    let bassSum = 0, bassCount = 0, midSum = 0, midCount = 0, trebSum = 0, trebCount = 0;
-    Object.keys(prOffsets).forEach(k => {
-        let m = parseInt(k), val = prOffsets[k];
-        if(m <= 45) { bassSum += val; bassCount++; } else if(m <= 72) { midSum += val; midCount++; } else { trebSum += val; trebCount++; }
-    });
-    let avgBass = bassCount > 0 ? bassSum/bassCount : 0; let avgMid = midCount > 0 ? midSum/midCount : 0; let avgTreb = trebCount > 0 ? trebSum/trebCount : 0;
-    
-    for(let m=21; m<=108; m++) {
-        let overpull = 0;
-        if(m <= 45) { overpull = Math.max(0, -avgBass * 0.10); } 
-        else if(m <= 72) { overpull = Math.max(0, -avgMid * 0.25); } 
-        else { overpull = Math.max(0, -avgTreb * 0.15); } 
-        prOverpullArray[m] = overpull;
-    }
-    
-    savePersistence();
-}
-
-window.resetStretchCurve = function() {
-    ihProfile = {}; ihRawData = {}; prOffsets = {}; useCustomIH = false; for(let m=0; m<=108; m++) { tuningCurve[m] = 440 * Math.pow(2, (m - 69) / 12); smoothedIH[m] = 0; prOverpullArray[m] = 0; }
-    $('stretchClassification').innerHTML = ""; $('ihResult').className = 'guide-result guide-res-wait'; $('ihResult').innerHTML = 'Select a note to sample...';
-    let btn = $('btnCalculateIH'); btn.innerHTML = 'CALCULATE TARGETS'; btn.disabled = true; btn.style.background = '#000'; btn.style.color = '#fff'; document.querySelectorAll('#ihBtns .action-btn').forEach(b => b.classList.remove('logged'));
-    updateDynamicGuideTexts(); setTarget(lowerMidi, curIv); savePersistence();
-}
-
-window.copyDiagnostics = function() {
-    let str = "--- IH DIAGNOSTIC DUMP ---\n[RAW MEASUREMENTS]\n";
-    let req = [36, 41, 48, 53, 60, 65, 72];
-    req.forEach(m => {
-        if(ihProfile[m]) {
-            let raw = ihRawData[m];
-            if (raw) {
-                str += `${noteName(m)} (${m}) | Partials: ${raw.n}/${raw.m} | PeakA: ${raw.fA.toFixed(1)} Hz | PeakB: ${raw.fB.toFixed(1)} Hz | Raw B: ${ihProfile[m].toFixed(6)} | Quality: ${raw.used}/${raw.frames}\n`;
-            } else {
-                str += `${noteName(m)} (${m}) | Raw B: ${ihProfile[m].toFixed(6)}\n`;
-            }
-        }
-    });
-    str += "\n[CURVE MATH]\n";
-    let bC4 = smoothedIH[60] || 0;
-    str += `Smoothed C4 Ref: ${bC4.toFixed(6)}\n`;
-    
-    if(useCustomIH) {
-        let f3m3 = getConfig(53, 'M3');
-        str += `Calculated F3-A3 Target: ${f3m3.theoBeat.toFixed(2)} bps\n`;
-        let f3f4 = getConfig(53, 'OCT_42');
-        str += `Calculated F3-F4 (4:2): ${f3f4.theoBeat.toFixed(2)} bps\n`;
-        let f3a3_f = tuningCurve[53];
-        let a3_f = tuningCurve[57];
-        str += `Fundamentals -> F3: ${f3a3_f.toFixed(2)} Hz, A3: ${a3_f.toFixed(2)} Hz\n`;
-    }
-    
-    navigator.clipboard.writeText(str).then(() => {
-        let btn = $('btnCopyDiag'); let old = btn.innerText;
-        btn.innerText = 'COPIED!'; setTimeout(()=> btn.innerText = old, 2000);
-    }).catch(err => { prompt("Copy this data:", str); });
-}
 
 $('btnPause').onclick = async () => {
   micPaused = !micPaused;
@@ -1475,8 +1309,6 @@ function buildAudioProcessor() {
       const rms = Math.sqrt(sum / limit); envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005); lastEnvelope = envelopeRunning;
       noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004; if (noiseFloor < 0.000001) noiseFloor = 0.000001; const snr = envelopeRunning / noiseFloor;
       
-      if (isStrike) ihStrikeFlag = true;
-      
       if (isStrike && snr > 2.5) { const timeNow = performance.now(); if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = []; $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900'; } }
       if (transientSamplesLeft > 0) { transientSamplesLeft--; } else { envHistory.push({ val: envelopeRunning }); const fps = audioCtx.sampleRate / currentChunkSize; if (envHistory.length > Math.round(4.5 * fps)) envHistory.shift(); }
     }
@@ -1488,30 +1320,6 @@ function retuneFilters(cfg) { if (!audioCtx || filters.length === 0) return; con
 
 function renderLoop(ts) {
   if (!isRunning) return; rafId = requestAnimationFrame(renderLoop); if (micPaused) return;
-  
-  if (ihStage === 'WAIT_STRIKE') {
-      if (ihStrikeFlag) {
-          ihStage = 'CAPTURING';
-          ihFrames = [];
-          ihCaptureEndTime = performance.now() + 1500; 
-          ihLastFrameTime = performance.now() + 300; 
-          $('ihResult').innerHTML = `Strike detected!<br>Analyzing ${noteName(ihScanMidi)}...<br><span style="font-size:0.65rem;">Gathering consensus...</span>`;
-      }
-  } else if (ihStage === 'CAPTURING') {
-      let now = performance.now();
-      if (now < ihCaptureEndTime) {
-          if (now - ihLastFrameTime > 100) { 
-              ihLastFrameTime = now;
-              let frameData = captureIHFrame(ihScanMidi);
-              if (frameData) ihFrames.push(frameData);
-          }
-      } else {
-          ihStage = 'IDLE';
-          finalizeIHCapture(ihScanMidi);
-      }
-  } else {
-      ihStrikeFlag = false; 
-  }
   
   if (captureState === 'LISTEN_ONLY') { $('captureStateLbl').textContent = 'LISTENING'; $('captureStateLbl').style.color = '#0066ff'; const snr = envelopeRunning / noiseFloor; if (snr > 1.5 && envelopeRunning > 0.005) sigLight.style.background = '#00ff00'; else sigLight.style.background = '#e0e0e0'; return; }
   if (captureState === 'LOCKED') { let bloomEl = $('bloomIndicator'); if (envHistory.length > 10 && bloomEl) { let diffs = 0; for(let i=1; i<envHistory.length; i++) diffs += (envHistory[i].val - envHistory[i-1].val); decaySlope = diffs / envHistory.length; if (decaySlope > -0.0001) { bloomEl.textContent = 'BLOOMING'; bloomEl.style.color = '#00aa00'; } else { bloomEl.textContent = 'DECAYING'; bloomEl.style.color = '#d00000'; } } } else { let bloomEl = $('bloomIndicator'); if(bloomEl) { bloomEl.textContent = 'UNISON: --'; bloomEl.style.color = '#aaa'; } }
@@ -1574,9 +1382,14 @@ document.querySelectorAll('.iv-tab').forEach(t => {
   }); 
 });
 
-$('bigStartBtn').addEventListener('click', async () => { $('startOverlay').style.display = 'none'; await startAudioEngine(); });
+$('bigStartBtn').addEventListener('click', async () => { 
+    $('startOverlay').style.display = 'none'; 
+    applyIHPreset(); // Initialize default curve on startup
+    await startAudioEngine(); 
+});
+
 enforceReblitzLimits(); buildPianoRoll(); renderDynExpanders(); renderSweep();
-selectMode('DET'); // Default startup tab
+selectMode('DET'); 
 </script>
 </body>
 </html>
