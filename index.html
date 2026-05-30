@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V48</title>
+<title>DAN'S BEAT SPEED DETECTOR - V49</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -56,33 +56,24 @@
   }
   .overlay-title { margin-bottom: 15px; text-transform: uppercase; font-style: italic; font-weight: 900; border-bottom: 3px solid #000; padding-bottom: 5px; }
 
-  /* MAIN MENU */
-  #mainMenuOverlay .menu-btn {
-      width: 100%; padding: 18px; margin-bottom: 12px; font-size: 1.3rem; font-weight: 900;
-      border: 3px solid #000; border-radius: 8px; background: #fff; cursor: pointer;
-      text-transform: uppercase; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      box-shadow: 0 4px 0 #000; transition: transform 0.1s, box-shadow 0.1s;
-  }
-  #mainMenuOverlay .menu-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #000; background: #f0f0f0; }
-
   .header { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 6px; flex-shrink: 0; width: 100%; }
   h1 { 
-    color: #ff0000; font-size: clamp(1.2rem, 5.5vw, 2rem); white-space: normal; font-weight: 900; 
+    color: #ff0000; font-size: clamp(1.2rem, 5.5vw, 1.8rem); white-space: normal; font-weight: 900; 
     font-style: italic; text-align: center; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; width: 100%; margin-bottom: 4px;
     text-shadow: 2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
   }
   
-  .controls-row { display: flex; gap: 4px; width: 100%; justify-content: space-between; flex-wrap: nowrap; }
+  .controls-row { display: flex; gap: 4px; width: 100%; justify-content: space-between; flex-wrap: nowrap; overflow-x: auto; background: #f0f0f0; padding: 4px; border-radius: 6px; border: 2px solid #000; }
   .top-btn { 
-    background: #fff; border: 2px solid #000; font-size: 0.75rem; font-weight: 900; padding: 8px 4px; 
+    background: #fff; border: 2px solid #000; font-size: 0.7rem; font-weight: 900; padding: 6px 4px; 
     cursor: pointer; border-radius: 4px; text-transform: uppercase; flex: 1; text-align: center; 
-    white-space: nowrap; transition: all 0.1s; color: #000; box-shadow: 0 2px 0 #000;
+    white-space: nowrap; transition: all 0.1s; color: #000; box-shadow: 0 2px 0 #000; display:flex; align-items:center; justify-content:center;
   }
   .top-btn:active { transform: translateY(2px); box-shadow: 0 0 0 #000; }
+  .top-btn.active-tab { background: #000; color: #fff; box-shadow: 0 2px 0 #333; }
   
-  #btnMenuToggle { background: #000; color: #fff; }
-  #btnPause { background: #00aa00; color: #fff; border-color: #00aa00; box-shadow: 0 2px 0 #006600;}
-  #btnPassThrough { background: #fff; color: #000; border-color: #000; }
+  #btnPause { background: #00aa00; font-size: 1rem; border-color: #007700; box-shadow: 0 2px 0 #005500;}
+  #btnPassThrough { font-size: 1rem; }
 
   button.ctrl-btn {
     background: #ffffff; border: 1px solid #000000; color: #000000; padding: 4px 8px; border-radius: 4px; 
@@ -253,19 +244,6 @@
   <button id="bigStartBtn">ENTER</button>
 </div>
 
-<div id="mainMenuOverlay" class="overlay-panel">
-    <h2 class="overlay-title">Workspace Selection</h2>
-    <p style="font-size:0.8rem; color:#555; margin-bottom:15px; text-align:center;">Select your active module.</p>
-    
-    <button class="menu-btn" onclick="selectMode('GUIDE')">GUIDE</button>
-    <button class="menu-btn" onclick="selectMode('DET')">LOGS</button>
-    <button class="menu-btn" onclick="selectMode('PRAISE')">PITCH RAISE</button>
-    <button class="menu-btn" onclick="selectMode('IH')">STRETCH</button>
-    <button class="menu-btn" onclick="toggleFiles(true)" style="background:#e0f0ff; border-color:#0066ff; color:#0044bb;">FILES</button>
-
-    <button class="ctrl-btn" onclick="toggleMenu(false)" style="padding:16px; font-size:1.2rem; border-width:3px; margin-top:auto; box-shadow: 0 4px 0 #000; font-weight:900;">CLOSE MENU</button>
-</div>
-
 <div id="filesOverlay" class="overlay-panel">
    <h2 class="overlay-title">Saved Tunings</h2>
    <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px; min-height:150px;"></div>
@@ -298,9 +276,13 @@
     <div class="header">
       <h1>DAN'S BEAT SPEED DETECTOR</h1>
       <div class="controls-row">
-        <button class="top-btn" id="btnMenuToggle" onclick="toggleMenu(true)">&#9776; MENU (<span id="activeModeLbl">GUIDE</span>)</button>
-        <button class="top-btn" id="btnPause">MIC: ON</button>
-        <button class="top-btn" id="btnPassThrough">PASS: OFF</button>
+        <button class="top-btn" id="nav-DET" onclick="selectMode('DET')">LOGS</button>
+        <button class="top-btn" id="nav-GUIDE" onclick="selectMode('GUIDE')">GUIDE</button>
+        <button class="top-btn" id="nav-IH" onclick="selectMode('IH')">IH</button>
+        <button class="top-btn" id="nav-PRAISE" onclick="selectMode('PRAISE')">PR</button>
+        <button class="top-btn" id="nav-FILES" onclick="toggleFiles(true)">💾</button>
+        <button class="top-btn" id="btnPause">🎙️</button>
+        <button class="top-btn" id="btnPassThrough">🔇</button>
       </div>
     </div>
 
@@ -362,10 +344,11 @@
       <div id="ws-IH" class="workspace-layer">
         <div style="padding: 8px;">
             <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Stretch Curve Profiler</h3>
-            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample keys to map this piano's wire stiffness. The app will secretly measure the piano's flatness to Auto-Calculate Pitch Raise targets.</p>
+            <p style="font-size: 0.75rem; margin-bottom: 12px; color: #555;">Sample the critical anchor keys to map this piano's exact wire stiffness.</p>
+            
+            <p style="font-weight:bold; color:#d00000; text-align:center; font-size:0.75rem; margin-bottom: 8px;">MUTE OUTSIDE STRINGS. PLAY CENTER FIRMLY.</p>
+
             <div class="action-row" style="justify-content: center; gap: 6px;" id="ihBtns">
-                <button class="action-btn" onclick="sampleIH(24)" id="ihBtn-24">C1</button>
-                <button class="action-btn" onclick="sampleIH(29)" id="ihBtn-29">F1</button>
                 <button class="action-btn" onclick="sampleIH(36)" id="ihBtn-36">C2</button>
                 <button class="action-btn" onclick="sampleIH(41)" id="ihBtn-41">F2</button>
                 <button class="action-btn" onclick="sampleIH(48)" id="ihBtn-48">C3</button>
@@ -373,8 +356,6 @@
                 <button class="action-btn" onclick="sampleIH(60)" id="ihBtn-60">C4</button>
                 <button class="action-btn" onclick="sampleIH(65)" id="ihBtn-65">F4</button>
                 <button class="action-btn" onclick="sampleIH(72)" id="ihBtn-72">C5</button>
-                <button class="action-btn" onclick="sampleIH(77)" id="ihBtn-77">F5</button>
-                <button class="action-btn" onclick="sampleIH(84)" id="ihBtn-84">C6</button>
             </div>
             
             <div style="display:flex; justify-content:center; align-items:center; margin-top:12px; gap:8px;">
@@ -429,7 +410,7 @@
           </div>
       </div>
 
-      <div id="ws-GUIDE" class="workspace-layer" style="display: flex;">
+      <div id="ws-GUIDE" class="workspace-layer">
         <div class="guide-tabs">
           <button class="gt-btn active" onclick="switchGuideTab('TEMP')">TEMP</button>
           <button class="gt-btn" onclick="switchGuideTab('UP')">UP</button>
@@ -656,24 +637,21 @@ async function getBuiltInMicConstraints() {
   return base;
 }
 
-let mainMode = 'GUIDE'; 
-
-window.toggleMenu = function(show) {
-    if(show) { $('mainMenuOverlay').style.display = 'flex'; } 
-    else { $('mainMenuOverlay').style.display = 'none'; }
-}
+let mainMode = 'DET'; // Set default mode to Logs
 
 window.selectMode = function(mode) {
     mainMode = mode;
     document.querySelectorAll('.workspace-layer').forEach(l => l.style.display = 'none');
-    if(mode === 'GUIDE' || mode === 'DET' || mode === 'IH' || mode === 'PRAISE') {
-        $('ws-' + mode).style.display = (mode === 'GUIDE' ? 'flex' : 'block');
+    
+    if(mode === 'DET' || mode === 'IH' || mode === 'PRAISE') {
+        $('ws-' + mode).style.display = 'block';
+    } else if (mode === 'GUIDE') {
+        $('ws-GUIDE').style.display = 'flex';
     }
-    let lbl = mode;
-    if(mode === 'DET') lbl = 'LOGS';
-    if(mode === 'IH') lbl = 'STRETCH';
-    if(mode === 'PRAISE') lbl = 'P.RAISE';
-    $('activeModeLbl').textContent = lbl;
+    
+    // Manage tab highlights
+    document.querySelectorAll('.top-btn').forEach(btn => btn.classList.remove('active-tab'));
+    if($('nav-' + mode)) $('nav-' + mode).classList.add('active-tab');
     
     if (mode === 'PRAISE') {
         updatePRState();
@@ -683,7 +661,6 @@ window.selectMode = function(mode) {
             runTuner(); 
         }
     }
-    toggleMenu(false);
 }
 
 // Global Variables
@@ -698,14 +675,11 @@ let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
 let decaySlope = 0; 
 let loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] };
 
-// Inharmonicity Two-Stage variables
-let ihFilter1 = null, ihFilter4 = null, ihAnalyser1 = null, ihAnalyser4 = null;
-let ihData1 = null, ihData4 = null;
+// Inharmonicity variables (FFT Peak Picking)
 let ihPartials = [1, 4];
-let isIHScanning = false, ihScanMidi = -1, ihPitches1 = [], ihPitches4 = [], ihRafId = null;
+let ihScanMidi = -1;
 let ihProfile = {}; let smoothedIH = new Float32Array(109); let useCustomIH = false;
 let ihStage = 'IDLE'; 
-let prePitches = [];
 
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
@@ -721,7 +695,7 @@ let prCurrentMidi = 21; // start at A0
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV48')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV49')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -773,16 +747,17 @@ window.startAudioEngine = async function() {
         if (audioCtx.state === 'suspended') await audioCtx.resume();
         const src = audioCtx.createMediaStreamSource(micStream);
         
-        analyserFull = audioCtx.createAnalyser(); analyserFull.fftSize = 4096; analyserFull.smoothingTimeConstant = 0.7;
+        // Setup Full Analyser for High-Res IH FFTs
+        analyserFull = audioCtx.createAnalyser(); 
+        analyserFull.fftSize = 16384; // Massive resolution
+        analyserFull.smoothingTimeConstant = 0.0; // We want raw instant peaks
+        
+        // Setup Tuner path
         tunerFilter = audioCtx.createBiquadFilter(); tunerFilter.type = 'bandpass'; tunerFilter.frequency.value = 440.0; tunerFilter.Q.value = 3.0; 
         analyserTuner = audioCtx.createAnalyser(); analyserTuner.fftSize = 4096;
         src.connect(tunerFilter); tunerFilter.connect(analyserTuner);
 
-        ihFilter1 = audioCtx.createBiquadFilter(); ihFilter1.type = 'bandpass'; ihFilter1.Q.value = 5.0; ihAnalyser1 = audioCtx.createAnalyser(); ihAnalyser1.fftSize = 4096; src.connect(ihFilter1); ihFilter1.connect(ihAnalyser1);
-        ihFilter4 = audioCtx.createBiquadFilter(); ihFilter4.type = 'bandpass'; ihFilter4.Q.value = 5.0; ihAnalyser4 = audioCtx.createAnalyser(); ihAnalyser4.fftSize = 4096; src.connect(ihFilter4); ihFilter4.connect(ihAnalyser4);
-        
-        ihData1 = new Float32Array(ihAnalyser1.fftSize); ihData4 = new Float32Array(ihAnalyser4.fftSize);
-
+        // Standard beat measurement filters
         const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
         gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
         monitorGain = audioCtx.createGain(); monitorGain.gain.value = monitorOn && !micPaused ? 25.0 : 0.0;
@@ -803,7 +778,7 @@ window.startAudioEngine = async function() {
 
 // PERSISTENCE & FILE SYSTEM
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV48');
+  const saved = localStorage.getItem('danDetectorLogsV49');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -825,10 +800,21 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV48', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV49', JSON.stringify(state)); }
 loadPersistence();
 
-window.toggleFiles = function(show) { let overlay = $('filesOverlay'); if(show) { overlay.style.display = 'flex'; renderSavedFiles(); } else { overlay.style.display = 'none'; toggleMenu(true); } }
+window.toggleFiles = function(show) { 
+    let overlay = $('filesOverlay'); 
+    if(show) { 
+        overlay.style.display = 'flex'; 
+        renderSavedFiles(); 
+        document.querySelectorAll('.top-btn').forEach(btn => btn.classList.remove('active-tab'));
+        $('nav-FILES').classList.add('active-tab');
+    } else { 
+        overlay.style.display = 'none'; 
+        selectMode(mainMode); 
+    } 
+}
 function renderSavedFiles() {
     let list = $('savedFilesList'); list.innerHTML = '';
     Object.keys(savedTunings).forEach(key => {
@@ -844,18 +830,18 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV48', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV48', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
         loggedIntervals = data.logs; ihProfile = data.ih || {}; useCustomIH = data.customIH || false; if(data.curve) tuningCurve = new Float32Array(data.curve); if(data.prOffsets) prOffsets = data.prOffsets; if(data.prOverpull) prOverpullArray = new Float32Array(data.prOverpull); savePersistence();
         if(useCustomIH) { smoothIHData(); document.querySelectorAll('#ihBtns .action-btn').forEach(b => { let m = parseInt(b.id.split('-')[1]); if(ihProfile[m] !== undefined) b.classList.add('logged'); }); $('btnCalculateIH').disabled = false; applyStretchCurve(); } else { resetStretchCurve(); }
-        renderLogTable(); updateGuide(); toggleFiles(false); toggleMenu(false);
+        renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV48', JSON.stringify(savedTunings)); renderSavedFiles(); } }
-window.startNewTuning = function() { if(confirm('Clear all logs?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; resetStretchCurve(); toggleFiles(false); toggleMenu(false); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.startNewTuning = function() { if(confirm('Clear all logs?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; resetStretchCurve(); toggleFiles(false); } }
 
 // PITCH RAISE UI LOGIC
 window.updatePRState = function() {
@@ -950,23 +936,55 @@ function runTuner() {
 
 // --- MATH & SMOOTHING ---
 function getPolynomial(xData, yData) {
-    let n = xData.length; if (n === 0) return (m) => 0.0005; if (n === 1) return (m) => Math.exp(yData[0]);
-    if (n === 2) { let slope = (yData[1] - yData[0]) / (xData[1] - xData[0]); let intercept = yData[0] - slope * xData[0]; return (m) => Math.exp(slope * m + intercept); }
+    let n = xData.length; 
+    if (n === 0) return (m) => 0.0005; 
+    if (n === 1) return (m) => Math.exp(yData[0]); // Flat line fallback
+    if (n === 2) { 
+        let slope = (yData[1] - yData[0]) / (xData[1] - xData[0]); 
+        let intercept = yData[0] - slope * xData[0]; 
+        return (m) => Math.exp(slope * m + intercept); 
+    }
     let sumX=0, sumY=0, sumX2=0, sumX3=0, sumX4=0, sumXY=0, sumX2Y=0;
     for(let i=0; i<n; i++) { let x = xData[i], y = yData[i]; sumX += x; sumX2 += x*x; sumX3 += x*x*x; sumX4 += x*x*x*x; sumY += y; sumXY += x*y; sumX2Y += x*x*y; }
     let M = [[n, sumX, sumX2], [sumX, sumX2, sumX3], [sumX2, sumX3, sumX4]]; let V = [sumY, sumXY, sumX2Y];
     let det = (m) => m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
     let D = det(M);
-    if (Math.abs(D) > 1e-10) { let a = det([[V[0], M[0][1], M[0][2]], [V[1], M[1][1], M[1][2]], [V[2], M[2][1], M[2][2]]])/D; let b = det([[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]])/D; let c = det([[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]])/D; return (m) => Math.exp(a + b*m + c*m*m); } 
-    else { let denomL = n*sumX2 - sumX*sumX; let slope = (n*sumXY - sumX*sumY) / denomL; let intercept = (sumY - slope*sumX) / n; return (m) => Math.exp(intercept + slope*m); }
+    if (Math.abs(D) > 1e-10) { 
+        let a = det([[V[0], M[0][1], M[0][2]], [V[1], M[1][1], M[1][2]], [V[2], M[2][1], M[2][2]]])/D; 
+        let b = det([[M[0][0], V[0], M[0][2]], [M[1][0], V[1], M[1][2]], [M[2][0], V[2], M[2][2]]])/D; 
+        let c = det([[M[0][0], M[0][1], V[0]], [M[1][0], M[1][1], V[1]], [M[2][0], M[2][1], V[2]]])/D; 
+        return (m) => Math.exp(a + b*m + c*m*m); 
+    } else { 
+        let denomL = n*sumX2 - sumX*sumX; 
+        let slope = (n*sumXY - sumX*sumY) / denomL; 
+        let intercept = (sumY - slope*sumX) / n; 
+        return (m) => Math.exp(intercept + slope*m); 
+    }
 }
 
 function smoothIHData() {
-    let keys = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b); if (keys.length === 0) return;
-    let breakSelect = $('bassBreakSelect'); let breakMidi = breakSelect ? parseInt(breakSelect.value) : 52;
-    let bassKeys = keys.filter(k => k <= breakMidi); let midKeys = keys.filter(k => k > breakMidi && k <= 69); let trebleKeys = keys.filter(k => k > 69);
-    let bassCurve = getPolynomial(bassKeys, bassKeys.map(k => Math.log(ihProfile[k]))); let midCurve = getPolynomial(midKeys, midKeys.map(k => Math.log(ihProfile[k]))); let trebleCurve = getPolynomial(trebleKeys, trebleKeys.map(k => Math.log(ihProfile[k])));
-    for(let m=0; m<=108; m++) { let B; if (m <= breakMidi) B = bassCurve(m); else if (m <= 69) B = midCurve(m); else B = trebleCurve(m); if (B < 1e-6) B = 1e-6; if (B > 0.05) B = 0.05; smoothedIH[m] = B; }
+    let keys = Object.keys(ihProfile).map(Number).sort((a,b)=>a-b); 
+    if (keys.length === 0) return;
+    
+    let breakSelect = $('bassBreakSelect'); 
+    let breakMidi = breakSelect ? parseInt(breakSelect.value) : 52;
+    
+    // TWO-PART PIECEWISE MATH (Bass vs Plain Wire)
+    let bassKeys = keys.filter(k => k <= breakMidi); 
+    let wireKeys = keys.filter(k => k > breakMidi); 
+    
+    let bassCurve = getPolynomial(bassKeys, bassKeys.map(k => Math.log(ihProfile[k]))); 
+    let wireCurve = getPolynomial(wireKeys, wireKeys.map(k => Math.log(ihProfile[k]))); 
+    
+    for(let m=0; m<=108; m++) { 
+        let B; 
+        if (m <= breakMidi) B = bassCurve(m); 
+        else B = wireCurve(m); 
+        
+        if (B < 1e-6) B = 1e-6; 
+        if (B > 0.05) B = 0.05; 
+        smoothedIH[m] = B; 
+    }
 }
 
 function buildTuningCurve() {
@@ -1031,29 +1049,113 @@ window.wipeAndTarget = function(midi, ivKey) { deleteEntry(ivKey, midi); setTarg
 window.wipeCluster = function(targetMidi, targetIv, wipeArray) { wipeArray.forEach(item => { if (loggedIntervals[item.i]) { loggedIntervals[item.i] = loggedIntervals[item.i].filter(e => e.midi !== item.m); } }); savePersistence(); renderLogTable(); updateGuide(); updateDynRes(); setTarget(targetMidi, targetIv); }
 
 
-// --- TWO-STAGE INHARMONICITY SCANNER ---
-function runIHScanner() {
-    if (!isIHScanning || !isRunning || micPaused) return;
+// --- NEW INSTANT FFT PEAK PICKER FOR INHARMONICITY ---
+function getExactPeak(fftData, sampleRate, targetFreq, centsRange) {
+    let binWidth = sampleRate / analyserFull.fftSize;
+    let fMin = targetFreq * Math.pow(2, -centsRange/1200);
+    let fMax = targetFreq * Math.pow(2, centsRange/1200);
+    let bMin = Math.max(1, Math.floor(fMin / binWidth));
+    let bMax = Math.min(fftData.length - 2, Math.ceil(fMax / binWidth));
     
-    if (ihStage === 'PRE') {
-        if(tunerDataArray && analyserTuner) {
-            analyserTuner.getFloatTimeDomainData(tunerDataArray);
-            let rawPitch = getPitchYin(tunerDataArray, audioCtx.sampleRate);
-            let f0 = 440 * Math.pow(2, (ihScanMidi - 69) / 12);
-            if (rawPitch > f0 * 0.80 && rawPitch < f0 * 1.20) prePitches.push(rawPitch);
-        }
-    } else if (ihStage === 'CAPTURE') {
-        ihAnalyser1.getFloatTimeDomainData(ihData1); ihAnalyser4.getFloatTimeDomainData(ihData4);
-        let p1 = getPitchYin(ihData1, audioCtx.sampleRate), p4 = getPitchYin(ihData4, audioCtx.sampleRate);
-        let measuredF = prePitches.length > 0 ? prePitches[Math.floor(prePitches.length/2)] : 440 * Math.pow(2, (ihScanMidi - 69) / 12);
-        let fA = measuredF * ihPartials[0], fB = measuredF * ihPartials[1];
-        if (p1 > fA * 0.9 && p1 < fA * 1.1) ihPitches1.push(p1); 
-        if (p4 > fB * 0.9 && p4 < fB * 1.1) ihPitches4.push(p4);
+    let maxVal = -Infinity;
+    let maxBin = -1;
+    for(let i = bMin; i <= bMax; i++) {
+        if(fftData[i] > maxVal) { maxVal = fftData[i]; maxBin = i; }
     }
-    ihRafId = requestAnimationFrame(runIHScanner);
+    // Reject if too quiet (noise floor check)
+    if(maxBin === -1 || maxVal < -90) return null;
+    
+    // Quadratic Interpolation for exact frequency
+    let alpha = fftData[maxBin - 1];
+    let beta = fftData[maxBin];
+    let gamma = fftData[maxBin + 1];
+    
+    let denom = alpha - 2 * beta + gamma;
+    let p = 0;
+    if (denom !== 0) p = 0.5 * (alpha - gamma) / denom;
+    
+    let exactFreq = (maxBin + p) * binWidth;
+    return { freq: exactFreq, db: beta };
 }
 
-function checkAllIHSampled() { let required = [24, 29, 36, 41, 48, 53, 60, 65, 72, 77, 84]; let allGood = required.every(m => ihProfile[m] !== undefined); if (allGood) { $('btnCalculateIH').disabled = false; $('btnCalculateIH').style.background = '#00aa00'; $('btnCalculateIH').style.borderColor = '#00aa00'; } }
+window.sampleIH = function(midi) {
+    if(!analyserFull) return; 
+    ihScanMidi = midi; 
+    
+    // Define partials based on physical realities of the strings
+    if (midi <= 41) { ihPartials = [4, 8]; }       // Deep wound bass
+    else if (midi <= 48) { ihPartials = [2, 4]; }  // Upper bass / break
+    else { ihPartials = [1, 4]; }                  // Plain wire
+    
+    ihStage = 'WAIT_STRIKE';
+    $('ihResult').className = 'guide-result guide-res-wait'; 
+    $('ihResult').innerHTML = `Waiting for strike on ${noteName(midi)}...<br>Play firmly and let it ring.`;
+}
+
+function captureIHFFT(midi) {
+    ihStage = 'IDLE';
+    let fftData = new Float32Array(analyserFull.frequencyBinCount);
+    analyserFull.getFloatFrequencyData(fftData);
+    
+    let f0 = 440 * Math.pow(2, (midi - 69) / 12);
+    let n = ihPartials[0];
+    let m = ihPartials[1];
+    
+    // Search for lower partial (widest net)
+    let peakA = getExactPeak(fftData, audioCtx.sampleRate, f0 * n, 150);
+    if (!peakA) {
+        $('ihResult').className = 'guide-result guide-res-warn';
+        $('ihResult').innerHTML = `Could not lock ${n}th partial. Too quiet. Try again.`;
+        return;
+    }
+    
+    // Extrapolate exact fundamental from peakA
+    let f_actual = peakA.freq / n;
+    
+    // Search for upper partial near the exact target
+    let peakB = getExactPeak(fftData, audioCtx.sampleRate, f_actual * m, 150);
+    if (!peakB) {
+        $('ihResult').className = 'guide-result guide-res-warn';
+        $('ihResult').innerHTML = `Could not lock ${m}th partial. Too quiet. Try again.`;
+        return;
+    }
+    
+    let fA = peakA.freq;
+    let fB = peakB.freq;
+    
+    // Exact mathematical formula for B (Inharmonicity Coefficient)
+    let ratio = (fB / m) / (fA / n);
+    let R2 = ratio * ratio;
+    let denom = m*m - R2 * n*n;
+    let B = 0;
+    if (denom !== 0) B = (R2 - 1) / denom;
+    
+    if (B < 0 || B > 0.05) {
+        $('ihResult').className = 'guide-result guide-res-warn';
+        $('ihResult').innerHTML = `Bad data jump (B = ${B.toFixed(6)}). Mute unisons and try again.`;
+        return;
+    }
+    
+    ihProfile[midi] = B;
+    prOffsets[midi] = 1200 * Math.log2(f_actual / f0); // Log flatness for Auto Pitch Raise
+    
+    $('ihResult').className = 'guide-result guide-res-pass'; 
+    $('ihResult').innerHTML = `<b>${noteName(midi)}</b> logged!<br><span style="font-size:0.65rem;">B = ${B.toFixed(6)}</span>`; 
+    $('ihBtn-'+midi).classList.add('logged'); 
+    
+    checkAllIHSampled();
+    savePersistence();
+}
+
+function checkAllIHSampled() { 
+    let required = [36, 41, 48, 53, 60, 65, 72]; 
+    let allGood = required.every(m => ihProfile[m] !== undefined); 
+    if (allGood) { 
+        $('btnCalculateIH').disabled = false; 
+        $('btnCalculateIH').style.background = '#00aa00'; 
+        $('btnCalculateIH').style.borderColor = '#00aa00'; 
+    } 
+}
 
 window.applyStretchCurve = function() {
     useCustomIH = true; let btn = $('btnCalculateIH'); btn.innerHTML = 'PROFILE ACTIVE ✔'; btn.style.background = '#e6ffe6'; btn.style.color = '#006600'; smoothIHData();
@@ -1088,53 +1190,50 @@ window.resetStretchCurve = function() {
     updateDynamicGuideTexts(); setTarget(lowerMidi, curIv); savePersistence();
 }
 
-window.sampleIH = function(midi) {
-    if(!ihFilter1 || !ihFilter4) return; ihScanMidi = midi; let f0 = 440 * Math.pow(2, (midi - 69) / 12); 
-    if (midi <= 36) { ihPartials = [6, 10]; } else if (midi <= 48) { ihPartials = [2, 4]; } else { ihPartials = [1, 4]; }                  
-    
-    ihStage = 'PRE'; prePitches = []; ihPitches1 = []; ihPitches4 = [];
-    
-    if(!tunerActive) { tunerActive = true; tunerDataArray = new Float32Array(analyserTuner.fftSize); }
-    if(tunerFilter) { tunerFilter.frequency.value = f0; tunerFilter.Q.value = 1.0; } // Wide net
-    
-    if (ihRafId) cancelAnimationFrame(ihRafId); isIHScanning = true; runIHScanner();
-    $('ihResult').className = 'guide-result guide-res-wait'; $('ihResult').innerHTML = `Pre-measuring actual pitch for ${noteName(midi)}...`;
-    
-    // Stage 1: Pre-measure (1000ms)
-    setTimeout(() => {
-        if(!isIHScanning || ihStage !== 'PRE') return;
-        let measuredF = f0;
-        if (prePitches.length > 5) {
-            prePitches.sort((a,b)=>a-b); measuredF = prePitches[Math.floor(prePitches.length/2)];
-            let centsFlat = 1200 * Math.log2(measuredF / f0); prOffsets[midi] = centsFlat; 
-        } else { prOffsets[midi] = 0; }
-        
-        ihStage = 'CAPTURE';
-        let fA = measuredF * ihPartials[0], fB = measuredF * ihPartials[1]; 
-        ihFilter1.frequency.value = fA; ihFilter1.Q.value = 4.0;
-        ihFilter4.frequency.value = fB; ihFilter4.Q.value = 4.0;
-        
-        let partialText = ihPartials[0] + 'th & ' + ihPartials[1] + 'th'; if(ihPartials[0]===1) partialText = 'Fundamental & 4th'; if(ihPartials[0]===2) partialText = '2nd & 4th';
-        $('ihResult').innerHTML = `Pitch found. Scanning ${partialText} Partial...`;
-        
-        // Stage 2: Capture (2000ms)
-        setTimeout(() => {
-            isIHScanning = false; ihStage = 'IDLE';
-            if(ihPitches1.length > 5 && ihPitches4.length > 5) {
-                ihPitches1.sort((a,b)=>a-b); ihPitches4.sort((a,b)=>a-b); let medA = ihPitches1[Math.floor(ihPitches1.length/2)]; let medB = ihPitches4[Math.floor(ihPitches4.length/2)];
-                let n = ihPartials[0], m = ihPartials[1], ratio = (medB / m) / (medA / n), R2 = ratio * ratio, B = (R2 - 1) / (m*m - R2 * n*n); if (B < 0) B = 0; ihProfile[midi] = B;
-                $('ihResult').className = 'guide-result guide-res-pass'; $('ihResult').innerHTML = `<b>${noteName(midi)} stretch point & pitch logged!</b>`; $('ihBtn-'+midi).classList.add('logged'); checkAllIHSampled();
-            } else { $('ihResult').className = 'guide-result guide-res-warn'; $('ihResult').innerHTML = `Could not lock partials for ${noteName(midi)}.<br>Try again louder.`; }
-        }, 2000); 
-    }, 1000); 
-}
-
 $('btnPause').onclick = async () => {
   micPaused = !micPaused;
-  if (micPaused) { $('btnPause').textContent = 'MIC: PAUSED'; $('btnPause').style.background = '#ffcccc'; $('btnPause').style.color = '#d00000'; $('btnPause').style.borderColor = '#d00000'; $('captureStateLbl').textContent = 'PAUSED'; $('captureStateLbl').style.color = '#d00000'; sigLight.style.background = '#ff0000'; sigLight.style.boxShadow = '0 0 8px #ff0000'; captureState = 'IDLE'; if(monitorGain) monitorGain.gain.value = 0; if(audioCtx) audioCtx.suspend(); } 
-  else { $('btnPause').textContent = 'MIC: ON'; $('btnPause').style.background = '#00aa00'; $('btnPause').style.color = '#ffffff'; $('btnPause').style.borderColor = '#00aa00'; resetCapture(); const tracksLost = !micStream || micStream.getTracks().every(t => t.readyState === 'ended'); if (tracksLost || !audioCtx || audioCtx.state === 'closed') { await startAudioEngine(); } else { if(audioCtx.state === 'suspended') await audioCtx.resume(); } if(monitorGain && monitorOn) monitorGain.gain.value = 25.0; }
+  if (micPaused) { 
+      $('btnPause').textContent = '🎙️'; 
+      $('btnPause').style.background = '#ffcccc'; 
+      $('btnPause').style.borderColor = '#d00000'; 
+      $('captureStateLbl').textContent = 'PAUSED'; 
+      $('captureStateLbl').style.color = '#d00000'; 
+      sigLight.style.background = '#ff0000'; 
+      sigLight.style.boxShadow = '0 0 8px #ff0000'; 
+      captureState = 'IDLE'; 
+      if(monitorGain) monitorGain.gain.value = 0; 
+      if(audioCtx) audioCtx.suspend(); 
+  } 
+  else { 
+      $('btnPause').textContent = '🎙️'; 
+      $('btnPause').style.background = '#00aa00'; 
+      $('btnPause').style.borderColor = '#007700'; 
+      resetCapture(); 
+      const tracksLost = !micStream || micStream.getTracks().every(t => t.readyState === 'ended'); 
+      if (tracksLost || !audioCtx || audioCtx.state === 'closed') { 
+          await startAudioEngine(); 
+      } else { 
+          if(audioCtx.state === 'suspended') await audioCtx.resume(); 
+      } 
+      if(monitorGain && monitorOn) monitorGain.gain.value = 25.0; 
+  }
 };
-$('btnPassThrough').onclick = () => { monitorOn = !monitorOn; if (monitorOn) { $('btnPassThrough').textContent = 'PASS: ON'; $('btnPassThrough').style.background = '#00aa00'; $('btnPassThrough').style.color = '#ffffff'; $('btnPassThrough').style.borderColor = '#00aa00'; if(monitorGain && !micPaused) monitorGain.gain.value = 25.0; } else { $('btnPassThrough').textContent = 'PASS: OFF'; $('btnPassThrough').style.background = '#ffffff'; $('btnPassThrough').style.color = '#000000'; $('btnPassThrough').style.borderColor = '#000000'; if(monitorGain) monitorGain.gain.value = 0; } };
+$('btnPassThrough').onclick = () => { 
+    monitorOn = !monitorOn; 
+    if (monitorOn) { 
+        $('btnPassThrough').textContent = '🔈'; 
+        $('btnPassThrough').style.background = '#00aa00'; 
+        $('btnPassThrough').style.color = '#ffffff'; 
+        $('btnPassThrough').style.borderColor = '#007700'; 
+        if(monitorGain && !micPaused) monitorGain.gain.value = 25.0; 
+    } else { 
+        $('btnPassThrough').textContent = '🔇'; 
+        $('btnPassThrough').style.background = '#ffffff'; 
+        $('btnPassThrough').style.color = '#000000'; 
+        $('btnPassThrough').style.borderColor = '#000000'; 
+        if(monitorGain) monitorGain.gain.value = 0; 
+    } 
+};
 
 $('btnTunerToggle').onclick = () => {
   tunerActive = !tunerActive; const btn = $('btnTunerToggle'), out = $('tunerReadout');
@@ -1277,7 +1376,7 @@ function buildAudioProcessor() {
     if (!isRunning || micPaused) return; const inputData = e.inputBuffer.getChannelData(0);
     for (let offset = 0; offset < inputData.length; offset += currentChunkSize) {
       let sum = 0, limit = Math.min(currentChunkSize, inputData.length - offset); for (let i = 0; i < limit; i++) sum += inputData[offset + i] * inputData[offset + i];
-      const rms = Math.sqrt(sum / limit); envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); const isStrike = (envelopeRunning > lastEnvelope * 2.0) && (envelopeRunning > 0.005); lastEnvelope = envelopeRunning;
+      const rms = Math.sqrt(sum / limit); envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005); lastEnvelope = envelopeRunning;
       noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004; if (noiseFloor < 0.000001) noiseFloor = 0.000001; const snr = envelopeRunning / noiseFloor;
       if (isStrike && snr > 2.5) { const timeNow = performance.now(); if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = []; $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900'; } }
       if (transientSamplesLeft > 0) { transientSamplesLeft--; } else { envHistory.push({ val: envelopeRunning }); const fps = audioCtx.sampleRate / currentChunkSize; if (envHistory.length > Math.round(4.5 * fps)) envHistory.shift(); }
@@ -1290,6 +1389,16 @@ function retuneFilters(cfg) { if (!audioCtx || filters.length === 0) return; con
 
 function renderLoop(ts) {
   if (!isRunning) return; rafId = requestAnimationFrame(renderLoop); if (micPaused) return;
+  
+  // Custom IH FFT Grab Logic
+  if (ihStage === 'WAIT_STRIKE') {
+      const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005);
+      if (isStrike) {
+          ihStage = 'CAPTURING';
+          $('ihResult').innerHTML = `Strike detected! Analyzing ${noteName(ihScanMidi)}...`;
+          setTimeout(() => { captureIHFFT(ihScanMidi); }, 200); 
+      }
+  }
   
   if (captureState === 'LISTEN_ONLY') { $('captureStateLbl').textContent = 'LISTENING'; $('captureStateLbl').style.color = '#0066ff'; const snr = envelopeRunning / noiseFloor; if (snr > 1.5 && envelopeRunning > 0.0005) sigLight.style.background = '#00ff00'; else sigLight.style.background = '#e0e0e0'; return; }
   if (captureState === 'LOCKED') { let bloomEl = $('bloomIndicator'); if (envHistory.length > 10 && bloomEl) { let diffs = 0; for(let i=1; i<envHistory.length; i++) diffs += (envHistory[i].val - envHistory[i-1].val); decaySlope = diffs / envHistory.length; if (decaySlope > -0.0001) { bloomEl.textContent = 'BLOOMING'; bloomEl.style.color = '#00aa00'; } else { bloomEl.textContent = 'DECAYING'; bloomEl.style.color = '#d00000'; } } } else { let bloomEl = $('bloomIndicator'); if(bloomEl) { bloomEl.textContent = 'UNISON: --'; bloomEl.style.color = '#aaa'; } }
@@ -1355,6 +1464,7 @@ document.querySelectorAll('.iv-tab').forEach(t => {
 
 $('bigStartBtn').addEventListener('click', async () => { $('startOverlay').style.display = 'none'; await startAudioEngine(); });
 enforceReblitzLimits(); buildPianoRoll(); renderDynExpanders(); renderSweep();
+selectMode('DET'); // Default startup tab
 </script>
 </body>
 </html>
