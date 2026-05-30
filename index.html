@@ -19,7 +19,7 @@
   }
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V49</title>
+<title>DAN'S BEAT SPEED DETECTOR - V49.1</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -680,6 +680,7 @@ let ihPartials = [1, 4];
 let ihScanMidi = -1;
 let ihProfile = {}; let smoothedIH = new Float32Array(109); let useCustomIH = false;
 let ihStage = 'IDLE'; 
+let ihStrikeFlag = false; // Prevents race condition during strike detection
 
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
@@ -695,7 +696,7 @@ let prCurrentMidi = 21; // start at A0
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight');
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV49')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV49_1')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -778,7 +779,7 @@ window.startAudioEngine = async function() {
 
 // PERSISTENCE & FILE SYSTEM
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV49');
+  const saved = localStorage.getItem('danDetectorLogsV49_1');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -800,7 +801,7 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV49', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danDetectorLogsV49_1', JSON.stringify(state)); }
 loadPersistence();
 
 window.toggleFiles = function(show) { 
@@ -830,9 +831,9 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV49_1', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ih: ihProfile, customIH: useCustomIH, curve: Array.from(tuningCurve), prOffsets: prOffsets, prOverpull: Array.from(prOverpullArray) }; localStorage.setItem('danTunerSavesV49_1', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
         loggedIntervals = data.logs; ihProfile = data.ih || {}; useCustomIH = data.customIH || false; if(data.curve) tuningCurve = new Float32Array(data.curve); if(data.prOffsets) prOffsets = data.prOffsets; if(data.prOverpull) prOverpullArray = new Float32Array(data.prOverpull); savePersistence();
@@ -840,7 +841,7 @@ window.loadTuning = function(key) {
         renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV49', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV49_1', JSON.stringify(savedTunings)); renderSavedFiles(); } }
 window.startNewTuning = function() { if(confirm('Clear all logs?')) { loggedIntervals = { M3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [] }; resetStretchCurve(); toggleFiles(false); } }
 
 // PITCH RAISE UI LOGIC
@@ -1087,6 +1088,7 @@ window.sampleIH = function(midi) {
     else if (midi <= 48) { ihPartials = [2, 4]; }  // Upper bass / break
     else { ihPartials = [1, 4]; }                  // Plain wire
     
+    ihStrikeFlag = false; 
     ihStage = 'WAIT_STRIKE';
     $('ihResult').className = 'guide-result guide-res-wait'; 
     $('ihResult').innerHTML = `Waiting for strike on ${noteName(midi)}...<br>Play firmly and let it ring.`;
@@ -1281,15 +1283,16 @@ function renderLogTable() {
   if (entries.length > 0) {
     entries.sort((a, b) => a.midi - b.midi);
     for (let i = 0; i < entries.length; i++) {
-      entries[i].pctStr = '-'; entries[i].isWrong = false; entries[i].isWarn = false;
+      entries[i].pctStr = '-'; entries[i].isWrong = false; 
       if (i > 0) {
         const pct = ((entries[i].measured - entries[i-1].measured) / entries[i-1].measured) * 100; entries[i].pctStr = (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
-        if (entries[i].midi === entries[i-1].midi + 1) { if (pct <= 0) entries[i].isWrong = true; else if (pct < 3 || pct > 9) entries[i].isWarn = true; }
+        if (entries[i].midi === entries[i-1].midi + 1) { if (pct <= 0) entries[i].isWrong = true; }
       }
     }
     tb.innerHTML += `<tr style="background:#f4f4f4; border-bottom:1px solid #000;"><td colspan="6" style="text-align:center; font-weight:800; font-size:0.8rem; padding:4px;">${curIv} PROGRESSION</td></tr>`;
     for (let i = entries.length - 1; i >= 0; i--) {
-      const c = entries[i]; const rowStyle = c.isWrong ? 'background-color: #ffeaea; color: #d00000; font-weight: 700;' : (c.isWarn ? 'background-color: #fff8cc; color: #b38000; font-weight: 700;' : ''); const strikeCountStr = c.strikes.length > 1 ? ` <span style="font-size:0.6rem; color:#666;">(${c.strikes.length}x)</span>` : '';
+      const c = entries[i]; const rowStyle = c.isWrong ? 'background-color: #ffeaea; color: #d00000; font-weight: 700;' : ''; 
+      const strikeCountStr = c.strikes.length > 1 ? ` <span style="font-size:0.6rem; color:#666;">(${c.strikes.length}x)</span>` : '';
       tb.innerHTML += `<tr style="${rowStyle}"><td><b>${curIv}</b></td><td style="font-weight:800;">${c.noteName}</td><td style="font-weight:700; font-size:0.85rem;">${c.measured.toFixed(2)}${strikeCountStr}</td><td style="font-weight:700;">${c.pctStr}</td><td class="w">~${c.target.toFixed(2)}</td><td><button class="btn-del" onclick="deleteEntry('${curIv}', ${c.midi})">X</button></td></tr>`;
     }
   } else { tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#666;">Logs automatically upon solid capture</td></tr>'; }
@@ -1378,6 +1381,9 @@ function buildAudioProcessor() {
       let sum = 0, limit = Math.min(currentChunkSize, inputData.length - offset); for (let i = 0; i < limit; i++) sum += inputData[offset + i] * inputData[offset + i];
       const rms = Math.sqrt(sum / limit); envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005); lastEnvelope = envelopeRunning;
       noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004; if (noiseFloor < 0.000001) noiseFloor = 0.000001; const snr = envelopeRunning / noiseFloor;
+      
+      if (isStrike) ihStrikeFlag = true;
+      
       if (isStrike && snr > 2.5) { const timeNow = performance.now(); if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = []; $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900'; } }
       if (transientSamplesLeft > 0) { transientSamplesLeft--; } else { envHistory.push({ val: envelopeRunning }); const fps = audioCtx.sampleRate / currentChunkSize; if (envHistory.length > Math.round(4.5 * fps)) envHistory.shift(); }
     }
@@ -1392,15 +1398,16 @@ function renderLoop(ts) {
   
   // Custom IH FFT Grab Logic
   if (ihStage === 'WAIT_STRIKE') {
-      const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005);
-      if (isStrike) {
+      if (ihStrikeFlag) {
           ihStage = 'CAPTURING';
           $('ihResult').innerHTML = `Strike detected! Analyzing ${noteName(ihScanMidi)}...`;
-          setTimeout(() => { captureIHFFT(ihScanMidi); }, 200); 
+          setTimeout(() => { captureIHFFT(ihScanMidi); }, 400); 
       }
+  } else {
+      ihStrikeFlag = false; 
   }
   
-  if (captureState === 'LISTEN_ONLY') { $('captureStateLbl').textContent = 'LISTENING'; $('captureStateLbl').style.color = '#0066ff'; const snr = envelopeRunning / noiseFloor; if (snr > 1.5 && envelopeRunning > 0.0005) sigLight.style.background = '#00ff00'; else sigLight.style.background = '#e0e0e0'; return; }
+  if (captureState === 'LISTEN_ONLY') { $('captureStateLbl').textContent = 'LISTENING'; $('captureStateLbl').style.color = '#0066ff'; const snr = envelopeRunning / noiseFloor; if (snr > 1.5 && envelopeRunning > 0.005) sigLight.style.background = '#00ff00'; else sigLight.style.background = '#e0e0e0'; return; }
   if (captureState === 'LOCKED') { let bloomEl = $('bloomIndicator'); if (envHistory.length > 10 && bloomEl) { let diffs = 0; for(let i=1; i<envHistory.length; i++) diffs += (envHistory[i].val - envHistory[i-1].val); decaySlope = diffs / envHistory.length; if (decaySlope > -0.0001) { bloomEl.textContent = 'BLOOMING'; bloomEl.style.color = '#00aa00'; } else { bloomEl.textContent = 'DECAYING'; bloomEl.style.color = '#d00000'; } } } else { let bloomEl = $('bloomIndicator'); if(bloomEl) { bloomEl.textContent = 'UNISON: --'; bloomEl.style.color = '#aaa'; } }
   
   const cfg = getConfig(lowerMidi, curIv); const snr = envelopeRunning / noiseFloor; const threshold = getDynamicThresholds(lowerMidi, curIv);
