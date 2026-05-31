@@ -9,11 +9,11 @@
 <meta name="apple-mobile-web-app-title" content="Dan's Tuner">
 <link rel="manifest" href="manifest.json">
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff' /%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%23000000' stroke-width='1.5' rx='6' /%3E%3Cg font-family='impact, sans-serif' font-weight='900' fill='%23ff0000' stroke='%23000000' stroke-width='0.8' text-anchor='middle' dominant-baseline='central'%3E%3Cg transform='translate(50, 18) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDAN'S%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 39) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EBEAT%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 60) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3ESPEED%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 81) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDETECTOR%3C/text%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff' /%3E%3Cg transform='translate(50, 50) skewX(-20) scale(0.7, 1.8)' font-family='impact, sans-serif' font-weight='900' font-style='italic' text-anchor='middle' dominant-baseline='central'%3E%3Ctext x='0' y='0' fill='%23ff0000' stroke='%23000000' stroke-width='2.5'%3EDBSD%3C/text%3E%3C/g%3E%3C/svg%3E">
 
 <script>
   (function() {
-      // iOS Homescreen Icon Generator - Option 1
+      // iOS Homescreen Icon Generator
       var canvas = document.createElement('canvas');
       canvas.width = 192; canvas.height = 192;
       var ctx = canvas.getContext('2d');
@@ -22,44 +22,23 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, 192, 192);
       
-      // Thin Inner Frame (approx 8px from edge, scaled up from SVG)
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3;
-      if(ctx.roundRect) {
-          ctx.beginPath(); 
-          ctx.roundRect(8, 8, 176, 176, 12); 
-          ctx.stroke();
-      } else {
-          ctx.strokeRect(8, 8, 176, 176);
-      }
-      
       // Text styling
       ctx.fillStyle = '#ff0000';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 6; // Thicker border
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '900 30px impact, -apple-system, sans-serif';
+      ctx.font = '900 70px impact, -apple-system, sans-serif';
       
-      // Lines mapped to optical center Y coordinates
-      let lines = [
-          {t: "DAN'S", y: 35},
-          {t: "BEAT", y: 75},
-          {t: "SPEED", y: 115},
-          {t: "DETECTOR", y: 155}
-      ];
+      let skewRad = Math.tan(-20 * Math.PI / 180); // Increased slant
       
-      let skewRad = Math.tan(-15 * Math.PI / 180); // -15 degree slant
-      
-      lines.forEach(line => {
-          ctx.save();
-          ctx.translate(96, line.y); // Move to center of this specific line
-          // apply scaleX (0.85), skewY (0), skewX (skewRad), scaleY (1.3), transX (0), transY (0)
-          ctx.transform(0.85, 0, skewRad, 1.3, 0, 0); 
-          ctx.fillText(line.t, 0, 0);
-          ctx.strokeText(line.t, 0, 0);
-          ctx.restore();
-      });
+      ctx.save();
+      ctx.translate(96, 96); // Center of icon
+      // apply scaleX (0.7), skewY (0), skewX (skewRad), scaleY (1.8), transX (0), transY (0)
+      ctx.transform(0.7, 0, skewRad, 1.8, 0, 0); 
+      ctx.strokeText("DBSD", 0, 0);
+      ctx.fillText("DBSD", 0, 0);
+      ctx.restore();
       
       // Inject for iOS Add to Home Screen
       var link = document.createElement('link');
@@ -69,7 +48,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V57.3</title>
+<title>DAN'S BEAT SPEED DETECTOR - V57.4</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -782,6 +761,8 @@ window.selectMode = function(mode) {
     document.querySelectorAll('.top-btn').forEach(btn => btn.classList.remove('active-tab'));
     if($('nav-' + mode)) $('nav-' + mode).classList.add('active-tab');
     
+    updateTunerFilter();
+
     if (mode === 'PRAISE') {
         renderPRAnchors();
         if(!tunerActive) { 
@@ -793,7 +774,7 @@ window.selectMode = function(mode) {
 }
 
 // Global Variables
-let audioCtx, micStream, analyserFull, analyserTuner, gainNode, monitorGain, scriptNode;
+let audioCtx, micStream, analyserFull, analyserTuner, gainNode, monitorGain, scriptNode, tunerFilter;
 let filters = [];
 let isRunning = false, micPaused = false, monitorOn = false, rafId = null, currentChunkSize = 256; 
 let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];    
@@ -802,14 +783,13 @@ let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAvera
 
 let lastAudioFrameTime = 0; // Failsafe for stuck envelope bug
 
-let customCurveOffsets = null; // Holds our imported anchor array
-let lockedPins = { 69: 0.0 }; // Global failsafe declaration
+let customCurveOffsets = null; 
+let lockedPins = { 69: 0.0 }; 
 
 let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
 let decaySlope = 0; 
 let loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] };
 
-// Inharmonicity Presets (Strictly sizes, defaulting to 40")
 const ihPresets = [ 
     { l: '36"', b: -48, t: 40 }, 
     { l: '40"', b: -38, t: 35 }, 
@@ -818,26 +798,22 @@ const ihPresets = [
     { l: '7ft', b: -18, t: 18 }, 
     { l: '9ft', b: -12, t: 12 } 
 ];
-let currentIHIndex = 1; // Default to 40"
+let currentIHIndex = 1; 
 
-// Pitch Variables
 let tuningCurve = new Float32Array(109);
 for(let m=0; m<=108; m++) tuningCurve[m] = 440 * Math.pow(2, (m - 69) / 12);
 let tunerActive = false, tunerDataArray = null;
 let smoothedPitch = -1; let pitchHistory = [];
 let pinModalMidi = null;
 
-// PR Auto-Lock Variables
 let prStableCents = null;
 let prStableStartTime = 0;
-
-// Pitch Raise Variables
 let prAnchorMidis = [36, 41, 48, 53, 60, 65, 72, 77, 84];
 let prLoggedOffsets = {};
 let prOverpullArray = new Float32Array(109);
-let prMeasureMidi = 48; // Default C3
+let prMeasureMidi = 48; 
 let prCurrentMidi = 21; 
-let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
+let prMode = 'MEASURE'; 
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
@@ -863,7 +839,6 @@ const IV = {
   M17: { sem:28, lp:5, up:1, name:'Major 17th' }
 };
 
-// Calculate playable bounds for intervals based on 88-key piano
 Object.keys(IV).forEach(key => {
   let min = 108, max = 21;
   for (let m = 21; m <= 108; m++) {
@@ -901,8 +876,16 @@ window.startAudioEngine = async function() {
         analyserFull.fftSize = 16384; 
         analyserFull.smoothingTimeConstant = 0.0; 
         
-        analyserTuner = audioCtx.createAnalyser(); analyserTuner.fftSize = 4096;
-        src.connect(analyserTuner); 
+        // Tuner setup: increased FFT size and Low-Pass Anti-Inharmonicity filter
+        analyserTuner = audioCtx.createAnalyser(); 
+        analyserTuner.fftSize = 8192; 
+        tunerFilter = audioCtx.createBiquadFilter();
+        tunerFilter.type = 'lowpass';
+        tunerFilter.Q.value = 0.5;
+        tunerFilter.frequency.value = 20000;
+        
+        src.connect(tunerFilter);
+        tunerFilter.connect(analyserTuner);
 
         const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
         gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
@@ -915,13 +898,31 @@ window.startAudioEngine = async function() {
 
         scriptNode.onaudioprocess = buildAudioProcessor();
         isRunning = true; 
-        lastAudioFrameTime = performance.now(); // Initialize failsafe
+        lastAudioFrameTime = performance.now(); 
+        updateTunerFilter();
+        
         if(rafId) cancelAnimationFrame(rafId);
         lastEnvelope = 0; rafId = requestAnimationFrame(renderLoop);
     } catch (e) {
         console.warn("Audio start failed: ", e);
         if(!isRunning) $('startOverlay').style.display = 'flex';
     }
+}
+
+// Dynamic Low-Pass Filter to eliminate sharp overtones dragging the YIN fundamental reading
+function updateTunerFilter() {
+    if (!tunerFilter || !audioCtx) return;
+    let targetHz = 20000; // Default open
+    
+    if (document.getElementById('pinModal').style.display === 'flex' && pinModalMidi) {
+        targetHz = tuningCurve[pinModalMidi];
+    } else if (mainMode === 'PRAISE') {
+        targetHz = tuningCurve[prMode === 'MEASURE' ? prMeasureMidi : prCurrentMidi];
+    }
+    
+    // Set cutoff to 2.2x fundamental: Lets 1st & 2nd partial through, kills 3rd/4th/5th+ sharp partials
+    let cutoff = Math.min(targetHz * 2.2, 20000);
+    tunerFilter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
 }
 
 function loadPersistence() {
@@ -1057,7 +1058,6 @@ window.startNewTuning = function() {
     } 
 }
 
-// --- MONOTONE CUBIC SPLINE INTERPOLATOR ---
 function createMonotoneCubicSpline(xs, ys) {
     var n = xs.length;
     var delta = [];
@@ -1159,6 +1159,7 @@ function applyIHPreset() {
         else { updatePRSweepUI(); }
     }
     
+    updateTunerFilter();
     updateDynamicGuideTexts();
     renderDynExpanders();
     setTarget(lowerMidi, curIv);
@@ -1223,12 +1224,14 @@ window.openPinModal = function(midi) {
     $('pinModalCents').style.color = '#000';
     pitchHistory = []; smoothedPitch = -1;
     $('pinModal').style.display = 'flex';
+    updateTunerFilter();
 }
 
 window.closePinModal = function() {
     $('pinModal').style.display = 'none';
     pinModalMidi = null;
     pitchHistory = []; smoothedPitch = -1;
+    updateTunerFilter();
 }
 
 window.savePin = function() {
@@ -1297,10 +1300,12 @@ window.renderPRAnchors = function() {
             $('prMeasureCents').style.color = '#000';
             $('prMeasureCents').style.textShadow = 'none';
             renderPRAnchors(); 
+            updateTunerFilter();
         };
         container.appendChild(b);
     });
     $('prMeasureNoteLbl').textContent = noteName(prMeasureMidi);
+    updateTunerFilter();
 }
 
 window.logPRAnchor = function() {
@@ -1387,6 +1392,7 @@ function updatePRSweepUI() {
     
     $('prSweepCents').textContent = '---';
     $('prSweepCents').style.color = '#000';
+    updateTunerFilter();
 }
 
 function processTunerPitch(rawPitch, targetF, elId, isSilent) {
@@ -1818,7 +1824,6 @@ window.changeExpandNote = function(dir, isUp) {
     else { expDownMidi += dir; if(expDownMidi < 21) expDownMidi = 21; if(expDownMidi > 52) expDownMidi = 52; } 
     renderDynExpanders(); 
 
-    // Auto-arm the recommended interval instantly for seamless workflow
     setTimeout(() => {
         let containerId = isUp ? '#dynUpListenBtns' : '#dynDownListenBtns';
         let btn = document.querySelector(`${containerId} .recommended`);
