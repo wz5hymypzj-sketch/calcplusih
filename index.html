@@ -766,6 +766,7 @@ let filters = [];
 let isRunning = false, micPaused = false, monitorOn = false, rafId = null, currentChunkSize = 256; 
 let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];    
 let transientSamplesLeft = 0, lastAttackTime = 0;
+let transientLockout = 0; const TRANSIENT_DELAY_MS = 450;
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
 let lastAudioFrameTime = 0; 
 
@@ -866,9 +867,9 @@ window.startAudioEngine = async function() {
         analyserTuner = audioCtx.createAnalyser(); 
         analyserTuner.fftSize = 8192; 
         tunerFilter = audioCtx.createBiquadFilter();
-        tunerFilter.type = 'lowpass';
-        tunerFilter.Q.value = 0.5;
-        tunerFilter.frequency.value = 20000;
+        tunerFilter.type = 'bandpass';
+        tunerFilter.Q.value = 15;
+        tunerFilter.frequency.value = 440;
         
         src.connect(tunerFilter);
         tunerFilter.connect(analyserTuner);
@@ -897,16 +898,18 @@ window.startAudioEngine = async function() {
 
 function updateTunerFilter() {
     if (!tunerFilter || !audioCtx) return;
-    let targetHz = 20000; 
+    let targetHz = 440; 
     
     if (document.getElementById('pinModal').style.display === 'flex' && pinModalMidi) {
         targetHz = tuningCurve[pinModalMidi];
     } else if (mainMode === 'PRAISE') {
         targetHz = tuningCurve[prMode === 'MEASURE' ? prMeasureMidi : prCurrentMidi];
+    } else if (mainMode === 'GUIDE' && tunerActive) {
+        targetHz = tuningCurve[69];
     }
     
-    let cutoff = Math.min(targetHz * 2.2, 20000);
-    tunerFilter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
+    targetHz = Math.max(10, Math.min(20000, targetHz));
+    tunerFilter.frequency.setTargetAtTime(targetHz, audioCtx.currentTime, 0.05);
 }
 
 function loadPersistence() {
@@ -1364,6 +1367,12 @@ window.changePRNote = function(dir) {
     if(prCurrentMidi > 108) prCurrentMidi = 108;
     pitchHistory = [];
     smoothedPitch = -1;
+    $('prSweepCents').textContent = '---';
+    $('prSweepCents').style.color = '#000';
+    if ($('prSweepDot')) {
+        $('prSweepDot').style.left = '50%';
+        $('prSweepDot').style.background = '#ccc';
+    }
     updatePRSweepUI();
 }
 
@@ -1376,18 +1385,21 @@ function updatePRSweepUI() {
     $('prOverpullInfo').textContent = `Overpull: ${overpullCents > 0 ? '+' : ''}${overpullCents.toFixed(1)}c`;
     $('prSweepTargetF').textContent = `Target: ${targetF.toFixed(2)} Hz`;
     
-    $('prSweepCents').textContent = '---';
-    $('prSweepCents').style.color = '#000';
-    if ($('prSweepDot')) {
-        $('prSweepDot').style.left = '50%';
-        $('prSweepDot').style.background = '#ccc';
-    }
     updateTunerFilter();
 }
 
-function processTunerPitch(rawPitch, targetF, elId, isSilent) {
+function processTunerPitch(rawPitch, targetF, elId, isSilent, isSettling) {
     let el = $(elId);
     let dotId = elId === 'prMeasureCents' ? 'prMeasureDot' : (elId === 'prSweepCents' ? 'prSweepDot' : null);
+
+    if (isSettling) {
+        if (smoothedPitch !== -1 && el) {
+            el.style.color = '#ccc';
+            el.style.textShadow = "none";
+            if (dotId && $(dotId)) $(dotId).style.background = '#ccc';
+        }
+        return;
+    }
 
     if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) {
         pitchHistory.push(rawPitch);
@@ -1399,7 +1411,6 @@ function processTunerPitch(rawPitch, targetF, elId, isSilent) {
         if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 5.0) {
             smoothedPitch = medianPitch;
         } else {
-            // Heavier smoothing for more stable UI readout
             smoothedPitch = (smoothedPitch * 0.92) + (medianPitch * 0.08);
         }
         
@@ -1411,7 +1422,6 @@ function processTunerPitch(rawPitch, targetF, elId, isSilent) {
             else if (Math.abs(cents) > 5.0) el.style.color = '#d00000';
             else el.style.color = '#000';
             
-            // Visual Dot Update: clamp to a -25c to +25c window for dynamic movement
             if (dotId && $(dotId)) {
                 let dotPct = 50 + (Math.max(-25, Math.min(25, cents)) * 2);
                 $(dotId).style.left = dotPct + '%';
@@ -1421,7 +1431,6 @@ function processTunerPitch(rawPitch, targetF, elId, isSilent) {
 
             if (mainMode === 'PRAISE' && prMode === 'MEASURE' && document.getElementById('pinModal').style.display !== 'flex') {
                 let now = performance.now();
-                // Widened stability gate to prevent endless reset loops on microscopic string changes
                 if (prStableCents === null || Math.abs(cents - prStableCents) > 1.2) {
                     prStableCents = cents;
                     prStableStartTime = now;
@@ -1437,13 +1446,11 @@ function processTunerPitch(rawPitch, targetF, elId, isSilent) {
         if(pitchHistory.length === 0) { 
             smoothedPitch = -1; 
             prStableCents = null;
-            if(el) {
-                el.textContent = '---'; 
-                el.style.color = '#000'; 
+            if(el && el.textContent !== '---') {
+                el.style.color = '#ccc'; 
                 el.style.textShadow = "none";
             }
             if (dotId && $(dotId)) {
-                $(dotId).style.left = '50%';
                 $(dotId).style.background = '#ccc';
             }
         }
@@ -1454,7 +1461,9 @@ function runTuner() {
   if(!tunerActive || !isRunning || micPaused) return;
   analyserTuner.getFloatTimeDomainData(tunerDataArray);
   let rawPitch = getPitchYin(tunerDataArray, audioCtx.sampleRate);
-  let isSilent = (envelopeRunning < 0.005);
+  let isSilent = (envelopeRunning < 0.002);
+  let now = performance.now();
+  let isSettling = (now < transientLockout);
   
   if (mainMode === 'PRAISE' || document.getElementById('pinModal').style.display === 'flex') {
       let targetF;
@@ -1471,12 +1480,18 @@ function runTuner() {
           targetF = baseF * Math.pow(2, overpullCents / 1200);
           elId = 'prSweepCents';
       }
-      processTunerPitch(rawPitch, targetF, elId, isSilent);
+      processTunerPitch(rawPitch, targetF, elId, isSilent, isSettling);
   } 
   else {
-      let targetF = 440.0;
+      let targetF = tuningCurve[69]; // Target always A4 with selected curve applied for Guide Step 1.
 
-      if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) { 
+      if (isSettling) {
+          if (smoothedPitch !== -1) {
+              let cents = 1200 * Math.log2(smoothedPitch / targetF);
+              let text = (cents > 0 ? '+' : '') + cents.toFixed(1) + 'c';
+              $('tunerReadout').innerHTML = `<span style="font-size:1.4rem; font-weight:900; line-height:1.2; color:#ccc;">${smoothedPitch.toFixed(1)} Hz</span><br><span style="color:#ccc; font-weight:900; font-size:0.9rem;">${text}</span>`;
+          }
+      } else if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) { 
         pitchHistory.push(rawPitch);
         if(pitchHistory.length > 20) pitchHistory.shift(); 
         let sorted = [...pitchHistory].sort((a,b) => a-b);
@@ -1490,11 +1505,18 @@ function runTuner() {
         let text = (cents > 0 ? '+' : '') + cents.toFixed(1) + 'c';
         
         $('tunerReadout').innerHTML = `<span style="font-size:1.4rem; font-weight:900; line-height:1.2;">${smoothedPitch.toFixed(1)} Hz</span><br><span style="color:${color}; font-weight:900; font-size:0.9rem;">${text}</span>`;
+        $('tunerReadout').className = 'guide-result guide-res-pass';
       } else { 
         if(pitchHistory.length > 0) pitchHistory.shift();
         if(pitchHistory.length === 0) {
+            if (smoothedPitch !== -1) {
+                let cents = 1200 * Math.log2(smoothedPitch / targetF);
+                let text = (cents > 0 ? '+' : '') + cents.toFixed(1) + 'c';
+                $('tunerReadout').innerHTML = `<span style="font-size:1.4rem; font-weight:900; line-height:1.2; color:#ccc;">${smoothedPitch.toFixed(1)} Hz</span><br><span style="color:#ccc; font-weight:900; font-size:0.9rem;">${text}</span>`;
+            } else {
+                $('tunerReadout').innerHTML = '--- Hz';
+            }
             smoothedPitch = -1; 
-            $('tunerReadout').innerHTML = '--- Hz';
             $('tunerReadout').className = 'guide-result guide-res-wait';
         }
       }
@@ -2027,6 +2049,10 @@ function buildAudioProcessor() {
       envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); 
       const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005); 
       lastEnvelope = envelopeRunning;
+      
+      if (isStrike) {
+          transientLockout = performance.now() + TRANSIENT_DELAY_MS;
+      }
       
       noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004; 
       if (noiseFloor < 0.000001) noiseFloor = 0.000001; 
