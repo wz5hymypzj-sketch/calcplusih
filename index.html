@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Dan's Tuner">
 <link rel="manifest" href="manifest.json">
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff' /%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%23000000' stroke-width='1.5' rx='6' /%3E%3Cg font-family='impact, sans-serif' font-weight='900' fill='%23ff0000' stroke='%23000000' stroke-width='0.8' text-anchor='middle' dominant-baseline='central'%3E%3Cg transform='translate(50, 18) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDAN'S%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 39) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EBEAT%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 60) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3ESPEED%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 81) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDETECTOR%3C/text%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff' /%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%23000000' stroke-width='1.5' rx='6' /%3E%3Cg font-family='impact, sans-serif' font-weight='900' fill='%23ff0000' stroke='%23000000' stroke-width='1.2' text-anchor='middle' dominant-baseline='central'%3E%3Cg transform='translate(50, 18) skewX(-22) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDAN'S%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 39) skewX(-22) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EBEAT%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 60) skewX(-22) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3ESPEED%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 81) skewX(-22) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDETECTOR%3C/text%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 
 <script>
   (function() {
@@ -33,7 +33,7 @@
       
       ctx.fillStyle = '#ff0000';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2.5;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = '900 30px impact, -apple-system, sans-serif';
@@ -45,7 +45,7 @@
           {t: "DETECTOR", y: 155}
       ];
       
-      let skewRad = Math.tan(-15 * Math.PI / 180); 
+      let skewRad = Math.tan(-22 * Math.PI / 180); 
       
       lines.forEach(line => {
           ctx.save();
@@ -63,7 +63,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V57.5</title>
+<title>DAN'S BEAT SPEED DETECTOR - V58.0</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -98,7 +98,7 @@
       display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.98); 
       z-index: 9000; flex-direction: column; padding: 20px; overflow-y: auto;
   }
-  .overlay-title { margin-bottom: 15px; text-transform: uppercase; font-style: italic; font-weight: 900; border-bottom: 3px solid #000; padding-bottom: 5px; }
+  .overlay-title { margin-bottom: 10px; text-transform: uppercase; font-style: italic; font-weight: 900; border-bottom: 3px solid #000; padding-bottom: 5px; flex-shrink: 0;}
 
   .header { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 6px; flex-shrink: 0; width: 100%; }
   h1 { 
@@ -146,9 +146,6 @@
     font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer;
   }
   .roll-nav:active { background: #000; color: #fff; }
-  
-  #btnAutoNote { font-size:0.6rem; width:28px; background:#fff; border-color:#ccc; color:#aaa; font-weight:900;}
-  #btnAutoNote.on { background:#00aa00; color:#fff; border-color:#007700; }
   
   .piano-roll { display: flex; flex: 1; justify-content: space-between; }
   .pk {
@@ -217,7 +214,6 @@
   .guide-step h3 { font-size: 0.85rem; color: #000; margin-bottom: 4px; text-transform: uppercase; font-weight: 900; background: #eee; padding: 4px; border-radius: 2px; text-align: center; }
   .guide-step p { font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; color: #444; line-height: 1.2; text-align: center; }
   .tuning-target { font-weight: 700; color: #000; text-align: center; margin-bottom: 6px; font-size: 0.75rem; text-transform: uppercase;}
-  .sub-header-lbl { font-size: 0.7rem; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 6px; margin-bottom: 2px; text-align: center; display: block; width: 100%; }
   
   .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; justify-content: center; }
   .action-btn { background: #e0f0ff; border: 1px solid #0066ff; color: #0044bb; font-size: 0.75rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 0 #0066ff; transition: transform 0.05s, box-shadow 0.05s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px;}
@@ -321,9 +317,18 @@
     </div>
 </div>
 
-<div id="filesOverlay" class="overlay-panel">
+<div id="filesOverlay" class="overlay-panel" style="padding-top: 10px;">
    <h2 class="overlay-title">Saved Tunings</h2>
-   <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px; min-height:250px;"></div>
+   <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px; min-height:100px; max-height:35vh;"></div>
+
+   <div style="background:#f4f4f4; padding:10px; border:2px solid #000; border-radius:6px; margin-bottom:12px; flex-shrink:0;">
+       <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Tuning Management</h3>
+       <input type="text" id="saveNameInput" placeholder="Tuning Name" style="width:100%; padding:8px; font-size:0.9rem; margin-bottom:8px; border:1px solid #ccc; border-radius:4px;">
+       <div style="display:flex; gap:6px;">
+           <button class="ctrl-btn" onclick="saveCurrentTuning()" style="flex:2; background:#000; color:#fff; padding:10px; font-size:0.9rem;">SAVE</button>
+           <button class="ctrl-btn fix-btn" onclick="startNewTuning()" style="flex:1; padding:10px; font-size:0.9rem;">NEW TUNING</button>
+       </div>
+   </div>
 
    <div style="background:#f4f4f4; padding:10px; border:2px solid #000; border-radius:6px; margin-bottom:12px; flex-shrink:0;">
        <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Manual Curve Builder</h3>
@@ -343,16 +348,6 @@
            <button class="ctrl-btn fix-btn" onclick="clearCustomCurve()" style="padding:8px;">CLEAR</button>
        </div>
        <div id="customCurveStatus" style="font-size:0.7rem; font-weight:bold; text-align:center; margin-top:6px; color:#00aa00; display:none;">✔ CUSTOM CURVE ACTIVE (A4 Centered)</div>
-   </div>
-
-   <div style="background:#f4f4f4; padding:10px; border:2px solid #000; border-radius:6px; margin-bottom:12px; flex-shrink:0;">
-       <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Save Tuning</h3>
-       <input type="text" id="saveNameInput" placeholder="Tuning Name" style="width:100%; padding:8px; font-size:0.9rem; margin-bottom:8px; border:1px solid #ccc; border-radius:4px;">
-       <button class="ctrl-btn" onclick="saveCurrentTuning()" style="width:100%; background:#000; color:#fff; padding:10px; font-size:0.9rem;">SAVE & ADD TO LIST</button>
-   </div>
-
-   <div style="display:flex; gap:10px; margin-bottom:10px; flex-shrink:0;">
-     <button class="ctrl-btn fix-btn" onclick="startNewTuning()" style="flex:1; padding:12px; font-size:0.9rem;">NEW TUNING</button>
    </div>
 
    <button class="ctrl-btn" onclick="toggleFiles(false)" style="padding:16px; font-size:1.2rem; border-width:3px; box-shadow: 0 4px 0 #000; font-weight:900; flex-shrink:0;">BACK TO MENU</button>
@@ -388,7 +383,6 @@
     </div>
 
     <div class="roll-wrapper">
-      <button class="roll-nav" id="btnAutoNote">AUTO</button>
       <button class="roll-nav" id="octDown">‹</button>
       <div class="piano-roll" id="pianoRoll"></div>
       <button class="roll-nav" id="octUp">›</button>
@@ -499,15 +493,15 @@
             <h3>Step 1: Set Pitch</h3>
             <div class="tuning-target">Goal: Tune A4</div>
             <button class="ctrl-btn" id="btnTunerToggle" style="width:100%; margin-bottom:4px; font-size:0.8rem;">TUNER: OFF</button>
-            <div class="readout-box" id="step1TunerBox" style="display:none; flex-direction:column; padding:10px; margin-bottom:8px;">
-               <div style="width:100%; height:50px; position:relative; margin-bottom:10px;">
+            <div class="readout-box" id="step1TunerBox" style="display:none; flex-direction:column; padding:6px; margin-bottom:8px;">
+               <div style="width:100%; height:30px; position:relative; margin-bottom:6px;">
                    <svg viewBox="0 0 200 50" style="width:100%; height:100%;">
                        <path d="M 20 20 Q 100 60 180 20" fill="none" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
                        <circle cx="100" cy="40" r="8" fill="none" stroke="#000" stroke-width="3"/>
                        <circle id="visDot-Step1" cx="100" cy="40" r="6" fill="#e0e0e0" style="display:none; transition: cx 0.1s ease-out, cy 0.1s ease-out, fill 0.1s;"/>
                    </svg>
                </div>
-               <div class="val-large" id="step1Cents" style="font-size:3.2rem;">---</div>
+               <div class="val-large" id="step1Cents" style="font-size:2.2rem; line-height:1;">---</div>
                <div class="val-lbl" id="step1Hz">--- Hz</div>
             </div>
           </div>
@@ -815,8 +809,6 @@ let transientSamplesLeft = 0, lastAttackTime = 0;
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
 
 let lastAudioFrameTime = 0; 
-let autoNoteEnabled = false;
-let autoPitchHistory = [];
 
 let customCurveOffsets = null; 
 let lockedPins = { 69: 0.0 }; 
@@ -853,7 +845,7 @@ let prMode = 'MEASURE';
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
 const avgEl = $('avgVal'), sigLight = $('signalLight'); 
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV52_0')) || {};
+let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV58_0')) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -956,7 +948,8 @@ function updateTunerFilter() {
         targetHz = 440.0;
     }
     
-    let cutoff = Math.min(targetHz * 2.2, 20000);
+    // Tightened the cutoff to reduce overtone pulling for dead-on precision
+    let cutoff = Math.min(targetHz * 1.5, 20000);
     tunerFilter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
 }
 
@@ -982,7 +975,7 @@ function updateVisualTuner(dotId, cents) {
 }
 
 function loadPersistence() {
-  const saved = localStorage.getItem('danDetectorLogsV52_0');
+  const saved = localStorage.getItem('danDetectorLogsV58_0');
   if(saved) {
     try { 
       let parsed = JSON.parse(saved); 
@@ -1027,7 +1020,7 @@ function savePersistence() {
         prMode: prMode,
         customOffsets: customCurveOffsets ? Array.from(customCurveOffsets) : null
     }; 
-    localStorage.setItem('danDetectorLogsV52_0', JSON.stringify(state)); 
+    localStorage.setItem('danDetectorLogsV58_0', JSON.stringify(state)); 
 }
 loadPersistence();
 
@@ -1068,7 +1061,7 @@ window.saveCurrentTuning = function() {
         prMode: prMode,
         customOffsets: customCurveOffsets ? Array.from(customCurveOffsets) : null
     }; 
-    localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); 
+    localStorage.setItem('danTunerSavesV58_0', JSON.stringify(savedTunings)); 
     $('saveNameInput').value = ''; 
     renderSavedFiles(); 
 }
@@ -1095,7 +1088,7 @@ window.loadTuning = function(key) {
         renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV58_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
 window.startNewTuning = function() { 
     if(confirm('Clear all logs and resets?')) { 
         loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] }; 
@@ -1198,15 +1191,6 @@ window.clearCustomCurve = function() {
         setTarget(lowerMidi, curIv);
     }
 }
-
-$('btnAutoNote').addEventListener('click', (e) => {
-    autoNoteEnabled = !autoNoteEnabled;
-    if(autoNoteEnabled) {
-        e.target.classList.add('on');
-    } else {
-        e.target.classList.remove('on');
-    }
-});
 
 // IH CYCLE LOGIC
 window.cycleIH = function() {
@@ -1473,11 +1457,10 @@ function processTunerPitch(rawPitch, targetF, elId, dotId, isSilent) {
     let el = $(elId);
     if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) {
         pitchHistory.push(rawPitch);
-        if(pitchHistory.length > 5) pitchHistory.shift(); 
+        if(pitchHistory.length > 3) pitchHistory.shift(); 
         
         let sorted = [...pitchHistory].sort((a,b) => a-b);
-        let filtered = sorted.length === 5 ? sorted.slice(1, -1) : sorted;
-        let medianPitch = filtered[Math.floor(filtered.length/2)];
+        let medianPitch = sorted[Math.floor(sorted.length/2)];
         
         if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 5.0) {
             smoothedPitch = medianPitch;
@@ -1522,34 +1505,8 @@ function processTunerPitch(rawPitch, targetF, elId, dotId, isSilent) {
 }
 
 function runPitchEngine(rawPitch, isSilent) {
-  let needsTuner = tunerActive || mainMode === 'PRAISE' || document.getElementById('pinModal').style.display === 'flex' || autoNoteEnabled;
+  let needsTuner = tunerActive || mainMode === 'PRAISE' || document.getElementById('pinModal').style.display === 'flex';
   if(!needsTuner) return;
-
-  // Auto Note Switcher Logic
-  if(autoNoteEnabled && mainMode === 'DET' && captureState === 'IDLE' && !isSilent && rawPitch > 20 && rawPitch < 4200) {
-      autoPitchHistory.push(rawPitch);
-      if(autoPitchHistory.length > 8) autoPitchHistory.shift();
-      let sorted = [...autoPitchHistory].sort((a,b)=>a-b);
-      let med = sorted[Math.floor(sorted.length/2)];
-      
-      // Require strong 1.5% stability over 8 frames to prove it's a single note, not an interval
-      if (autoPitchHistory.length === 8 && Math.abs(sorted[7] - sorted[0]) < med * 0.015) { 
-          let midi = Math.round(12 * Math.log2(med / 440)) + 69;
-          if (midi >= IV[curIv].min && midi <= IV[curIv].max && midi !== lowerMidi) {
-              // Ensure we aren't interrupting a strong beat envelope
-              let snr = envelopeRunning / noiseFloor;
-              if (snr < 3.0) { 
-                  lowerMidi = midi;
-                  updateRollBounds();
-                  buildPianoRoll();
-                  setTarget(lowerMidi, curIv);
-                  autoPitchHistory = [];
-              }
-          }
-      }
-  } else {
-      autoPitchHistory = [];
-  }
 
   // Tuner/Pitch Display Logic
   let targetF = null;
@@ -1604,12 +1561,17 @@ function getConfig(lowerMidi, ivKey) {
   return { lowerMidi, upperMidi, fLo, fHi, pLo, pHi, center, theoBeat, bpLo: center - margin, bpHi: center + margin, iv, ivKey };
 }
 
+// Zoned Thresholds
 function getDynamicThresholds(midiNote, ivKey) {
-  let minEnv = 0.002, minSnr = 2.0;   
-  if (midiNote > 60) { let boostFactor = Math.min(1, (midiNote - 60) / 36); minEnv = 0.002 - (boostFactor * 0.0015); minSnr = 2.0 - (boostFactor * 1.0); }
-  if (midiNote >= 58) { minEnv *= 0.5; minSnr *= 0.5; } if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) { minSnr *= 0.75; minEnv *= 0.8; }
-  return { env: Math.max(0.0001, minEnv), snr: Math.max(1.0, minSnr) };
+  let minEnv = 0.001, minSnr = 1.5;   
+  if (midiNote > 72) { minEnv = 0.0002; minSnr = 1.2; } // Treble
+  else if (midiNote > 50) { minEnv = 0.0005; minSnr = 1.5; } // Mid
+  else { minEnv = 0.0015; minSnr = 2.0; } // Bass requires stronger SNR to avoid rumble
+  
+  if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) { minSnr *= 0.75; minEnv *= 0.8; }
+  return { env: minEnv, snr: minSnr };
 }
+
 function getBeatDesc(val) {
     if(val === null || isNaN(val)) return ''; if(val < 0.25) return 'PURE / STILL'; if(val < 0.85) return 'SLOW BREATHING'; if(val < 1.6) return 'HEARTBEAT'; if(val < 3.5) return 'WALKING PACE'; if(val < 6.0) return 'JOGGING'; if(val < 9.0) return 'FAST TAPPING'; if(val < 13.0) return 'RAPID FLUTTER'; return 'MOTOR / PURR';
 }
@@ -1625,8 +1587,10 @@ function switchGuideTab(tab) {
 window.setTarget = function(midi, ivKey) {
   lowerMidi = midi; 
   
-  const fastIntervals = ['m3', 'M3', 'M6', 'M10', 'M17'];
-  currentChunkSize = fastIntervals.includes(ivKey) ? 256 : 512;
+  // Zoned FFT Size
+  if (midi < 40) currentChunkSize = 1024;
+  else if (midi < 60) currentChunkSize = 512;
+  else currentChunkSize = 256;
   
   document.querySelectorAll('.listen-btn').forEach(b => b.classList.remove('active-listen'));
   if (ivKey.startsWith('OCT_')) { curIv = ivKey; currentOctMode = ivKey; let tab = $('tabOct'); let ratio = ivKey.split('_')[1]; tab.innerHTML = `${ratio[0]}:${ratio[1]}`; document.querySelectorAll('.iv-tab').forEach(x => x.classList.remove('on')); tab.classList.add('on'); } 
@@ -2101,8 +2065,63 @@ function getPitchYin(buf, sampleRate) {
   for (let tau = 2; tau < halfSize; tau++) { if (yinBuffer[tau] < threshold) { while (tau + 1 < halfSize && yinBuffer[tau + 1] < yinBuffer[tau]) { tau++; } foundTau = tau; break; } }
   if (foundTau === -1) { let minVal = Infinity; for (let tau = 2; tau < halfSize; tau++) { if (yinBuffer[tau] < minVal) { minVal = yinBuffer[tau]; foundTau = tau; } } }
   let s0 = yinBuffer[foundTau - 1]; let s1 = yinBuffer[foundTau]; let s2 = yinBuffer[foundTau + 1]; let shift = 0;
-  if (s0 !== undefined && s2 !== undefined) { let denom = 2 * (s0 - 2*s1 + s2); if (denom !== 0) shift = (s0 - s2) / denom; }
+  
+  // High precision YIN parabolic interpolation 
+  if (s0 !== undefined && s2 !== undefined) { 
+      let denom = (s0 - 2 * s1 + s2); 
+      if (denom !== 0) shift = 0.5 * (s0 - s2) / denom; 
+  }
   return sampleRate / (foundTau + shift);
+}
+
+// Highly precise Autocorrelation Beat Detector
+function detectBeat(history, targetBps, iv) {
+    let vals = history.map(h => h.val);
+    let N = vals.length;
+    if (N < 10) return null;
+    
+    let mean = vals.reduce((a, b) => a + b) / N;
+    let ac = new Float32Array(N);
+    
+    for(let tau = 0; tau < Math.floor(N / 2); tau++) {
+        let sum = 0;
+        for(let i = 0; i < N - tau; i++) {
+            sum += (vals[i] - mean) * (vals[i+tau] - mean);
+        }
+        ac[tau] = sum;
+    }
+    
+    let maxVal = 0;
+    let bestTau = -1;
+    let isFalling = true;
+    
+    // Find the first major peak corresponding to the fundamental beat
+    for (let tau = 1; tau < Math.floor(N / 2) - 1; tau++) {
+        if (isFalling) {
+            if (ac[tau] > ac[tau-1]) isFalling = false;
+            continue;
+        }
+        if (ac[tau] > ac[tau-1] && ac[tau] > ac[tau+1]) {
+            if (ac[tau] > maxVal) {
+                maxVal = ac[tau];
+                bestTau = tau;
+            }
+        }
+    }
+    
+    if (bestTau === -1) return null;
+    
+    // Interpolate the true peak
+    let s0 = ac[bestTau-1], s1 = ac[bestTau], s2 = ac[bestTau+1];
+    let shift = 0.5 * (s0 - s2) / (s0 - 2*s1 + s2);
+    let trueTau = bestTau + shift;
+    
+    let fps = audioCtx.sampleRate / currentChunkSize;
+    let bps = fps / trueTau;
+    
+    // Validate output against reasonable boundaries
+    if (bps > targetBps * 0.3 && bps < targetBps * 3.0) return bps;
+    return null;
 }
 
 function buildAudioProcessor() {
@@ -2154,7 +2173,7 @@ function renderLoop(ts) {
   if (tunerDataArray) {
       analyserTuner.getFloatTimeDomainData(tunerDataArray);
       let rawPitch = getPitchYin(tunerDataArray, audioCtx.sampleRate);
-      let isSilent = (envelopeRunning < 0.005);
+      let isSilent = (envelopeRunning < 0.001); // Lowered for longer sustain
       runPitchEngine(rawPitch, isSilent);
   }
   
