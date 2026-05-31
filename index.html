@@ -9,28 +9,57 @@
 <meta name="apple-mobile-web-app-title" content="Dan's Tuner">
 <link rel="manifest" href="manifest.json">
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='0' y='0' width='100' height='100' fill='%23ffffff'/%3E%3Cg transform='translate(50, 50) scale(0.65, 2.2)'%3E%3Ctext x='0' y='4' font-family='-apple-system, BlinkMacSystemFont, sans-serif' font-weight='900' font-style='italic' font-size='45' text-anchor='middle' fill='%23ff0000' stroke='%23000000' stroke-width='2'%3EDBSD%3C/text%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff' /%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%23000000' stroke-width='1.5' rx='6' /%3E%3Cg font-family='impact, sans-serif' font-weight='900' fill='%23ff0000' stroke='%23000000' stroke-width='0.8' text-anchor='middle' dominant-baseline='central'%3E%3Cg transform='translate(50, 18) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDAN'S%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 39) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EBEAT%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 60) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3ESPEED%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 81) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDETECTOR%3C/text%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 
 <script>
   (function() {
-      // iOS Homescreen Icon Generator - Max size, no borders
+      // iOS Homescreen Icon Generator - Option 1
       var canvas = document.createElement('canvas');
       canvas.width = 192; canvas.height = 192;
       var ctx = canvas.getContext('2d');
-      // Background
+      
+      // White Background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, 192, 192);
-      // Text logic (tall and skinny, max size)
+      
+      // Thin Inner Frame (approx 8px from edge, scaled up from SVG)
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      if(ctx.roundRect) {
+          ctx.beginPath(); 
+          ctx.roundRect(8, 8, 176, 176, 12); 
+          ctx.stroke();
+      } else {
+          ctx.strokeRect(8, 8, 176, 176);
+      }
+      
+      // Text styling
       ctx.fillStyle = '#ff0000';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 1.5;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = 'italic 900 80px -apple-system, BlinkMacSystemFont, sans-serif';
-      // Compress horizontally, stretch vertically
-      ctx.scale(0.65, 2.2);
-      ctx.strokeText('DBSD', 147, 43); // Scaled coordinates to hit center
-      ctx.fillText('DBSD', 147, 43);
+      ctx.font = '900 30px impact, -apple-system, sans-serif';
+      
+      // Lines mapped to optical center Y coordinates
+      let lines = [
+          {t: "DAN'S", y: 35},
+          {t: "BEAT", y: 75},
+          {t: "SPEED", y: 115},
+          {t: "DETECTOR", y: 155}
+      ];
+      
+      let skewRad = Math.tan(-15 * Math.PI / 180); // -15 degree slant
+      
+      lines.forEach(line => {
+          ctx.save();
+          ctx.translate(96, line.y); // Move to center of this specific line
+          // apply scaleX (0.85), skewY (0), skewX (skewRad), scaleY (1.3), transX (0), transY (0)
+          ctx.transform(0.85, 0, skewRad, 1.3, 0, 0); 
+          ctx.fillText(line.t, 0, 0);
+          ctx.strokeText(line.t, 0, 0);
+          ctx.restore();
+      });
       
       // Inject for iOS Add to Home Screen
       var link = document.createElement('link');
@@ -40,7 +69,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V57.1</title>
+<title>DAN'S BEAT SPEED DETECTOR - V57.2</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -198,16 +227,13 @@
   .action-btn.logged { background: #e6ffe6; border-color: #00aa00; color: #006600; box-shadow: 0 2px 0 #00aa00; }
   .action-btn.logged:active { box-shadow: 0 0 0 #00aa00; }
 
-  /* Default grey unpressed state for Listen Buttons */
+  /* Listen Buttons states */
   .listen-btn { background: #f4f4f4; border-color: #aaa; color: #555; box-shadow: 0 2px 0 #aaa; }
   .listen-btn:active { box-shadow: 0 0 0 #aaa; transform: translateY(2px); }
-  /* Dark grey pressed state for Listen Buttons */
   .listen-btn.active-listen { background: #555; color: #fff; border-color: #333; box-shadow: 0 0 0 #333; transform: translateY(2px); }
 
-  /* Light blue unpressed state for Recommended Listen Buttons */
   .listen-btn.recommended { background: #e0f0ff; border-color: #0066ff; color: #0044bb; box-shadow: 0 2px 0 #0066ff; }
   .listen-btn.recommended:active { box-shadow: 0 0 0 #0066ff; transform: translateY(2px); }
-  /* Dark blue pressed state for Recommended Listen Buttons */
   .listen-btn.recommended.active-listen { background: #0066ff; color: #fff; border-color: #0044bb; box-shadow: 0 0 0 #0044bb; transform: translateY(2px); }
 
   .guide-result { font-size: 0.75rem; font-weight: 600; padding: 6px; background: #fff; border: 1px dashed #000; text-align: left; line-height: 1.4; border-radius: 4px; }
@@ -558,8 +584,8 @@
           </div>
           <div class="guide-step">
             <h3>Step 9: Chromatic M3 Sweep</h3>
-            <div class="tuning-target">Goal: Ensure Steady M3 Acceleration</div>
-            <p style="font-size:0.7rem; color:#444; margin-bottom:8px;">Listen to every M3 chromatically. The beat speed should steadily increase. If it suddenly dips or spikes, you have an error.</p>
+            <div class="tuning-target">Goal: Verify accelerating M3 ladder</div>
+            <p style="font-size:0.7rem; color:#666; margin-bottom:6px;">Listen chromatically from F3 up to C#4. The speed must climb steadily without dips.</p>
             <div class="action-row">
               <button class="action-btn" data-midi="53" data-iv="M3" data-label="F3 M3 A3" onclick="handleAction(this, 53, 'M3')">F3 M3 A3</button>
               <button class="action-btn" data-midi="54" data-iv="M3" data-label="F#3 M3 A#3" onclick="handleAction(this, 54, 'M3')">F#3 M3 A#3</button>
@@ -575,7 +601,7 @@
           </div>
           <div class="guide-step">
             <h3>Step 10: Chromatic M6 Sweep</h3>
-            <div class="tuning-target">Goal: Ensure Steady M6 Acceleration</div>
+            <div class="tuning-target">Goal: Verify inside/outside architecture</div>
             <div class="action-row">
               <button class="action-btn" data-midi="53" data-iv="M6" data-label="F3 M6 D4" onclick="handleAction(this, 53, 'M6')">F3 M6 D4</button>
               <button class="action-btn" data-midi="54" data-iv="M6" data-label="F#3 M6 D#4" onclick="handleAction(this, 54, 'M6')">F#3 M6 D#4</button>
@@ -586,10 +612,24 @@
           </div>
           <div class="guide-step">
             <h3>Step 11: Final P4/P5 Polish</h3>
-            <div class="tuning-target">Goal: Ensure All 4ths and 5ths Beat Slowly</div>
-            <p style="font-size:0.7rem; color:#666; margin-bottom:8px;">All P4s and P5s should beat slowly. Ensure all are logged to unlock the Grader.</p>
-            <div class="action-row" id="finalPolishBtns">
-               </div>
+            <div class="tuning-target">Goal: Ensure all 4ths & 5ths beat slowly</div>
+            <p style="font-size:0.7rem; color:#666; margin-bottom:8px;">All logged P4s and P5s must remain quiet under 1.2 bps to unlock the Grader matrix.</p>
+            <div class="action-row">
+              <button class="action-btn" data-midi="53" data-iv="P4" data-label="F3 P4 A#3" onclick="handleAction(this, 53, 'P4')">F3 P4 A#3</button>
+              <button class="action-btn" data-midi="53" data-iv="P5" data-label="F3 P5 C4" onclick="handleAction(this, 53, 'P5')">F3 P5 C4</button>
+              <button class="action-btn" data-midi="54" data-iv="P4" data-label="F#3 P4 B3" onclick="handleAction(this, 54, 'P4')">F#3 P4 B3</button>
+              <button class="action-btn" data-midi="54" data-iv="P5" data-label="F#3 P5 C#4" onclick="handleAction(this, 54, 'P5')">F#3 P5 C#4</button>
+              <button class="action-btn" data-midi="55" data-iv="P4" data-label="G3 P4 C4" onclick="handleAction(this, 55, 'P4')">G3 P4 C4</button>
+              <button class="action-btn" data-midi="55" data-iv="P5" data-label="G3 P5 D4" onclick="handleAction(this, 55, 'P5')">G3 P5 D4</button>
+              <button class="action-btn" data-midi="56" data-iv="P4" data-label="G#3 P4 C#4" onclick="handleAction(this, 56, 'P4')">G#3 P4 C#4</button>
+              <button class="action-btn" data-midi="56" data-iv="P5" data-label="G#3 P5 D#4" onclick="handleAction(this, 56, 'P5')">G#3 P5 D#4</button>
+              <button class="action-btn" data-midi="57" data-iv="P4" data-label="A3 P4 D4" onclick="handleAction(this, 57, 'P4')">A3 P4 D4</button>
+              <button class="action-btn" data-midi="57" data-iv="P5" data-label="A3 P5 E4" onclick="handleAction(this, 57, 'P5')">A3 P5 E4</button>
+              <button class="action-btn" data-midi="58" data-iv="P4" data-label="A#3 P4 D#4" onclick="handleAction(this, 58, 'P4')">A#3 P4 D#4</button>
+              <button class="action-btn" data-midi="58" data-iv="P5" data-label="A#3 P5 F4" onclick="handleAction(this, 58, 'P5')">A#3 P5 F4</button>
+              <button class="action-btn" data-midi="59" data-iv="P4" data-label="B3 P4 E4" onclick="handleAction(this, 59, 'P4')">B3 P4 E4</button>
+              <button class="action-btn" data-midi="60" data-iv="P4" data-label="C4 P4 F4" onclick="handleAction(this, 60, 'P4')">C4 P4 F4</button>
+            </div>
             <div class="guide-result guide-res-wait" id="guideRes11">Awaiting logs...</div>
           </div>
           <div class="guide-step" style="background: #fdfdfd; border-color: #000; padding-bottom:12px;">
@@ -725,8 +765,6 @@ let isRunning = false, micPaused = false, monitorOn = false, rafId = null, curre
 let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];    
 let transientSamplesLeft = 0, lastAttackTime = 0;
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
-
-let smoothedEnvelope = 0; // Essential for restoring the consistent master tracking
 
 let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
 let decaySlope = 0; 
@@ -1598,7 +1636,7 @@ function renderDynExpanders() {
       lBtnsU += `<button class="action-btn listen-btn ${recU==='OCT_63'?'recommended':''}" onclick="handleListen(this, ${mU-12}, 'OCT_63')">6:3</button>`;
   }
   if(mU-19 >= 21) lBtnsU += `<button class="action-btn listen-btn ${recU==='P12'?'recommended':''}" onclick="handleListen(this, ${mU-19}, 'P12')">P12</button>`;
-  if(mU-24 >= 21) lBtnsU += `<button class="action-btn listen-btn ${recU==='OCT+2'?'recommended':''}" onclick="handleListen(this, ${mU-24}, 'OCT+2')">OCT+2</button>`;
+  if(mU-24 >= 21) lBtnsU += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mU-24}, 'OCT+2')">OCT+2</button>`;
   $('dynUpListenBtns').innerHTML = lBtnsU;
 
   let proofsU = '', guardsU = '';
@@ -1634,7 +1672,7 @@ function renderDynExpanders() {
       lBtnsD += `<button class="action-btn listen-btn ${recD==='OCT_63'?'recommended':''}" onclick="handleListen(this, ${mD}, 'OCT_63')">6:3</button>`;
   }
   if(mD+19 <= 108) lBtnsD += `<button class="action-btn listen-btn ${recD==='P12'?'recommended':''}" onclick="handleListen(this, ${mD}, 'P12')">P12</button>`;
-  if(mD+24 <= 108) lBtnsD += `<button class="action-btn listen-btn ${recD==='OCT+2'?'recommended':''}" onclick="handleListen(this, ${mD}, 'OCT+2')">OCT+2</button>`;
+  if(mD+24 <= 108) lBtnsD += `<button class="action-btn listen-btn" onclick="handleListen(this, ${mD}, 'OCT+2')">OCT+2</button>`;
   $('dynDownListenBtns').innerHTML = lBtnsD;
 
   let proofsD = '', guardsD = '';
@@ -1767,10 +1805,9 @@ function buildAudioProcessor() {
       for (let i = 0; i < limit; i++) sum += inputData[offset + i] * inputData[offset + i];
       const rms = Math.sqrt(sum / limit); 
       
-      smoothedEnvelope = (smoothedEnvelope * 0.7) + (rms * 0.3);
-      envelopeRunning = smoothedEnvelope;
-      
-      const isStrike = (envelopeRunning > lastEnvelope * 2.0) && (envelopeRunning > 0.005); 
+      // RESTORED MASTER ENVELOPE LOGIC for pristine M3 transient triggering
+      envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); 
+      const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005); 
       lastEnvelope = envelopeRunning;
       
       noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004; 
