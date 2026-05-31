@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Dan's Tuner">
 <link rel="manifest" href="manifest.json">
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff' /%3E%3Cg transform='translate(50, 50) skewX(-20) scale(0.7, 1.8)' font-family='impact, sans-serif' font-weight='900' font-style='italic' text-anchor='middle' dominant-baseline='central'%3E%3Ctext x='0' y='0' fill='%23ff0000' stroke='%23000000' stroke-width='2.5'%3EDBSD%3C/text%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ffffff' /%3E%3Crect x='4' y='4' width='92' height='92' fill='none' stroke='%23000000' stroke-width='1.5' rx='6' /%3E%3Cg font-family='impact, sans-serif' font-weight='900' fill='%23ff0000' stroke='%23000000' stroke-width='0.8' text-anchor='middle' dominant-baseline='central'%3E%3Cg transform='translate(50, 18) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDAN'S%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 39) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EBEAT%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 60) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3ESPEED%3C/text%3E%3C/g%3E%3Cg transform='translate(50, 81) skewX(-15) scale(0.85, 1.3)'%3E%3Ctext x='0' y='0' font-size='16'%3EDETECTOR%3C/text%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 
 <script>
   (function() {
@@ -18,29 +18,44 @@
       canvas.width = 192; canvas.height = 192;
       var ctx = canvas.getContext('2d');
       
-      // White Background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, 192, 192);
       
-      // Text styling
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      if(ctx.roundRect) {
+          ctx.beginPath(); 
+          ctx.roundRect(8, 8, 176, 176, 12); 
+          ctx.stroke();
+      } else {
+          ctx.strokeRect(8, 8, 176, 176);
+      }
+      
       ctx.fillStyle = '#ff0000';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 6; // Thicker border
+      ctx.lineWidth = 1.5;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '900 70px impact, -apple-system, sans-serif';
+      ctx.font = '900 30px impact, -apple-system, sans-serif';
       
-      let skewRad = Math.tan(-20 * Math.PI / 180); // Increased slant
+      let lines = [
+          {t: "DAN'S", y: 35},
+          {t: "BEAT", y: 75},
+          {t: "SPEED", y: 115},
+          {t: "DETECTOR", y: 155}
+      ];
       
-      ctx.save();
-      ctx.translate(96, 96); // Center of icon
-      // apply scaleX (0.7), skewY (0), skewX (skewRad), scaleY (1.8), transX (0), transY (0)
-      ctx.transform(0.7, 0, skewRad, 1.8, 0, 0); 
-      ctx.strokeText("DBSD", 0, 0);
-      ctx.fillText("DBSD", 0, 0);
-      ctx.restore();
+      let skewRad = Math.tan(-15 * Math.PI / 180); 
       
-      // Inject for iOS Add to Home Screen
+      lines.forEach(line => {
+          ctx.save();
+          ctx.translate(96, line.y); 
+          ctx.transform(0.85, 0, skewRad, 1.3, 0, 0); 
+          ctx.fillText(line.t, 0, 0);
+          ctx.strokeText(line.t, 0, 0);
+          ctx.restore();
+      });
+      
       var link = document.createElement('link');
       link.rel = 'apple-touch-icon';
       link.href = canvas.toDataURL('image/png');
@@ -48,7 +63,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V57.4</title>
+<title>DAN'S BEAT SPEED DETECTOR - V57.5</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -131,6 +146,10 @@
     font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer;
   }
   .roll-nav:active { background: #000; color: #fff; }
+  
+  #btnAutoNote { font-size:0.6rem; width:28px; background:#fff; border-color:#ccc; color:#aaa; font-weight:900;}
+  #btnAutoNote.on { background:#00aa00; color:#fff; border-color:#007700; }
+  
   .piano-roll { display: flex; flex: 1; justify-content: space-between; }
   .pk {
     flex: 1; height: 64px; background: #ffffff; border: 1px solid #000000; border-radius: 0 0 3px 3px; margin: 0 1px; 
@@ -206,7 +225,6 @@
   .action-btn.logged { background: #e6ffe6; border-color: #00aa00; color: #006600; box-shadow: 0 2px 0 #00aa00; }
   .action-btn.logged:active { box-shadow: 0 0 0 #00aa00; }
 
-  /* Listen Buttons states */
   .listen-btn { background: #f4f4f4; border-color: #aaa; color: #555; box-shadow: 0 2px 0 #aaa; }
   .listen-btn:active { box-shadow: 0 0 0 #aaa; transform: translateY(2px); }
   .listen-btn.active-listen { background: #555; color: #fff; border-color: #333; box-shadow: 0 0 0 #333; transform: translateY(2px); }
@@ -287,7 +305,14 @@
     <div style="background:#fff; padding:20px; border-radius:8px; text-align:center; border: 4px solid #000; max-width: 400px; margin: 0 auto; width: 100%;">
         <h2 style="text-transform: uppercase; font-weight: 900; margin-bottom: 6px;">LOCK PIN: <span id="pinModalNote" style="color:#d00000;"></span></h2>
         <p style="margin-bottom:12px; font-size:0.8rem; font-weight: bold; color: #555;">Play note repeatedly. Wait for stable pitch to anchor the elastic curve.</p>
-        <div class="readout-box" style="margin-bottom:12px; padding: 20px 0;">
+        <div class="readout-box" style="margin-bottom:12px; padding: 10px 0;">
+            <div style="width:100%; height:50px; position:relative; margin-bottom:10px;">
+                <svg viewBox="0 0 200 50" style="width:100%; height:100%;">
+                    <path d="M 20 20 Q 100 60 180 20" fill="none" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="100" cy="40" r="8" fill="none" stroke="#000" stroke-width="3"/>
+                    <circle id="visDot-Pin" cx="100" cy="40" r="6" fill="#e0e0e0" style="display:none; transition: cx 0.1s ease-out, cy 0.1s ease-out, fill 0.1s;"/>
+                </svg>
+            </div>
             <div class="val-large" id="pinModalCents" style="font-size:3.5rem;">---</div>
             <div class="val-lbl" id="pinModalTargetHz">Target: ---</div>
         </div>
@@ -298,11 +323,10 @@
 
 <div id="filesOverlay" class="overlay-panel">
    <h2 class="overlay-title">Saved Tunings</h2>
-   <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px; min-height:150px;"></div>
+   <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px; min-height:250px;"></div>
 
    <div style="background:#f4f4f4; padding:10px; border:2px solid #000; border-radius:6px; margin-bottom:12px; flex-shrink:0;">
        <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Manual Curve Builder</h3>
-       <p style="font-size:0.7rem; color:#555; margin-bottom:8px;">Enter PianoMeter offsets (cents). The app will seamlessly interpolate the 88-key stretch curve.</p>
        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-bottom:8px;">
            <div><label style="font-size:0.65rem;font-weight:bold;">A0</label><input type="number" id="anc_21" step="0.1" style="width:100%; padding:4px;"></div>
            <div><label style="font-size:0.65rem;font-weight:bold;">C1</label><input type="number" id="anc_24" step="0.1" style="width:100%; padding:4px;"></div>
@@ -318,25 +342,17 @@
            <button class="action-btn" onclick="generateCustomCurve()" style="flex:1; padding:8px;">APPLY CURVE</button>
            <button class="ctrl-btn fix-btn" onclick="clearCustomCurve()" style="padding:8px;">CLEAR</button>
        </div>
-       <div id="customCurveStatus" style="font-size:0.7rem; font-weight:bold; text-align:center; margin-top:6px; color:#00aa00; display:none;">✔ CUSTOM CURVE ACTIVE</div>
+       <div id="customCurveStatus" style="font-size:0.7rem; font-weight:bold; text-align:center; margin-top:6px; color:#00aa00; display:none;">✔ CUSTOM CURVE ACTIVE (A4 Centered)</div>
    </div>
 
    <div style="background:#f4f4f4; padding:10px; border:2px solid #000; border-radius:6px; margin-bottom:12px; flex-shrink:0;">
-       <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Save Current Workspace</h3>
-       <input type="text" id="saveNameInput" placeholder="Tuning Name (e.g. Yamaha LU101)" style="width:100%; padding:8px; font-size:0.9rem; margin-bottom:8px; border:1px solid #ccc; border-radius:4px;">
+       <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Save Tuning</h3>
+       <input type="text" id="saveNameInput" placeholder="Tuning Name" style="width:100%; padding:8px; font-size:0.9rem; margin-bottom:8px; border:1px solid #ccc; border-radius:4px;">
        <button class="ctrl-btn" onclick="saveCurrentTuning()" style="width:100%; background:#000; color:#fff; padding:10px; font-size:0.9rem;">SAVE & ADD TO LIST</button>
-   </div>
-
-   <div id="importSection" style="display:none; background:#e0f0ff; padding:10px; border:2px solid #0066ff; border-radius:6px; margin-bottom:12px; flex-shrink:0;">
-       <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase; color:#0044bb;">Import From Clipboard</h3>
-       <textarea id="importDataInput" rows="3" placeholder="Paste tuning data string here..." style="width:100%; padding:6px; font-size:0.8rem; margin-bottom:6px; border:1px solid #ccc; border-radius:4px; font-family:monospace; resize:none;"></textarea>
-       <input type="text" id="importNameInput" placeholder="Name for imported tuning" style="width:100%; padding:8px; font-size:0.9rem; margin-bottom:8px; border:1px solid #ccc; border-radius:4px;">
-       <button class="action-btn" onclick="importTuning()" style="width:100%; padding:10px; font-size:0.9rem;">SAVE IMPORTED DATA</button>
    </div>
 
    <div style="display:flex; gap:10px; margin-bottom:10px; flex-shrink:0;">
      <button class="ctrl-btn fix-btn" onclick="startNewTuning()" style="flex:1; padding:12px; font-size:0.9rem;">NEW TUNING</button>
-     <button class="ctrl-btn" onclick="toggleImportUI()" style="flex:1; padding:12px; font-size:0.9rem;" id="btnShowImport">IMPORT TEXT</button>
    </div>
 
    <button class="ctrl-btn" onclick="toggleFiles(false)" style="padding:16px; font-size:1.2rem; border-width:3px; box-shadow: 0 4px 0 #000; font-weight:900; flex-shrink:0;">BACK TO MENU</button>
@@ -372,6 +388,7 @@
     </div>
 
     <div class="roll-wrapper">
+      <button class="roll-nav" id="btnAutoNote">AUTO</button>
       <button class="roll-nav" id="octDown">‹</button>
       <div class="piano-roll" id="pianoRoll"></div>
       <button class="roll-nav" id="octUp">›</button>
@@ -419,15 +436,20 @@
       </div>
 
       <div id="ws-PRAISE" class="workspace-layer" style="padding: 8px;">
-          <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Pitch Raise Suite</h3>
+          <h3 style="font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 4px;">Pitch Raise</h3>
 
           <div id="prMeasureScreen" style="display:flex; flex-direction:column; align-items:center;">
-             <p style="font-size:0.7rem; color:#555; text-align:center; margin-bottom:12px; font-weight:bold;">1. Select Anchor &nbsp;|&nbsp; 2. Play Note &nbsp;|&nbsp; 3. Log Cents</p>
-             
-             <div class="action-row" id="prAnchorBtns" style="margin-bottom:12px; gap:8px;">
+             <div class="action-row" id="prAnchorBtns" style="display:flex; flex-wrap:wrap; justify-content:center; gap:4px; margin-bottom:12px;">
                  </div>
              
-             <div class="readout-box" style="width:100%; margin-bottom:12px; padding:16px 6px;">
+             <div class="readout-box" style="width:100%; margin-bottom:12px; padding:10px 6px;">
+                 <div style="width:100%; height:50px; position:relative; margin-bottom:4px;">
+                     <svg viewBox="0 0 200 50" style="width:100%; height:100%;">
+                         <path d="M 20 20 Q 100 60 180 20" fill="none" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+                         <circle cx="100" cy="40" r="8" fill="none" stroke="#000" stroke-width="3"/>
+                         <circle id="visDot-PRMeasure" cx="100" cy="40" r="6" fill="#e0e0e0" style="display:none; transition: cx 0.1s ease-out, cy 0.1s ease-out, fill 0.1s;"/>
+                     </svg>
+                 </div>
                  <div class="val-large" id="prMeasureCents" style="font-size:3.5rem;">---</div>
                  <div class="val-lbl" id="prMeasureNoteLbl">---</div>
              </div>
@@ -448,7 +470,14 @@
               <div style="font-size:1rem; font-weight:900; color:#0066ff; margin-bottom:4px;" id="prOverpullInfo">Actual Overpull: +0.0c</div>
               <div style="font-size:0.7rem; font-weight:700; color:#888; margin-bottom:12px;" id="prSweepTargetF">Target: --- Hz</div>
               
-              <div class="readout-box" style="width:100%; margin-bottom:12px; padding: 20px 6px;">
+              <div class="readout-box" style="width:100%; margin-bottom:12px; padding: 10px 6px;">
+                  <div style="width:100%; height:50px; position:relative; margin-bottom:10px;">
+                      <svg viewBox="0 0 200 50" style="width:100%; height:100%;">
+                          <path d="M 20 20 Q 100 60 180 20" fill="none" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+                          <circle cx="100" cy="40" r="8" fill="none" stroke="#000" stroke-width="3"/>
+                          <circle id="visDot-PRSweep" cx="100" cy="40" r="6" fill="#e0e0e0" style="display:none; transition: cx 0.1s ease-out, cy 0.1s ease-out, fill 0.1s;"/>
+                      </svg>
+                  </div>
                   <div class="val-large" id="prSweepCents" style="font-size:4rem;">---</div>
                   <div class="val-lbl">ALIGN TO 0.0c</div>
               </div>
@@ -470,7 +499,17 @@
             <h3>Step 1: Set Pitch</h3>
             <div class="tuning-target">Goal: Tune A4</div>
             <button class="ctrl-btn" id="btnTunerToggle" style="width:100%; margin-bottom:4px; font-size:0.8rem;">TUNER: OFF</button>
-            <div class="guide-result guide-res-wait" id="tunerReadout" style="min-height: 38px; display:flex; align-items:center; justify-content:center; flex-direction:column;">--- Hz</div>
+            <div class="readout-box" id="step1TunerBox" style="display:none; flex-direction:column; padding:10px; margin-bottom:8px;">
+               <div style="width:100%; height:50px; position:relative; margin-bottom:10px;">
+                   <svg viewBox="0 0 200 50" style="width:100%; height:100%;">
+                       <path d="M 20 20 Q 100 60 180 20" fill="none" stroke="#ccc" stroke-width="4" stroke-linecap="round"/>
+                       <circle cx="100" cy="40" r="8" fill="none" stroke="#000" stroke-width="3"/>
+                       <circle id="visDot-Step1" cx="100" cy="40" r="6" fill="#e0e0e0" style="display:none; transition: cx 0.1s ease-out, cy 0.1s ease-out, fill 0.1s;"/>
+                   </svg>
+               </div>
+               <div class="val-large" id="step1Cents" style="font-size:3.2rem;">---</div>
+               <div class="val-lbl" id="step1Hz">--- Hz</div>
+            </div>
           </div>
           <div class="guide-step">
             <h3>Step 2: Prove A3 Octave</h3>
@@ -722,7 +761,6 @@
 window.addEventListener('orientationchange', () => { setTimeout(() => { window.scrollTo(0, 0); document.body.scrollTop = 0; document.documentElement.scrollTop = 0; }, 50); });
 window.addEventListener('resize', () => { window.scrollTo(0, 0); });
 
-// Auto-sleep and auto-wake based on page visibility
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         if (audioCtx && audioCtx.state === 'running') {
@@ -765,11 +803,6 @@ window.selectMode = function(mode) {
 
     if (mode === 'PRAISE') {
         renderPRAnchors();
-        if(!tunerActive) { 
-            tunerActive = true; 
-            tunerDataArray = new Float32Array(analyserTuner.fftSize); 
-            runTuner(); 
-        }
     }
 }
 
@@ -781,7 +814,9 @@ let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];
 let transientSamplesLeft = 0, lastAttackTime = 0;
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
 
-let lastAudioFrameTime = 0; // Failsafe for stuck envelope bug
+let lastAudioFrameTime = 0; 
+let autoNoteEnabled = false;
+let autoPitchHistory = [];
 
 let customCurveOffsets = null; 
 let lockedPins = { 69: 0.0 }; 
@@ -876,7 +911,6 @@ window.startAudioEngine = async function() {
         analyserFull.fftSize = 16384; 
         analyserFull.smoothingTimeConstant = 0.0; 
         
-        // Tuner setup: increased FFT size and Low-Pass Anti-Inharmonicity filter
         analyserTuner = audioCtx.createAnalyser(); 
         analyserTuner.fftSize = 8192; 
         tunerFilter = audioCtx.createBiquadFilter();
@@ -886,6 +920,7 @@ window.startAudioEngine = async function() {
         
         src.connect(tunerFilter);
         tunerFilter.connect(analyserTuner);
+        tunerDataArray = new Float32Array(analyserTuner.fftSize);
 
         const cfg = getConfig(lowerMidi, curIv); filters = buildFilters(cfg);
         gainNode = audioCtx.createGain(); gainNode.gain.value = 250.0; 
@@ -909,20 +944,41 @@ window.startAudioEngine = async function() {
     }
 }
 
-// Dynamic Low-Pass Filter to eliminate sharp overtones dragging the YIN fundamental reading
 function updateTunerFilter() {
     if (!tunerFilter || !audioCtx) return;
-    let targetHz = 20000; // Default open
+    let targetHz = 20000; 
     
     if (document.getElementById('pinModal').style.display === 'flex' && pinModalMidi) {
         targetHz = tuningCurve[pinModalMidi];
     } else if (mainMode === 'PRAISE') {
         targetHz = tuningCurve[prMode === 'MEASURE' ? prMeasureMidi : prCurrentMidi];
+    } else if (tunerActive) {
+        targetHz = 440.0;
     }
     
-    // Set cutoff to 2.2x fundamental: Lets 1st & 2nd partial through, kills 3rd/4th/5th+ sharp partials
     let cutoff = Math.min(targetHz * 2.2, 20000);
     tunerFilter.frequency.setTargetAtTime(cutoff, audioCtx.currentTime, 0.05);
+}
+
+function updateVisualTuner(dotId, cents) {
+    let dot = $(dotId);
+    if(!dot) return;
+    if(cents === null || cents === undefined || isNaN(cents)) {
+        dot.style.display = 'none';
+        return;
+    }
+    dot.style.display = 'block';
+    
+    let c = Math.max(-50, Math.min(50, cents));
+    let x = 100 + (c / 50) * 80;
+    let y = 8.75 + (5 * x / 8) - (Math.pow(x, 2) / 320); 
+    
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+
+    if(Math.abs(cents) <= 1.0) dot.setAttribute('fill', '#00aa00');
+    else if(Math.abs(cents) <= 3.0) dot.setAttribute('fill', '#ff9900');
+    else dot.setAttribute('fill', '#ff0000');
 }
 
 function loadPersistence() {
@@ -960,6 +1016,7 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
+
 function savePersistence() { 
     let state = { 
         logs: loggedIntervals, 
@@ -998,11 +1055,6 @@ function renderSavedFiles() {
     if(Object.keys(savedTunings).length === 0) list.innerHTML = '<div style="padding:15px; color:#999; text-align:center; font-style:italic;">No saved tunings.</div>';
 }
 window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let jsonStr = JSON.stringify(data); navigator.clipboard.writeText(jsonStr).then(() => alert('Data copied!')).catch(()=>prompt("Copy text:", jsonStr)); } }
-window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
-window.importTuning = function() {
-    let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
-}
 
 window.saveCurrentTuning = function() { 
     let name = $('saveNameInput').value.trim(); 
@@ -1111,6 +1163,15 @@ window.generateCustomCurve = function() {
         return;
     }
     
+    // Inject A4 fixed anchor to ensure Concert Pitch is mathematically locked
+    xs.push(69);
+    ys.push(0);
+    
+    // Sort combined arrays to ensure strictly increasing X values for Spline
+    let combined = xs.map((x, i) => ({x, y: ys[i]})).sort((a,b) => a.x - b.x);
+    xs = combined.map(item => item.x);
+    ys = combined.map(item => item.y);
+    
     let spline = createMonotoneCubicSpline(xs, ys);
     customCurveOffsets = new Float32Array(109);
     for (let m = 21; m <= 108; m++) {
@@ -1122,7 +1183,7 @@ window.generateCustomCurve = function() {
     updateDynamicGuideTexts();
     renderDynExpanders();
     setTarget(lowerMidi, curIv);
-    alert("Custom curve successfully generated and applied!");
+    alert("Custom curve generated! A4 is locked at 0.0c.");
 }
 
 window.clearCustomCurve = function() {
@@ -1137,6 +1198,15 @@ window.clearCustomCurve = function() {
         setTarget(lowerMidi, curIv);
     }
 }
+
+$('btnAutoNote').addEventListener('click', (e) => {
+    autoNoteEnabled = !autoNoteEnabled;
+    if(autoNoteEnabled) {
+        e.target.classList.add('on');
+    } else {
+        e.target.classList.remove('on');
+    }
+});
 
 // IH CYCLE LOGIC
 window.cycleIH = function() {
@@ -1224,6 +1294,7 @@ window.openPinModal = function(midi) {
     $('pinModalCents').style.color = '#000';
     pitchHistory = []; smoothedPitch = -1;
     $('pinModal').style.display = 'flex';
+    updateVisualTuner('visDot-Pin', null);
     updateTunerFilter();
 }
 
@@ -1275,6 +1346,7 @@ window.renderPRAnchors = function() {
     prAnchorMidis.forEach(m => {
         let b = document.createElement('button');
         b.className = 'action-btn';
+        b.style.flex = '1 1 18%'; // Creates a dynamic 5/4 grid
         b.style.minWidth = '42px';
         b.style.padding = '6px 4px';
         
@@ -1299,6 +1371,7 @@ window.renderPRAnchors = function() {
             $('prMeasureCents').textContent = '---';
             $('prMeasureCents').style.color = '#000';
             $('prMeasureCents').style.textShadow = 'none';
+            updateVisualTuner('visDot-PRMeasure', null);
             renderPRAnchors(); 
             updateTunerFilter();
         };
@@ -1392,44 +1465,47 @@ function updatePRSweepUI() {
     
     $('prSweepCents').textContent = '---';
     $('prSweepCents').style.color = '#000';
+    updateVisualTuner('visDot-PRSweep', null);
     updateTunerFilter();
 }
 
-function processTunerPitch(rawPitch, targetF, elId, isSilent) {
+function processTunerPitch(rawPitch, targetF, elId, dotId, isSilent) {
     let el = $(elId);
     if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) {
         pitchHistory.push(rawPitch);
-        if(pitchHistory.length > 20) pitchHistory.shift(); 
+        if(pitchHistory.length > 5) pitchHistory.shift(); 
         
         let sorted = [...pitchHistory].sort((a,b) => a-b);
-        let medianPitch = sorted[Math.floor(sorted.length/2)];
+        let filtered = sorted.length === 5 ? sorted.slice(1, -1) : sorted;
+        let medianPitch = filtered[Math.floor(filtered.length/2)];
         
         if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 5.0) {
             smoothedPitch = medianPitch;
         } else {
-            smoothedPitch = (smoothedPitch * 0.85) + (medianPitch * 0.15);
+            smoothedPitch = (smoothedPitch * 0.6) + (medianPitch * 0.4);
         }
         
         let cents = 1200 * Math.log2(smoothedPitch / targetF);
         
         if(el) {
             el.textContent = (cents > 0 ? '+' : '') + cents.toFixed(1) + 'c';
-            if(Math.abs(cents) < 1.0) el.style.color = '#00aa00';
+            if(Math.abs(cents) <= 1.0) el.style.color = '#00aa00';
             else if (Math.abs(cents) > 5.0) el.style.color = '#d00000';
             else el.style.color = '#000';
             
             if (mainMode === 'PRAISE' && prMode === 'MEASURE' && document.getElementById('pinModal').style.display !== 'flex') {
                 let now = performance.now();
-                if (prStableCents === null || Math.abs(cents - prStableCents) > 0.6) {
+                if (prStableCents === null || Math.abs(cents - prStableCents) > 1.0) {
                     prStableCents = cents;
                     prStableStartTime = now;
                     el.style.textShadow = "none";
-                } else if (now - prStableStartTime > 1600) {
+                } else if (now - prStableStartTime > 1000) {
                     el.style.textShadow = "0 0 15px #00aa00";
                     logPRAnchor(); 
                 }
             }
         }
+        updateVisualTuner(dotId, cents);
     } else {
         if(pitchHistory.length > 0) pitchHistory.shift();
         if(pitchHistory.length === 0) { 
@@ -1440,61 +1516,72 @@ function processTunerPitch(rawPitch, targetF, elId, isSilent) {
                 el.style.color = '#000'; 
                 el.style.textShadow = "none";
             }
+            updateVisualTuner(dotId, null);
         }
     }
 }
 
-function runTuner() {
-  if(!tunerActive || !isRunning || micPaused) return;
-  analyserTuner.getFloatTimeDomainData(tunerDataArray);
-  let rawPitch = getPitchYin(tunerDataArray, audioCtx.sampleRate);
-  let isSilent = (envelopeRunning < 0.005);
-  
-  if (mainMode === 'PRAISE' || document.getElementById('pinModal').style.display === 'flex') {
-      let targetF;
-      let elId;
-      if (document.getElementById('pinModal').style.display === 'flex') {
-          targetF = tuningCurve[pinModalMidi];
-          elId = 'pinModalCents';
-      } else if (prMode === 'MEASURE') {
+function runPitchEngine(rawPitch, isSilent) {
+  let needsTuner = tunerActive || mainMode === 'PRAISE' || document.getElementById('pinModal').style.display === 'flex' || autoNoteEnabled;
+  if(!needsTuner) return;
+
+  // Auto Note Switcher Logic
+  if(autoNoteEnabled && mainMode === 'DET' && captureState === 'IDLE' && !isSilent && rawPitch > 20 && rawPitch < 4200) {
+      autoPitchHistory.push(rawPitch);
+      if(autoPitchHistory.length > 8) autoPitchHistory.shift();
+      let sorted = [...autoPitchHistory].sort((a,b)=>a-b);
+      let med = sorted[Math.floor(sorted.length/2)];
+      
+      // Require strong 1.5% stability over 8 frames to prove it's a single note, not an interval
+      if (autoPitchHistory.length === 8 && Math.abs(sorted[7] - sorted[0]) < med * 0.015) { 
+          let midi = Math.round(12 * Math.log2(med / 440)) + 69;
+          if (midi >= IV[curIv].min && midi <= IV[curIv].max && midi !== lowerMidi) {
+              // Ensure we aren't interrupting a strong beat envelope
+              let snr = envelopeRunning / noiseFloor;
+              if (snr < 3.0) { 
+                  lowerMidi = midi;
+                  updateRollBounds();
+                  buildPianoRoll();
+                  setTarget(lowerMidi, curIv);
+                  autoPitchHistory = [];
+              }
+          }
+      }
+  } else {
+      autoPitchHistory = [];
+  }
+
+  // Tuner/Pitch Display Logic
+  let targetF = null;
+  let elId = null;
+  let dotId = null;
+
+  if (document.getElementById('pinModal').style.display === 'flex') {
+      targetF = tuningCurve[pinModalMidi];
+      elId = 'pinModalCents';
+      dotId = 'visDot-Pin';
+  } else if (mainMode === 'PRAISE') {
+      if (prMode === 'MEASURE') {
           targetF = tuningCurve[prMeasureMidi];
           elId = 'prMeasureCents';
+          dotId = 'visDot-PRMeasure';
       } else {
           let baseF = tuningCurve[prCurrentMidi];
           let overpullCents = prOverpullArray[prCurrentMidi] || 0;
           targetF = baseF * Math.pow(2, overpullCents / 1200);
           elId = 'prSweepCents';
+          dotId = 'visDot-PRSweep';
       }
-      processTunerPitch(rawPitch, targetF, elId, isSilent);
-  } 
-  else {
-      let targetF = 440.0;
-
-      if(!isSilent && rawPitch > targetF * 0.88 && rawPitch < targetF * 1.12) { 
-        pitchHistory.push(rawPitch);
-        if(pitchHistory.length > 20) pitchHistory.shift(); 
-        let sorted = [...pitchHistory].sort((a,b) => a-b);
-        let medianPitch = sorted[Math.floor(sorted.length/2)];
-        
-        if (smoothedPitch === -1 || Math.abs(smoothedPitch - medianPitch) > 5.0) smoothedPitch = medianPitch;
-        else smoothedPitch = (smoothedPitch * 0.85) + (medianPitch * 0.15);
-
-        let cents = 1200 * Math.log2(smoothedPitch / targetF);
-        let color = Math.abs(cents) < 1.5 ? '#00aa00' : '#d00000';
-        let text = (cents > 0 ? '+' : '') + cents.toFixed(1) + 'c';
-        
-        $('tunerReadout').innerHTML = `<span style="font-size:1.4rem; font-weight:900; line-height:1.2;">${smoothedPitch.toFixed(1)} Hz</span><br><span style="color:${color}; font-weight:900; font-size:0.9rem;">${text}</span>`;
-      } else { 
-        if(pitchHistory.length > 0) pitchHistory.shift();
-        if(pitchHistory.length === 0) {
-            smoothedPitch = -1; 
-            $('tunerReadout').innerHTML = '--- Hz';
-            $('tunerReadout').className = 'guide-result guide-res-wait';
-        }
-      }
+  } else if (tunerActive) {
+      targetF = 440.0;
+      elId = 'step1Cents';
+      dotId = 'visDot-Step1';
+      if ($('step1Hz')) $('step1Hz').textContent = smoothedPitch !== -1 ? smoothedPitch.toFixed(1) + ' Hz' : '--- Hz';
   }
-  
-  if(tunerActive) requestAnimationFrame(runTuner);
+
+  if (targetF !== null && elId !== null) {
+      processTunerPitch(rawPitch, targetF, elId, dotId, isSilent);
+  }
 }
 
 function getConfig(lowerMidi, ivKey) {
@@ -1538,7 +1625,6 @@ function switchGuideTab(tab) {
 window.setTarget = function(midi, ivKey) {
   lowerMidi = midi; 
   
-  // Dynamic Chunk Sizer - 256 for fast beats, 512 for stability on slow beats
   const fastIntervals = ['m3', 'M3', 'M6', 'M10', 'M17'];
   currentChunkSize = fastIntervals.includes(ivKey) ? 256 : 512;
   
@@ -1567,7 +1653,6 @@ $('btnPause').onclick = async () => {
       captureState = 'IDLE'; 
       if(monitorGain) monitorGain.gain.value = 0; 
       
-      // Hard Reset: Tear down audio completely
       if (audioCtx) { try { audioCtx.close(); } catch(e){} audioCtx = null; }
       if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
       isRunning = false;
@@ -1578,7 +1663,6 @@ $('btnPause').onclick = async () => {
       $('btnPause').style.borderColor = '#007700'; 
       resetCapture(); 
       
-      // Hard Reset: Rebuild audio completely
       await startAudioEngine(); 
       if(monitorGain && monitorOn) monitorGain.gain.value = 25.0; 
   }
@@ -1601,9 +1685,17 @@ $('btnPassThrough').onclick = () => {
 };
 
 $('btnTunerToggle').onclick = () => {
-  tunerActive = !tunerActive; const btn = $('btnTunerToggle'), out = $('tunerReadout');
-  if(tunerActive) { btn.textContent = 'TUNER: ON'; btn.style.background = '#000'; btn.style.color = '#fff'; out.className = 'guide-result guide-res-pass'; smoothedPitch = -1; pitchHistory = []; tunerDataArray = new Float32Array(analyserTuner.fftSize); runTuner(); } 
-  else { btn.textContent = 'TUNER: OFF'; btn.style.background = '#fff'; btn.style.color = '#000'; out.className = 'guide-result guide-res-wait'; out.innerHTML = '--- Hz'; }
+  tunerActive = !tunerActive; const btn = $('btnTunerToggle'), out = $('step1TunerBox');
+  if(tunerActive) { 
+      btn.textContent = 'TUNER: ON'; btn.style.background = '#000'; btn.style.color = '#fff'; 
+      out.style.display = 'flex';
+      smoothedPitch = -1; pitchHistory = []; 
+      updateTunerFilter();
+  } 
+  else { 
+      btn.textContent = 'TUNER: OFF'; btn.style.background = '#fff'; btn.style.color = '#000'; 
+      out.style.display = 'none';
+  }
 }
 
 function updateRollBounds() { while (lowerMidi < rollBaseMidi) rollBaseMidi -= 12; while (lowerMidi >= rollBaseMidi + 12) rollBaseMidi += 12; }
@@ -1636,7 +1728,6 @@ function refreshUI() {
 
 $('octDown').addEventListener('click', () => { if (rollBaseMidi > 12) { rollBaseMidi -= 12; buildPianoRoll(); } }); $('octUp').addEventListener('click', () => { if (rollBaseMidi < 108) { rollBaseMidi += 12; buildPianoRoll(); } });
 
-// Auto-Arming wrapper on navigation arrows
 $('btnBigDown').addEventListener('click', () => { 
     if (!isRunning || lowerMidi <= IV[curIv].min) return; 
     lowerMidi--; updateRollBounds(); resetCapture(); buildPianoRoll(); 
@@ -2018,7 +2109,7 @@ function buildAudioProcessor() {
   return (e) => {
     if (!isRunning || micPaused) return; const inputData = e.inputBuffer.getChannelData(0);
     
-    lastAudioFrameTime = performance.now(); // Update failsafe timer
+    lastAudioFrameTime = performance.now(); 
 
     for (let offset = 0; offset < inputData.length; offset += currentChunkSize) {
       let sum = 0, limit = Math.min(currentChunkSize, inputData.length - offset); 
@@ -2052,13 +2143,19 @@ function retuneFilters(cfg) { if (!audioCtx || filters.length === 0) return; con
 function renderLoop(ts) {
   if (!isRunning) return; rafId = requestAnimationFrame(renderLoop); if (micPaused) return;
 
-  // MIC DISCONNECTED FAILSAFE
   if (performance.now() - lastAudioFrameTime > 800) { 
       $('captureStateLbl').textContent = 'MIC DISCONNECTED'; 
       $('captureStateLbl').style.color = '#d00000'; 
       sigLight.style.background = '#e0e0e0'; 
       captureState = 'IDLE';
       return;
+  }
+  
+  if (tunerDataArray) {
+      analyserTuner.getFloatTimeDomainData(tunerDataArray);
+      let rawPitch = getPitchYin(tunerDataArray, audioCtx.sampleRate);
+      let isSilent = (envelopeRunning < 0.005);
+      runPitchEngine(rawPitch, isSilent);
   }
   
   if (captureState === 'LISTEN_ONLY') { $('captureStateLbl').textContent = 'LISTENING'; $('captureStateLbl').style.color = '#0066ff'; const snr = envelopeRunning / noiseFloor; if (snr > 1.5 && envelopeRunning > 0.005) sigLight.style.background = '#00ff00'; else sigLight.style.background = '#e0e0e0'; return; }
@@ -2098,28 +2195,6 @@ function renderLoop(ts) {
   }
 }
 
-function detectBeat(history, theoreticalBeat, ivKey) {
-  const N = history.length; const fps = audioCtx.sampleRate / currentChunkSize; const vals = history.map(h => h.val); const windowSize = Math.round(fps * 0.45); const valAvg = vals.reduce((a,b) => a+b, 0) / N;
-  const AC = new Float32Array(N); for (let i = 0; i < N; i++) { let start = Math.max(0, i - Math.floor(windowSize / 2)), end = Math.min(N, i + Math.ceil(windowSize / 2)), localSum = 0; for (let j = start; j < end; j++) localSum += vals[j]; AC[i] = vals[i] - (localSum / (end - start)); }
-  let ac0 = 0; for (let i = 0; i < N; i++) ac0 += AC[i] * AC[i]; let beatIntensity = Math.sqrt(ac0 / N) / valAvg; if (beatIntensity < 0.012 && valAvg > 0.005) return 0.0; if (ac0 < 1e-12) return null;
-  const minLag = Math.max(2, Math.round(fps / 55)), maxLag = Math.min(N - 2, Math.round(fps / 0.5)); const ac = new Float32Array(maxLag + 1); for (let lag = minLag; lag <= maxLag; lag++) { let sum = 0; for (let i = 0; i < N - lag; i++) sum += AC[i] * AC[i + lag]; ac[lag] = sum / ac0; }
-  const peaks = []; let acThreshold = theoreticalBeat > 10.0 ? 0.01 : 0.02; if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) acThreshold = 0.005; if (lowerMidi >= 58) { acThreshold *= 0.5; } 
-  for (let lag = minLag + 1; lag < maxLag; lag++) { if (ac[lag] > ac[lag - 1] && ac[lag] > ac[lag + 1] && ac[lag] > acThreshold) peaks.push({ lag, ac: ac[lag] }); }
-  if (peaks.length === 0) { if (ivKey.includes('OCT')) return 0.0; return null; }
-  let bestCandidate = null, maxScore = -1;
-  peaks.forEach(p => {
-    let alpha = ac[p.lag - 1], beta = ac[p.lag], gamma = ac[p.lag + 1]; let denom = alpha - 2 * beta + gamma; let pLag = p.lag;
-    if (Math.abs(denom) > 1e-5) pLag = p.lag + 0.5 * (alpha - gamma) / denom; let rate = fps / pLag; 
-    let allowedDev = Math.max(1.0, theoreticalBeat * 0.35); if (ivKey.includes('OCT') || ivKey === 'P12' || ivKey === 'P15' || ivKey === 'OCT+2') allowedDev = 4.0; if (Math.abs(rate - theoreticalBeat) > allowedDev) return; 
-    let score = p.ac; 
-    if (ivKey !== 'P4' && ivKey !== 'P5' && !ivKey.includes('OCT')) { let ratio = rate / theoreticalBeat; let distanceDev = theoreticalBeat === 0 ? 0 : Math.abs(Math.log2(ratio)); let proximityWeight = theoreticalBeat === 0 ? 1.0 : Math.exp(-0.5 * Math.pow(distanceDev / 0.8, 2)); if (rate < 0.15 || rate > 43.0) proximityWeight = 0.0; score *= proximityWeight; } 
-    else { if (rate < 0.15 || rate > 25.0) score *= 0.0; }
-    if (score > maxScore) { maxScore = score; bestCandidate = rate; }
-  }); 
-  if (maxScore > 0 && maxScore <= 0.005 && ivKey.includes('OCT')) { return 0.0; }
-  return maxScore > 0.005 ? bestCandidate : null;
-}
-
 $('clearBtn').addEventListener('click', () => { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] }; savePersistence(); resetCapture(); renderLogTable(); updateGuide(); renderDynExpanders(); });
 
 document.querySelectorAll('.iv-tab').forEach(t => { 
@@ -2135,7 +2210,7 @@ document.querySelectorAll('.iv-tab').forEach(t => {
 
 $('bigStartBtn').addEventListener('click', async () => { 
     $('startOverlay').style.display = 'none'; 
-    applyIHPreset(); // Initialize default curve on startup
+    applyIHPreset(); 
     await startAudioEngine(); 
 });
 
