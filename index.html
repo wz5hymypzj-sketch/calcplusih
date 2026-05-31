@@ -266,6 +266,12 @@
 
     .right-panel { flex: 45; height: 100%; display: flex; flex-direction: column; min-height: 0; }
   }
+
+  /* MANUAL CURVE BUILDER STYLES */
+  .mc-row { display: flex; align-items: center; justify-content: space-between; background: #222; padding: 8px 12px; border-radius: 6px; border: 1px solid #444; margin-bottom: 4px; }
+  .mc-row label { font-weight: 900; font-size: 1.1rem; color: #fff; width: 80px; }
+  .mc-row input { flex: 1; margin-left: 10px; padding: 8px; font-size: 1.2rem; text-align: center; border: 2px solid #555; border-radius: 4px; background: #111; color: #fff; font-weight: bold; }
+  .mc-row input:focus { border-color: #00aa00; outline: none; }
 </style>
 </head>
 <body>
@@ -291,6 +297,8 @@
 <div id="filesOverlay" class="overlay-panel">
    <h2 class="overlay-title">Saved Tunings</h2>
    <div id="savedFilesList" style="flex:1; overflow-y:auto; border:2px solid #000; border-radius:6px; background:#fff; margin-bottom:12px; min-height:150px;"></div>
+   
+   <button class="ctrl-btn" onclick="openManualCurve()" style="width:100%; padding:14px; font-size:1rem; background:#111; color:#fff; border: 2px solid #000; box-shadow: 0 4px 0 #000; margin-bottom: 12px; font-weight:900;">🛠️ MANUAL CURVE BUILDER</button>
 
    <div style="background:#f4f4f4; padding:10px; border:2px solid #000; border-radius:6px; margin-bottom:12px; flex-shrink:0;">
        <h3 style="font-size:0.8rem; margin-bottom:6px; text-transform:uppercase;">Save Current Workspace</h3>
@@ -313,6 +321,30 @@
    <button class="ctrl-btn" onclick="toggleFiles(false)" style="padding:16px; font-size:1.2rem; border-width:3px; box-shadow: 0 4px 0 #000; font-weight:900; flex-shrink:0;">BACK TO MENU</button>
 </div>
 
+<div id="manualCurveOverlay" class="overlay-panel" style="background: rgba(15,15,15,0.98); color: #fff; z-index: 9999;">
+    <h2 class="overlay-title" style="border-bottom-color:#444; color:#fff;">CUSTOM ANCHORS</h2>
+    <p style="font-size:0.8rem; color:#aaa; margin-bottom:16px; line-height:1.4;">Enter cents offsets directly from PianoMeter. The mathematical spline will smoothly interpolate all missing notes.</p>
+    
+    <div style="display:flex; flex-direction:column; margin-bottom: 16px; overflow-y:auto; flex:1;">
+        <div class="mc-row"><label>A0 (21)</label><input type="number" step="0.1" id="mc-21"></div>
+        <div class="mc-row"><label>C1 (24)</label><input type="number" step="0.1" id="mc-24"></div>
+        <div class="mc-row"><label>C2 (36)</label><input type="number" step="0.1" id="mc-36"></div>
+        <div class="mc-row"><label>C3 (48)</label><input type="number" step="0.1" id="mc-48"></div>
+        <div class="mc-row"><label>C4 (60)</label><input type="number" step="0.1" id="mc-60"></div>
+        <div class="mc-row"><label>C5 (72)</label><input type="number" step="0.1" id="mc-72"></div>
+        <div class="mc-row"><label>C6 (84)</label><input type="number" step="0.1" id="mc-84"></div>
+        <div class="mc-row"><label>C7 (96)</label><input type="number" step="0.1" id="mc-96"></div>
+        <div class="mc-row"><label>C8 (108)</label><input type="number" step="0.1" id="mc-108"></div>
+    </div>
+
+    <div style="flex-shrink:0;">
+        <button class="action-btn" onclick="applyManualCurve()" style="width:100%; padding:16px; font-size:1.1rem; background:#00aa00; color:#fff; border:none; box-shadow: 0 4px 0 #005500; margin-bottom:12px;">GENERATE & APPLY CURVE</button>
+        <div style="display:flex; gap:8px;">
+            <button class="ctrl-btn" onclick="clearManualCurve()" style="flex:1; padding:12px; background:#d00000; color:#fff; border:none;">REVERT TO PRESETS</button>
+            <button class="ctrl-btn" onclick="closeManualCurve()" style="flex:1; padding:12px; background:#444; color:#fff; border:none;">CANCEL</button>
+        </div>
+    </div>
+</div>
 
 <div class="layout-wrapper">
   
@@ -767,6 +799,9 @@ const ihPresets = [
 ];
 let currentIHIndex = 1; // Default to 40"
 
+let manualAnchors = null;
+let useManualCurve = false;
+
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
 for(let m=0; m<=108; m++) tuningCurve[m] = 440 * Math.pow(2, (m - 69) / 12);
@@ -788,8 +823,8 @@ let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
 const $ = id => document.getElementById(id);
-const avgEl = $('avgVal'), sigLight = $('signalLight'); 
-let savedTunings = JSON.parse(localStorage.getItem('danTunerSavesV52_0')) || {};
+const savedTuningsKey = 'danTunerSavesV52_0'; // Constant for save key to keep logic consistent
+let savedTunings = JSON.parse(localStorage.getItem(savedTuningsKey)) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const IS_SHARP = new Set([1,3,6,8,10]);
@@ -885,6 +920,8 @@ function loadPersistence() {
           if (parsed.prOffsets) prLoggedOffsets = parsed.prOffsets;
           if (parsed.prOverpull) prOverpullArray = new Float32Array(parsed.prOverpull);
           if (parsed.prMode) prMode = parsed.prMode;
+          if (parsed.manualAnchors !== undefined) manualAnchors = parsed.manualAnchors;
+          if (parsed.useManualCurve !== undefined) useManualCurve = parsed.useManualCurve;
           if (parsed.ihPresetIndex !== undefined) {
               currentIHIndex = parsed.ihPresetIndex;
               applyIHPreset();
@@ -901,7 +938,7 @@ function loadPersistence() {
     } catch(e) {}
   }
 }
-function savePersistence() { let state = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danDetectorLogsV52_0', JSON.stringify(state)); }
+function savePersistence() { let state = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode, manualAnchors: manualAnchors, useManualCurve: useManualCurve }; localStorage.setItem('danDetectorLogsV52_0', JSON.stringify(state)); }
 loadPersistence();
 
 window.toggleFiles = function(show) { 
@@ -931,9 +968,9 @@ window.copyTuning = function(key) { let data = savedTunings[key]; if(data) { let
 window.toggleImportUI = function() { let el = $('importSection'); if(el.style.display === 'none') { el.style.display = 'flex'; $('btnShowImport').style.background = '#0066ff'; $('btnShowImport').style.color = '#fff'; } else { el.style.display = 'none'; $('btnShowImport').style.background = '#fff'; $('btnShowImport').style.color = '#000'; } }
 window.importTuning = function() {
     let dataStr = $('importDataInput').value.trim(); let name = $('importNameInput').value.trim(); if(!dataStr || !name) { alert("Please provide both."); return; }
-    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
+    try { let data = JSON.parse(dataStr); if(data.logs) { savedTunings[name] = data; localStorage.setItem(savedTuningsKey, JSON.stringify(savedTunings)); renderSavedFiles(); $('importDataInput').value = ''; $('importNameInput').value = ''; toggleImportUI(); alert("Imported!"); } } catch(e) { alert("Invalid format."); }
 }
-window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode }; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
+window.saveCurrentTuning = function() { let name = $('saveNameInput').value.trim(); if(!name) { alert('Enter name.'); return; } savedTunings[name] = { logs: loggedIntervals, ihPresetIndex: currentIHIndex, curve: Array.from(tuningCurve), prOffsets: prLoggedOffsets, prOverpull: Array.from(prOverpullArray), prMode: prMode, manualAnchors: manualAnchors, useManualCurve: useManualCurve }; localStorage.setItem(savedTuningsKey, JSON.stringify(savedTunings)); $('saveNameInput').value = ''; renderSavedFiles(); }
 window.loadTuning = function(key) {
     let data = savedTunings[key]; if(data) {
         loggedIntervals = data.logs; 
@@ -942,15 +979,18 @@ window.loadTuning = function(key) {
         if(data.prOffsets) prLoggedOffsets = data.prOffsets; 
         if(data.prOverpull) prOverpullArray = new Float32Array(data.prOverpull); 
         if(data.prMode) prMode = data.prMode;
+        if(data.manualAnchors !== undefined) manualAnchors = data.manualAnchors;
+        if(data.useManualCurve !== undefined) useManualCurve = data.useManualCurve;
         savePersistence();
         renderLogTable(); updateGuide(); toggleFiles(false);
     }
 }
-window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem('danTunerSavesV52_0', JSON.stringify(savedTunings)); renderSavedFiles(); } }
-window.startNewTuning = function() { if(confirm('Clear all logs and resets?')) { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] }; prLoggedOffsets = {}; prMode = 'MEASURE'; currentIHIndex = 1; applyIHPreset(); toggleFiles(false); } }
+window.deleteTuning = function(key) { if(confirm('Delete ' + key + '?')) { delete savedTunings[key]; localStorage.setItem(savedTuningsKey, JSON.stringify(savedTunings)); renderSavedFiles(); } }
+window.startNewTuning = function() { if(confirm('Clear all logs and resets?')) { loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] }; prLoggedOffsets = {}; prMode = 'MEASURE'; currentIHIndex = 1; useManualCurve = false; applyIHPreset(); toggleFiles(false); } }
 
 // IH CYCLE LOGIC
 window.cycleIH = function() {
+    useManualCurve = false;
     currentIHIndex = (currentIHIndex + 1) % ihPresets.length;
     applyIHPreset();
     savePersistence();
@@ -958,7 +998,7 @@ window.cycleIH = function() {
 
 function applyIHPreset() {
     let preset = ihPresets[currentIHIndex];
-    $('btnIHCycle').textContent = preset.l;
+    if (!useManualCurve) $('btnIHCycle').textContent = preset.l;
     
     buildTuningCurve();
     
@@ -974,10 +1014,37 @@ function applyIHPreset() {
 
 // EMPIRICAL RAILSBACK CURVE GENERATOR
 function buildTuningCurve() {
+    if (useManualCurve && manualAnchors) {
+        let xs = [21, 24, 36, 48, 60, 72, 84, 96, 108];
+        let ys = xs.map(x => manualAnchors[x] || 0);
+        let getSplineCents = createMonotoneCubicSpline(xs, ys);
+
+        $('btnIHCycle').textContent = "CUST";
+        $('btnIHCycle').style.background = "#000";
+        $('btnIHCycle').style.color = "#fff";
+        
+        for(let m = 21; m <= 108; m++) {
+            let centsOffset = getSplineCents(m);
+            
+            // Respect pinned overrides if they exist, and strictly enforce A4 at 0.0
+            if (typeof lockedPins !== 'undefined' && lockedPins[m] !== undefined && m !== 69) centsOffset = lockedPins[m]; 
+            if (m === 69) centsOffset = 0.0; 
+            
+            let theoreticalF = 440.0 * Math.pow(2, (m - 69) / 12);
+            tuningCurve[m] = theoreticalF * Math.pow(2, centsOffset / 1200);
+        }
+        return;
+    }
+
+    // Standard Preset Generation
     let preset = ihPresets[currentIHIndex];
     let maxBassCents = preset.b; 
     let maxTrebleCents = preset.t; 
     let exponent = 2.5; 
+    
+    $('btnIHCycle').textContent = preset.l;
+    $('btnIHCycle').style.background = "#ffe600";
+    $('btnIHCycle').style.color = "#000";
     
     for(let m = 21; m <= 108; m++) {
         let centsOffset = 0;
@@ -989,6 +1056,8 @@ function buildTuningCurve() {
             let fraction = (m - 69) / (108 - 69);
             centsOffset = maxTrebleCents * Math.pow(fraction, exponent);
         }
+        
+        if (typeof lockedPins !== 'undefined' && lockedPins[m] !== undefined) centsOffset = lockedPins[m];
         
         let theoreticalF = 440.0 * Math.pow(2, (m - 69) / 12);
         tuningCurve[m] = theoreticalF * Math.pow(2, centsOffset / 1200);
@@ -1022,6 +1091,8 @@ window.savePin = function() {
     let etListenF = freq(pinModalMidi);
     let currentAbsoluteCents = 1200 * Math.log2(tc.listenF / etListenF);
     
+    // Check global scope for lockedPins before assignment (implicitly created in original code)
+    if (typeof lockedPins === 'undefined') window.lockedPins = {};
     lockedPins[pinModalMidi] = currentAbsoluteCents + centsDeviationFromCurve;
     
     buildTuningCurve(); 
@@ -1032,7 +1103,7 @@ window.savePin = function() {
 
 window.removePin = function(midi) {
     if (midi === 69) { alert("A4 cannot be unpinned."); return; }
-    delete lockedPins[midi];
+    if (typeof lockedPins !== 'undefined') delete lockedPins[midi];
     buildTuningCurve();
     savePersistence();
     updateGuide();
@@ -1040,7 +1111,7 @@ window.removePin = function(midi) {
 
 window.clearPins = function() {
     if (confirm("Reset elastic curve and clear all locked pins? (A4 will remain at 0.0c)")) {
-        lockedPins = { 69: 0.0 };
+        window.lockedPins = { 69: 0.0 };
         buildTuningCurve();
         savePersistence();
         updateGuide();
@@ -1481,7 +1552,7 @@ function updateActionButtons() { document.querySelectorAll('.action-btn:not(.lis
 
 // Elastic UI Pin generator
 function getPinButton(midi, label) {
-    if (lockedPins[midi] !== undefined && midi !== 69) {
+    if (typeof lockedPins !== 'undefined' && lockedPins[midi] !== undefined && midi !== 69) {
         return `<button class="action-btn" onclick="removePin(${midi})" style="margin-top:4px; width:100%; background:#e6ffe6; color:#006600; border-color:#00aa00;">✔ ${label} PINNED (Tap to Unlock)</button>`;
     }
     return `<button class="action-btn" onclick="openPinModal(${midi})" style="margin-top:4px; width:100%; background:#f0f8ff; color:#0066ff; box-shadow: 0 4px 0 #0044bb;">LOCK ${label} PITCH</button>`;
@@ -1916,6 +1987,89 @@ $('bigStartBtn').addEventListener('click', async () => {
     applyIHPreset(); // Initialize default curve on startup
     await startAudioEngine(); 
 });
+
+// --- MANUAL CURVE LOGIC ---
+window.openManualCurve = function() {
+    [21, 24, 36, 48, 60, 72, 84, 96, 108].forEach(m => {
+        let el = $('mc-'+m);
+        if(el) el.value = (manualAnchors && manualAnchors[m] !== undefined) ? manualAnchors[m] : '';
+    });
+    $('manualCurveOverlay').style.display = 'flex';
+}
+
+window.closeManualCurve = function() {
+    $('manualCurveOverlay').style.display = 'none';
+}
+
+window.applyManualCurve = function() {
+    let anchors = {};
+    let allFilled = true;
+    [21, 24, 36, 48, 60, 72, 84, 96, 108].forEach(m => {
+        let val = parseFloat($('mc-'+m).value);
+        if(isNaN(val)) allFilled = false;
+        anchors[m] = isNaN(val) ? 0 : val;
+    });
+    
+    if(!allFilled && !confirm("Some inputs are empty (will default to 0.0c). Continue?")) return;
+    
+    manualAnchors = anchors;
+    useManualCurve = true;
+    buildTuningCurve();
+    savePersistence();
+    closeManualCurve();
+    toggleFiles(false);
+}
+
+window.clearManualCurve = function() {
+    useManualCurve = false;
+    buildTuningCurve();
+    savePersistence();
+    closeManualCurve();
+}
+
+function createMonotoneCubicSpline(xs, ys) {
+    let n = xs.length;
+    let ms = new Float32Array(n);
+    let dxs = new Float32Array(n - 1);
+    let dys = new Float32Array(n - 1);
+    
+    for (let i = 0; i < n - 1; i++) {
+        dxs[i] = xs[i + 1] - xs[i];
+        dys[i] = ys[i + 1] - ys[i];
+        ms[i] = dys[i] / dxs[i];
+    }
+    
+    let c1s = new Float32Array(n);
+    c1s[0] = ms[0];
+    for (let i = 1; i < n - 1; i++) {
+        if (ms[i] * ms[i - 1] <= 0) { c1s[i] = 0; }
+        else {
+            let common = dxs[i - 1] + dxs[i];
+            c1s[i] = 3 * common / ((common + dxs[i]) / ms[i - 1] + (common + dxs[i - 1]) / ms[i]);
+        }
+    }
+    c1s[n - 1] = ms[n - 2];
+    
+    return function(x) {
+        let i = xs.length - 1;
+        if (x === xs[i]) return ys[i];
+        
+        let low = 0, high = i;
+        while (low <= high) {
+            let mid = Math.floor(0.5 * (low + high));
+            if (x < xs[mid]) high = mid - 1;
+            else if (x >= xs[mid + 1]) low = mid + 1;
+            else { i = mid; break; }
+        }
+        
+        let diff = x - xs[i], diffSq = diff * diff;
+        let c1 = c1s[i];
+        let c2 = (3 * ms[i] - 2 * c1s[i] - c1s[i + 1]) / dxs[i];
+        let c3 = (c1s[i] + c1s[i + 1] - 2 * ms[i]) / (dxs[i] * dxs[i]);
+        
+        return ys[i] + c1 * diff + c2 * diffSq + c3 * diff * diffSq;
+    };
+}
 
 enforceReblitzLimits(); buildPianoRoll(); renderDynExpanders(); renderSweep();
 selectMode('DET'); 
