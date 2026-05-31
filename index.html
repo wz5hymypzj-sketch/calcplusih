@@ -775,6 +775,9 @@ window.selectMode = function(mode) {
 }
 
 // Global Variables
+const $ = id => document.getElementById(id); // <--- FIX: MOVED TO TOP TO PREVENT CRASH
+const savedTuningsKey = 'danTunerSavesV52_0';
+
 let audioCtx, micStream, analyserFull, analyserTuner, gainNode, monitorGain, scriptNode;
 let filters = [];
 let isRunning = false, micPaused = false, monitorOn = false, rafId = null, currentChunkSize = 256; 
@@ -822,8 +825,6 @@ let prCurrentMidi = 21;
 let prMode = 'MEASURE'; // 'MEASURE' or 'ACTIVE'
 
 let expUpMidi = 66, expDownMidi = 52, sweepMidi = 41, sweepIvType = 'M3';
-const $ = id => document.getElementById(id);
-const savedTuningsKey = 'danTunerSavesV52_0'; // Constant for save key to keep logic consistent
 let savedTunings = JSON.parse(localStorage.getItem(savedTuningsKey)) || {};
 
 const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -998,7 +999,8 @@ window.cycleIH = function() {
 
 function applyIHPreset() {
     let preset = ihPresets[currentIHIndex];
-    if (!useManualCurve) $('btnIHCycle').textContent = preset.l;
+    let btn = $('btnIHCycle');
+    if (btn && !useManualCurve) btn.textContent = preset.l;
     
     buildTuningCurve();
     
@@ -1014,20 +1016,23 @@ function applyIHPreset() {
 
 // EMPIRICAL RAILSBACK CURVE GENERATOR
 function buildTuningCurve() {
+    let btn = $('btnIHCycle');
+
     if (useManualCurve && manualAnchors) {
         let xs = [21, 24, 36, 48, 60, 72, 84, 96, 108];
         let ys = xs.map(x => manualAnchors[x] || 0);
         let getSplineCents = createMonotoneCubicSpline(xs, ys);
 
-        $('btnIHCycle').textContent = "CUST";
-        $('btnIHCycle').style.background = "#000";
-        $('btnIHCycle').style.color = "#fff";
+        if (btn) {
+            btn.textContent = "CUST";
+            btn.style.background = "#000";
+            btn.style.color = "#fff";
+        }
         
         for(let m = 21; m <= 108; m++) {
             let centsOffset = getSplineCents(m);
             
-            // Respect pinned overrides if they exist, and strictly enforce A4 at 0.0
-            if (typeof lockedPins !== 'undefined' && lockedPins[m] !== undefined && m !== 69) centsOffset = lockedPins[m]; 
+            if (window.lockedPins && window.lockedPins[m] !== undefined && m !== 69) centsOffset = window.lockedPins[m]; 
             if (m === 69) centsOffset = 0.0; 
             
             let theoreticalF = 440.0 * Math.pow(2, (m - 69) / 12);
@@ -1042,9 +1047,11 @@ function buildTuningCurve() {
     let maxTrebleCents = preset.t; 
     let exponent = 2.5; 
     
-    $('btnIHCycle').textContent = preset.l;
-    $('btnIHCycle').style.background = "#ffe600";
-    $('btnIHCycle').style.color = "#000";
+    if (btn) {
+        btn.textContent = preset.l;
+        btn.style.background = "#ffe600";
+        btn.style.color = "#000";
+    }
     
     for(let m = 21; m <= 108; m++) {
         let centsOffset = 0;
@@ -1057,7 +1064,7 @@ function buildTuningCurve() {
             centsOffset = maxTrebleCents * Math.pow(fraction, exponent);
         }
         
-        if (typeof lockedPins !== 'undefined' && lockedPins[m] !== undefined) centsOffset = lockedPins[m];
+        if (window.lockedPins && window.lockedPins[m] !== undefined) centsOffset = window.lockedPins[m];
         
         let theoreticalF = 440.0 * Math.pow(2, (m - 69) / 12);
         tuningCurve[m] = theoreticalF * Math.pow(2, centsOffset / 1200);
@@ -1091,9 +1098,8 @@ window.savePin = function() {
     let etListenF = freq(pinModalMidi);
     let currentAbsoluteCents = 1200 * Math.log2(tc.listenF / etListenF);
     
-    // Check global scope for lockedPins before assignment (implicitly created in original code)
-    if (typeof lockedPins === 'undefined') window.lockedPins = {};
-    lockedPins[pinModalMidi] = currentAbsoluteCents + centsDeviationFromCurve;
+    if (typeof window.lockedPins === 'undefined') window.lockedPins = {};
+    window.lockedPins[pinModalMidi] = currentAbsoluteCents + centsDeviationFromCurve;
     
     buildTuningCurve(); 
     savePersistence();
@@ -1103,7 +1109,7 @@ window.savePin = function() {
 
 window.removePin = function(midi) {
     if (midi === 69) { alert("A4 cannot be unpinned."); return; }
-    if (typeof lockedPins !== 'undefined') delete lockedPins[midi];
+    if (typeof window.lockedPins !== 'undefined') delete window.lockedPins[midi];
     buildTuningCurve();
     savePersistence();
     updateGuide();
@@ -1552,7 +1558,7 @@ function updateActionButtons() { document.querySelectorAll('.action-btn:not(.lis
 
 // Elastic UI Pin generator
 function getPinButton(midi, label) {
-    if (typeof lockedPins !== 'undefined' && lockedPins[midi] !== undefined && midi !== 69) {
+    if (typeof window.lockedPins !== 'undefined' && window.lockedPins[midi] !== undefined && midi !== 69) {
         return `<button class="action-btn" onclick="removePin(${midi})" style="margin-top:4px; width:100%; background:#e6ffe6; color:#006600; border-color:#00aa00;">✔ ${label} PINNED (Tap to Unlock)</button>`;
     }
     return `<button class="action-btn" onclick="openPinModal(${midi})" style="margin-top:4px; width:100%; background:#f0f8ff; color:#0066ff; box-shadow: 0 4px 0 #0044bb;">LOCK ${label} PITCH</button>`;
