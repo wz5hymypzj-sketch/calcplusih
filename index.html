@@ -40,7 +40,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V57.0</title>
+<title>DAN'S BEAT SPEED DETECTOR - V57.1</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -190,6 +190,7 @@
   .guide-step h3 { font-size: 0.85rem; color: #000; margin-bottom: 4px; text-transform: uppercase; font-weight: 900; background: #eee; padding: 4px; border-radius: 2px; text-align: center; }
   .guide-step p { font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; color: #444; line-height: 1.2; text-align: center; }
   .tuning-target { font-weight: 700; color: #000; text-align: center; margin-bottom: 6px; font-size: 0.75rem; text-transform: uppercase;}
+  .sub-header-lbl { font-size: 0.7rem; font-weight: 800; color: #666; text-transform: uppercase; margin-top: 6px; margin-bottom: 2px; text-align: center; display: block; width: 100%; }
   
   .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; justify-content: center; }
   .action-btn { background: #e0f0ff; border: 1px solid #0066ff; color: #0044bb; font-size: 0.75rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 0 #0066ff; transition: transform 0.05s, box-shadow 0.05s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px;}
@@ -586,22 +587,9 @@
           <div class="guide-step">
             <h3>Step 11: Final P4/P5 Polish</h3>
             <div class="tuning-target">Goal: Ensure All 4ths and 5ths Beat Slowly</div>
-            <div class="action-row">
-              <button class="action-btn" data-midi="53" data-iv="P4" data-label="F3 P4 A#3" onclick="handleAction(this, 53, 'P4')">F3 P4 A#3</button>
-              <button class="action-btn" data-midi="53" data-iv="P5" data-label="F3 P5 C4" onclick="handleAction(this, 53, 'P5')">F3 P5 C4</button>
-              <button class="action-btn" data-midi="54" data-iv="P4" data-label="F#3 P4 B3" onclick="handleAction(this, 54, 'P4')">F#3 P4 B3</button>
-              <button class="action-btn" data-midi="54" data-iv="P5" data-label="F#3 P5 C#4" onclick="handleAction(this, 54, 'P5')">F#3 P5 C#4</button>
-              <button class="action-btn" data-midi="55" data-iv="P4" data-label="G3 P4 C4" onclick="handleAction(this, 55, 'P4')">G3 P4 C4</button>
-              <button class="action-btn" data-midi="55" data-iv="P5" data-label="G3 P5 D4" onclick="handleAction(this, 55, 'P5')">G3 P5 D4</button>
-              <button class="action-btn" data-midi="56" data-iv="P4" data-label="G#3 P4 C#4" onclick="handleAction(this, 56, 'P4')">G#3 P4 C#4</button>
-              <button class="action-btn" data-midi="56" data-iv="P5" data-label="G#3 P5 D#4" onclick="handleAction(this, 56, 'P5')">G#3 P5 D#4</button>
-              <button class="action-btn" data-midi="57" data-iv="P4" data-label="A3 P4 D4" onclick="handleAction(this, 57, 'P4')">A3 P4 D4</button>
-              <button class="action-btn" data-midi="57" data-iv="P5" data-label="A3 P5 E4" onclick="handleAction(this, 57, 'P5')">A3 P5 E4</button>
-              <button class="action-btn" data-midi="58" data-iv="P4" data-label="A#3 P4 D#4" onclick="handleAction(this, 58, 'P4')">A#3 P4 D#4</button>
-              <button class="action-btn" data-midi="58" data-iv="P5" data-label="A#3 P5 F4" onclick="handleAction(this, 58, 'P5')">A#3 P5 F4</button>
-              <button class="action-btn" data-midi="59" data-iv="P4" data-label="B3 P4 E4" onclick="handleAction(this, 59, 'P4')">B3 P4 E4</button>
-              <button class="action-btn" data-midi="60" data-iv="P4" data-label="C4 P4 F4" onclick="handleAction(this, 60, 'P4')">C4 P4 F4</button>
-            </div>
+            <p style="font-size:0.7rem; color:#666; margin-bottom:8px;">All P4s and P5s should beat slowly. Ensure all are logged to unlock the Grader.</p>
+            <div class="action-row" id="finalPolishBtns">
+               </div>
             <div class="guide-result guide-res-wait" id="guideRes11">Awaiting logs...</div>
           </div>
           <div class="guide-step" style="background: #fdfdfd; border-color: #000; padding-bottom:12px;">
@@ -738,11 +726,13 @@ let noiseFloor = 0.001, envelopeRunning = 0, lastEnvelope = 0, envHistory = [];
 let transientSamplesLeft = 0, lastAttackTime = 0;
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
 
+let smoothedEnvelope = 0; // Essential for restoring the consistent master tracking
+
 let curIv = 'M3', lowerMidi = 53, rollBaseMidi = 53, currentOctMode = 'OCT_42';
 let decaySlope = 0; 
 let loggedIntervals = { M3: [], m3: [], M6: [], P4: [], P5: [], OCT_42: [], OCT_63: [], OCT_21: [], M10: [], 'OCT+2': [], M17: [], P12: [] };
 
-// Inharmonicity Presets (Railsback Curve Empirical Anchors)
+// Inharmonicity Presets (Strictly sizes, defaulting to 40")
 const ihPresets = [ 
     { l: '36"', b: -48, t: 40 }, 
     { l: '40"', b: -38, t: 35 }, 
@@ -751,7 +741,7 @@ const ihPresets = [
     { l: '7ft', b: -18, t: 18 }, 
     { l: '9ft', b: -12, t: 12 } 
 ];
-let currentIHIndex = 1; // Defaults to 40"
+let currentIHIndex = 1; // Default to 40"
 
 // Pitch Variables
 let tuningCurve = new Float32Array(109);
@@ -1389,9 +1379,35 @@ function refreshUI() {
 }
 
 $('octDown').addEventListener('click', () => { if (rollBaseMidi > 12) { rollBaseMidi -= 12; buildPianoRoll(); } }); $('octUp').addEventListener('click', () => { if (rollBaseMidi < 108) { rollBaseMidi += 12; buildPianoRoll(); } });
-$('btnBigDown').addEventListener('click', () => { if (!isRunning || lowerMidi <= IV[curIv].min) return; lowerMidi--; updateRollBounds(); currentChunkSize = 512; resetCapture(); buildPianoRoll(); });
-$('btnBigUp').addEventListener('click', () => { if (!isRunning || lowerMidi >= IV[curIv].max) return; lowerMidi++; updateRollBounds(); currentChunkSize = 512; resetCapture(); buildPianoRoll(); });
-window.addEventListener('keydown', (e) => { if (!isRunning) return; if (e.key === 'ArrowRight') { e.preventDefault(); $('btnBigUp').click(); } else if (e.key === 'ArrowLeft') { e.preventDefault(); $('btnBigDown').click(); } });
+
+// Auto-Arming wrapper on navigation arrows
+$('btnBigDown').addEventListener('click', () => { 
+    if (!isRunning || lowerMidi <= IV[curIv].min) return; 
+    lowerMidi--; updateRollBounds(); currentChunkSize = 512; resetCapture(); buildPianoRoll(); 
+    autoClickRecommendedListen();
+});
+$('btnBigUp').addEventListener('click', () => { 
+    if (!isRunning || lowerMidi >= IV[curIv].max) return; 
+    lowerMidi++; updateRollBounds(); currentChunkSize = 512; resetCapture(); buildPianoRoll(); 
+    autoClickRecommendedListen();
+});
+window.addEventListener('keydown', (e) => { 
+    if (!isRunning) return; 
+    if (e.key === 'ArrowRight') { e.preventDefault(); $('btnBigUp').click(); } 
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); $('btnBigDown').click(); } 
+});
+
+function autoClickRecommendedListen() {
+    setTimeout(() => {
+        let isUpTab = $('gPane-UP').classList.contains('active');
+        let isDownTab = $('gPane-DOWN').classList.contains('active');
+        let containerId = isUpTab ? '#dynUpListenBtns' : (isDownTab ? '#dynDownListenBtns' : null);
+        if(containerId) {
+            let btn = document.querySelector(`${containerId} .recommended`);
+            if(btn) btn.click();
+        }
+    }, 15);
+}
 
 function finalizeLog() {
   if (lockedAverage === null) return; const cfg = getConfig(lowerMidi, curIv); 
@@ -1747,12 +1763,29 @@ function buildAudioProcessor() {
   return (e) => {
     if (!isRunning || micPaused) return; const inputData = e.inputBuffer.getChannelData(0);
     for (let offset = 0; offset < inputData.length; offset += currentChunkSize) {
-      let sum = 0, limit = Math.min(currentChunkSize, inputData.length - offset); for (let i = 0; i < limit; i++) sum += inputData[offset + i] * inputData[offset + i];
-      const rms = Math.sqrt(sum / limit); envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); const isStrike = (envelopeRunning > lastEnvelope * 2.5) && (envelopeRunning > 0.005); lastEnvelope = envelopeRunning;
-      noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004; if (noiseFloor < 0.000001) noiseFloor = 0.000001; const snr = envelopeRunning / noiseFloor;
+      let sum = 0, limit = Math.min(currentChunkSize, inputData.length - offset); 
+      for (let i = 0; i < limit; i++) sum += inputData[offset + i] * inputData[offset + i];
+      const rms = Math.sqrt(sum / limit); 
       
-      if (isStrike && snr > 2.5) { const timeNow = performance.now(); if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = []; $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900'; } }
-      if (transientSamplesLeft > 0) { transientSamplesLeft--; } else { envHistory.push({ val: envelopeRunning }); const fps = audioCtx.sampleRate / currentChunkSize; if (envHistory.length > Math.round(4.5 * fps)) envHistory.shift(); }
+      smoothedEnvelope = (smoothedEnvelope * 0.7) + (rms * 0.3);
+      envelopeRunning = smoothedEnvelope;
+      
+      const isStrike = (envelopeRunning > lastEnvelope * 2.0) && (envelopeRunning > 0.005); 
+      lastEnvelope = envelopeRunning;
+      
+      noiseFloor = noiseFloor * 0.996 + Math.min(envelopeRunning, noiseFloor * 1.5) * 0.004; 
+      if (noiseFloor < 0.000001) noiseFloor = 0.000001; 
+      const snr = envelopeRunning / noiseFloor;
+      
+      if (isStrike && snr > 2.5) { 
+          const timeNow = performance.now(); 
+          if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { 
+              envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = []; 
+              $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900'; 
+          } 
+      }
+      if (transientSamplesLeft > 0) { transientSamplesLeft--; } 
+      else { envHistory.push({ val: envelopeRunning }); const fps = audioCtx.sampleRate / currentChunkSize; if (envHistory.length > Math.round(4.5 * fps)) envHistory.shift(); }
     }
   };
 }
@@ -1774,7 +1807,7 @@ function renderLoop(ts) {
       if (captureState === 'WAIT' && now - captureStartTime > 800) { captureState = 'CAPTURING'; $('captureStateLbl').textContent = 'RECORDING...'; $('captureStateLbl').style.color = '#d00000'; }
       if (captureState === 'CAPTURING') {
           
-          if (curIv.includes('OCT') || curIv === 'P12') {
+          if (curIv.includes('OCT') || curIv === 'P12' || curIv === 'OCT+2') {
               avgEl.textContent = 'PURE';
               if (snr > threshold.snr && envelopeRunning > threshold.env) {
                   captureState = 'LISTEN_ONLY';
