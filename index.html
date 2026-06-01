@@ -43,7 +43,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V57.5</title>
+<title>DAN'S BEAT SPEED DETECTOR - V58</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -159,7 +159,8 @@
   }
   #captureStateLbl { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; font-weight: 900; color: #666; text-transform: uppercase; }
   #bloomIndicator { position: absolute; bottom: 8px; right: 10px; font-size: 0.65rem; font-weight: 900; color: #aaa; text-transform: uppercase; }
-  #btnEarOverride { position: absolute; bottom: 8px; left: 10px; font-size: 0.6rem; padding: 2px 4px; }
+  
+  #btnRefTone { position: absolute; bottom: 8px; left: 10px; font-size: 0.6rem; padding: 4px 6px; font-weight: 900; }
 
   .layout-wrapper { display: flex; flex-direction: column; width: 100%; flex: 1; min-height: 0; overflow: hidden; }
   .left-panel { display: flex; flex-direction: column; flex-shrink: 0; }
@@ -372,7 +373,7 @@
       <div class="readout-box">
         <div id="signalLight"></div>
         <div id="captureStateLbl">IDLE</div>
-        <button class="ctrl-btn" id="btnEarOverride" onclick="lockEarOverride()">LOCK EAR</button>
+        <button class="ctrl-btn" id="btnRefTone" onclick="toggleRefTone()">REF TONE: OFF</button>
         <div id="bloomIndicator">UNISON: --</div>
         <div class="val-large" id="avgVal">—</div>
         <div class="val-lbl">AVERAGE BPS</div>
@@ -781,6 +782,10 @@ let transientLockout = 0; const TRANSIENT_DELAY_MS = 450;
 let captureState = 'IDLE', captureStartTime = 0, capturedBeats = [], lockedAverage = null;
 let lastAudioFrameTime = 0; 
 
+// Tone Generator State
+let refToneOsc1 = null, refToneOsc2 = null, refToneGain = null;
+let isRefToneOn = false;
+
 let customCurveOffsets = null; 
 let lockedPins = { 69: 0.0 }; 
 
@@ -872,14 +877,14 @@ window.startAudioEngine = async function() {
         const src = audioCtx.createMediaStreamSource(micStream);
         
         analyserFull = audioCtx.createAnalyser(); 
-        analyserFull.fftSize = 16384; 
+        analyserFull.fftSize = 4096; 
         analyserFull.smoothingTimeConstant = 0.4; 
         
         analyserTuner = audioCtx.createAnalyser(); 
-        analyserTuner.fftSize = 8192; 
+        analyserTuner.fftSize = 4096; 
         tunerFilter = audioCtx.createBiquadFilter();
         tunerFilter.type = 'bandpass';
-        tunerFilter.Q.value = 10;
+        tunerFilter.Q.value = 3.0; // Restored V40 Tuner Sensitivity
         tunerFilter.frequency.value = 440;
         
         src.connect(tunerFilter);
@@ -1549,7 +1554,7 @@ function getConfig(lowerMidi, ivKey) {
   const center = (pLo + pHi) / 2; 
   const theoBeat = Math.abs(pHi - pLo);
   
-  let margin = Math.max(22, theoBeat * 1.2 + 8) * 1.20; 
+  let margin = Math.max(22, theoBeat * 1.2 + 8); // Restored V40 tighter margin
   if (ivKey === 'M10' || ivKey === 'M17') margin *= 1.8; 
   if (lowerMidi < 40) margin *= 1.4; 
   
@@ -1588,9 +1593,64 @@ window.setTarget = function(midi, ivKey) {
 
 window.handleAction = function(btn, midi, ivKey) { if (btn.classList.contains('logged')) { deleteEntry(ivKey, midi); } setTarget(midi, ivKey); }
 window.handleListen = function(btn, midi, ivKey) { setTarget(midi, ivKey); captureState = 'LISTEN_ONLY'; $('captureStateLbl').textContent = 'LISTENING'; $('captureStateLbl').style.color = '#0066ff'; if (!monitorOn) $('btnPassThrough').click(); document.querySelectorAll('.listen-btn').forEach(b => b.classList.remove('active-listen')); btn.classList.add('active-listen'); }
-window.lockEarOverride = function() { if (smoothedPitch > 0) { tuningCurve[lowerMidi] = smoothedPitch; let btn = $('btnEarOverride'); let oldTxt = btn.textContent; btn.textContent = "LOCKED!"; btn.style.background = "#00aa00"; btn.style.color = "#fff"; setTimeout(() => { btn.textContent = oldTxt; btn.style.background = "#fff"; btn.style.color = "#000"; }, 2000); refreshUI(); savePersistence(); } else { alert("Turn on TUNER (Step 1) and play note clearly."); } }
+
 window.wipeAndTarget = function(midi, ivKey) { deleteEntry(ivKey, midi); setTarget(midi, ivKey); }
 window.wipeCluster = function(targetMidi, targetIv, wipeArray) { wipeArray.forEach(item => { if (loggedIntervals[item.i]) { loggedIntervals[item.i] = loggedIntervals[item.i].filter(e => e.midi !== item.m); } }); savePersistence(); renderLogTable(); updateGuide(); renderDynExpanders(); setTarget(targetMidi, targetIv); }
+
+// --- TONE GENERATOR LOGIC ---
+window.toggleRefTone = function() {
+    if (!audioCtx || captureState !== 'LOCKED' || lockedAverage === null) {
+        alert("Lock onto a beat speed first to generate a reference tone.");
+        return;
+    }
+    isRefToneOn = !isRefToneOn;
+    let btn = $('btnRefTone');
+    
+    if (isRefToneOn) {
+        btn.textContent = "REF TONE: ON";
+        btn.style.background = "#0066ff";
+        btn.style.color = "#fff";
+        btn.style.borderColor = "#0044bb";
+        
+        const cfg = getConfig(lowerMidi, curIv);
+        let targetFreq = cfg.center;
+        let beatSpeed = lockedAverage;
+        
+        refToneGain = audioCtx.createGain();
+        refToneGain.gain.value = 0.08; 
+        refToneGain.connect(audioCtx.destination);
+        
+        refToneOsc1 = audioCtx.createOscillator();
+        refToneOsc1.type = 'sine';
+        refToneOsc1.frequency.value = targetFreq;
+        
+        refToneOsc2 = audioCtx.createOscillator();
+        refToneOsc2.type = 'sine';
+        refToneOsc2.frequency.value = targetFreq + beatSpeed; 
+        
+        refToneOsc1.connect(refToneGain);
+        refToneOsc2.connect(refToneGain);
+        
+        refToneOsc1.start();
+        refToneOsc2.start();
+    } else {
+        stopRefTone();
+    }
+}
+
+function stopRefTone() {
+    isRefToneOn = false;
+    let btn = $('btnRefTone');
+    if (btn) {
+        btn.textContent = "REF TONE: OFF";
+        btn.style.background = "#fff";
+        btn.style.color = "#000";
+        btn.style.borderColor = "#000";
+    }
+    if (refToneOsc1) { try { refToneOsc1.stop(); refToneOsc1.disconnect(); } catch(e){} refToneOsc1 = null; }
+    if (refToneOsc2) { try { refToneOsc2.stop(); refToneOsc2.disconnect(); } catch(e){} refToneOsc2 = null; }
+    if (refToneGain) { try { refToneGain.disconnect(); } catch(e){} refToneGain = null; }
+}
 
 $('btnPause').onclick = async () => {
   micPaused = !micPaused;
@@ -1644,7 +1704,12 @@ $('btnTunerToggle').onclick = () => {
 
 function updateRollBounds() { while (lowerMidi < rollBaseMidi) rollBaseMidi -= 12; while (lowerMidi >= rollBaseMidi + 12) rollBaseMidi += 12; }
 function enforceReblitzLimits() { const ivDef = IV[curIv]; if (lowerMidi < ivDef.min) lowerMidi = ivDef.min; if (lowerMidi > ivDef.max) lowerMidi = ivDef.max; updateRollBounds(); }
-function resetCapture() { captureState = 'IDLE'; capturedBeats = []; lockedAverage = null; if (!micPaused) { $('captureStateLbl').textContent = 'READY'; $('captureStateLbl').style.color = '#666'; } avgEl.textContent = '—'; }
+function resetCapture() { 
+    captureState = 'IDLE'; capturedBeats = []; lockedAverage = null; 
+    if (!micPaused) { $('captureStateLbl').textContent = 'READY'; $('captureStateLbl').style.color = '#666'; } 
+    avgEl.textContent = '—'; 
+    stopRefTone();
+}
 
 function buildPianoRoll() {
   const roll = $('pianoRoll'); const ivDef = IV[curIv]; roll.innerHTML = '';
@@ -2074,6 +2139,7 @@ function buildAudioProcessor() {
           if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { 
               envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = []; 
               $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900'; 
+              stopRefTone(); // Turn off the tone automatically on new strike
           } 
       }
       if (transientSamplesLeft > 0) { transientSamplesLeft--; } 
