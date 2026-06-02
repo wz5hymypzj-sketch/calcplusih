@@ -43,7 +43,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V59</title>
+<title>DAN'S BEAT SPEED DETECTOR - V60</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -160,7 +160,7 @@
   #captureStateLbl { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; font-weight: 900; color: #666; text-transform: uppercase; }
   #bloomIndicator { position: absolute; bottom: 8px; right: 10px; font-size: 0.65rem; font-weight: 900; color: #aaa; text-transform: uppercase; }
   
-  #btnRefTone { position: absolute; bottom: 8px; left: 10px; font-size: 0.6rem; padding: 4px 6px; font-weight: 900; border: 2px solid #000; border-radius: 4px;}
+  #btnRefTone { position: absolute; bottom: 8px; left: 10px; font-size: 0.6rem; padding: 4px 6px; font-weight: 900; border: 2px solid #000; border-radius: 4px; cursor:pointer;}
 
   .layout-wrapper { display: flex; flex-direction: column; width: 100%; flex: 1; min-height: 0; overflow: hidden; }
   .left-panel { display: flex; flex-direction: column; flex-shrink: 0; }
@@ -1580,16 +1580,16 @@ function getConfig(lowerMidi, ivKey) {
   const center = (pLo + pHi) / 2; 
   const theoBeat = Math.abs(pHi - pLo);
   
-  let margin = Math.max(22, theoBeat * 1.2 + 8); // Restored V40 tighter margin
-  if (ivKey === 'M10' || ivKey === 'M17') margin *= 1.8; 
+  let margin = Math.max(22, theoBeat * 1.2 + 8); 
+  if (ivKey === 'M10' || ivKey === 'M17') margin *= 2.5; // Widened for weak high partials
   if (lowerMidi < 40) margin *= 1.4; 
   
   return { lowerMidi, upperMidi, fLo, fHi, pLo, pHi, center, theoBeat, bpLo: center - margin, bpHi: center + margin, iv, ivKey };
 }
 
 function getDynamicThresholds(midiNote, ivKey) {
-  let minEnv = 0.002, minSnr = 2.0;   
-  if (midiNote > 60) { let boostFactor = Math.min(1, (midiNote - 60) / 36); minEnv = 0.002 - (boostFactor * 0.0015); minSnr = 2.0 - (boostFactor * 1.0); }
+  let minEnv = 0.002, minSnr = 1.8; // Lowered baseline SNR for high sensitivity  
+  if (midiNote > 60) { let boostFactor = Math.min(1, (midiNote - 60) / 36); minEnv = 0.002 - (boostFactor * 0.0015); minSnr = 1.8 - (boostFactor * 0.8); }
   if (midiNote >= 58) { minEnv *= 0.5; minSnr *= 0.5; } if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) { minSnr *= 0.75; minEnv *= 0.8; }
   return { env: Math.max(0.0001, minEnv), snr: Math.max(1.0, minSnr) };
 }
@@ -2200,7 +2200,8 @@ function buildAudioProcessor() {
       const rms = Math.sqrt(sum / limit); 
       
       envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); 
-      const isStrike = (envelopeRunning > lastEnvelope * 2.0) && (envelopeRunning > 0.005); 
+      // Lowered transient gate to 1.5x and floor to 0.002
+      const isStrike = (envelopeRunning > lastEnvelope * 1.5) && (envelopeRunning > 0.002); 
       lastEnvelope = envelopeRunning;
       
       if (isStrike) {
@@ -2211,12 +2212,12 @@ function buildAudioProcessor() {
       if (noiseFloor < 0.000001) noiseFloor = 0.000001; 
       const snr = envelopeRunning / noiseFloor;
       
-      if (isStrike && snr > 2.5) { 
+      if (isStrike && snr > 1.8) { 
           const timeNow = performance.now(); 
           if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { 
               envHistory = []; lastAttackTime = timeNow; transientSamplesLeft = 12; captureState = 'WAIT'; captureStartTime = timeNow; capturedBeats = []; 
               $('captureStateLbl').textContent = 'WAITING...'; $('captureStateLbl').style.color = '#ff9900'; 
-              stopRefTone(); // Turn off the tone automatically on new strike
+              stopRefTone(); 
           } 
       }
       if (transientSamplesLeft > 0) { transientSamplesLeft--; } 
@@ -2279,9 +2280,10 @@ function renderLoop(ts) {
 function detectBeat(history, theoreticalBeat, ivKey) {
   const N = history.length; const fps = audioCtx.sampleRate / currentChunkSize; const vals = history.map(h => h.val); const windowSize = Math.round(fps * 0.45); const valAvg = vals.reduce((a,b) => a+b, 0) / N;
   const AC = new Float32Array(N); for (let i = 0; i < N; i++) { let start = Math.max(0, i - Math.floor(windowSize / 2)), end = Math.min(N, i + Math.ceil(windowSize / 2)), localSum = 0; for (let j = start; j < end; j++) localSum += vals[j]; AC[i] = vals[i] - (localSum / (end - start)); }
-  let ac0 = 0; for (let i = 0; i < N; i++) ac0 += AC[i] * AC[i]; let beatIntensity = Math.sqrt(ac0 / N) / valAvg; if (beatIntensity < 0.012 && valAvg > 0.005) return 0.0; if (ac0 < 1e-12) return null;
+  // Lowered global beat intensity requirement
+  let ac0 = 0; for (let i = 0; i < N; i++) ac0 += AC[i] * AC[i]; let beatIntensity = Math.sqrt(ac0 / N) / valAvg; if (beatIntensity < 0.008 && valAvg > 0.002) return 0.0; if (ac0 < 1e-12) return null;
   const minLag = Math.max(2, Math.round(fps / 55)), maxLag = Math.min(N - 2, Math.round(fps / 0.5)); const ac = new Float32Array(maxLag + 1); for (let lag = minLag; lag <= maxLag; lag++) { let sum = 0; for (let i = 0; i < N - lag; i++) sum += AC[i] * AC[i + lag]; ac[lag] = sum / ac0; }
-  const peaks = []; let acThreshold = theoreticalBeat > 10.0 ? 0.01 : 0.02; if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) acThreshold = 0.005; if (lowerMidi >= 58) { acThreshold *= 0.5; } 
+  const peaks = []; let acThreshold = theoreticalBeat > 10.0 ? 0.01 : 0.02; if (ivKey === 'M10' || ivKey === 'M17') acThreshold = 0.008; if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) acThreshold = 0.005; if (lowerMidi >= 58) { acThreshold *= 0.5; } 
   for (let lag = minLag + 1; lag < maxLag; lag++) { if (ac[lag] > ac[lag - 1] && ac[lag] > ac[lag + 1] && ac[lag] > acThreshold) peaks.push({ lag, ac: ac[lag] }); }
   if (peaks.length === 0) { if (ivKey.includes('OCT')) return 0.0; return null; }
   let bestCandidate = null, maxScore = -1;
