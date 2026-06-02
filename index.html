@@ -43,7 +43,7 @@
   })();
 </script>
 
-<title>DAN'S BEAT SPEED DETECTOR - V60</title>
+<title>DAN'S BEAT SPEED DETECTOR - V61</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -444,9 +444,9 @@
         <div class="guide-pane active" id="gPane-TEMP">
           <div class="guide-step">
             <h3>Step 1: Set Pitch</h3>
-            <div class="tuning-target">Goal: Tune <span id="tunerTargetLbl">A4</span></div>
-            <p style="font-size:0.7rem; color:#555; margin-bottom:6px;">Select A4 on piano roll. Turn Tuner ON.</p>
-            <button class="ctrl-btn" id="btnTunerToggle" style="width:100%; margin-bottom:4px; font-size:0.8rem;">TUNER: OFF</button>
+            <div class="tuning-target">Goal: Tune A4</div>
+            <p style="font-size:0.7rem; color:#555; margin-bottom:6px;">Tune absolute pitch before beginning.</p>
+            <button class="action-btn" id="btnTunerToggle" onclick="toggleTunerA4()" style="width:100%; margin-bottom:4px; font-size:1rem; padding:10px;">A4 (440Hz)</button>
             <div class="guide-result guide-res-wait" id="tunerReadout" style="min-height: 38px; display:flex; align-items:center; justify-content:center; flex-direction:column;">--- Hz</div>
           </div>
           <div class="guide-step">
@@ -747,11 +747,12 @@ navigator.mediaDevices.addEventListener('devicechange', async () => {
 });
 
 async function getBuiltInMicConstraints() {
-  const base = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 };
+  // Explicitly require the environment (back camera) microphone to bypass Apple's HFP Bluetooth overrides
+  const base = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1, facingMode: "environment" };
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const inputs = devices.filter(d => d.kind === 'audioinput');
-    const builtIn = inputs.find(d => /iphone|built.?in|internal|wired|bottom|front/i.test(d.label) && !/airpod|bluetooth|bt |wireless|headset/i.test(d.label));
+    const builtIn = inputs.find(d => /iphone|built.?in|internal|wired|bottom|back|environment/i.test(d.label) && !/airpod|bluetooth|bt |wireless|headset/i.test(d.label));
     if (builtIn && builtIn.deviceId) return { ...base, deviceId: { exact: builtIn.deviceId } };
   } catch(e) {}
   return base;
@@ -777,9 +778,7 @@ window.selectMode = function(mode) {
     if (mode === 'PRAISE') {
         renderPRAnchors();
         if(!tunerActive) { 
-            tunerActive = true; 
-            tunerDataArray = new Float32Array(analyserTuner.fftSize); 
-            runTuner(); 
+            toggleTunerA4();
         }
     }
 }
@@ -929,7 +928,9 @@ function updateTunerFilter() {
     if (mainMode === 'PRAISE') {
         targetHz = tuningCurve[prMode === 'MEASURE' ? prMeasureMidi : prCurrentMidi];
     } else if (mainMode === 'GUIDE' && tunerActive) {
-        targetHz = tuningCurve[lowerMidi]; // Track selected lowerMidi for locks
+        // If the A4 button is active, rigidly lock the tuner to A4 (69). Otherwise, follow lowerMidi.
+        let isA4Target = document.getElementById('btnTunerToggle').classList.contains('active-listen');
+        targetHz = tuningCurve[isA4Target ? 69 : lowerMidi]; 
     }
     
     targetHz = Math.max(10, Math.min(20000, targetHz));
@@ -1246,8 +1247,12 @@ window.lockEmpiricalPitch = function(midi) {
         refreshUI();
         updateTunerFilter();
         pitchHistory = []; smoothedPitch = -1;
-        let lbl = $('tunerTargetLbl');
-        if(lbl) lbl.textContent = noteName(midi);
+        
+        // Ensure A4 tuner toggle is off when using generic locks
+        tunerActive = true;
+        let a4Btn = $('btnTunerToggle');
+        if (a4Btn) { a4Btn.classList.remove('active-listen'); a4Btn.style.background = '#e0f0ff'; a4Btn.style.color = '#0044bb'; }
+        
         alert("Tuner is now listening for " + noteName(midi) + ". Play the note steadily, then click LOCK again.");
         return;
     }
@@ -1525,7 +1530,9 @@ function runTuner() {
       processTunerPitch(rawPitch, targetF, elId, isSilent, isSettling);
   } 
   else {
-      let targetF = tuningCurve[lowerMidi]; // Track dynamic lowerMidi
+      // Dynamic Pitch Tracking based on A4 toggle vs standard interval listening
+      let isA4Target = document.getElementById('btnTunerToggle') && document.getElementById('btnTunerToggle').classList.contains('active-listen');
+      let targetF = tuningCurve[isA4Target ? 69 : lowerMidi]; 
 
       if (isSettling) {
           if (smoothedPitch !== -1) {
@@ -1581,14 +1588,16 @@ function getConfig(lowerMidi, ivKey) {
   const theoBeat = Math.abs(pHi - pLo);
   
   let margin = Math.max(22, theoBeat * 1.2 + 8); 
-  if (ivKey === 'M10' || ivKey === 'M17') margin *= 2.5; // Widened for weak high partials
+  // Highly widened margin to ensure weak high partials (M10/M17) are captured even with stretch
+  if (ivKey === 'M10' || ivKey === 'M17') margin *= 3.0; 
   if (lowerMidi < 40) margin *= 1.4; 
   
   return { lowerMidi, upperMidi, fLo, fHi, pLo, pHi, center, theoBeat, bpLo: center - margin, bpHi: center + margin, iv, ivKey };
 }
 
 function getDynamicThresholds(midiNote, ivKey) {
-  let minEnv = 0.002, minSnr = 1.8; // Lowered baseline SNR for high sensitivity  
+  // Lowered global SNR and Volume floors for hyper-sensitivity
+  let minEnv = 0.002, minSnr = 1.8;   
   if (midiNote > 60) { let boostFactor = Math.min(1, (midiNote - 60) / 36); minEnv = 0.002 - (boostFactor * 0.0015); minSnr = 1.8 - (boostFactor * 0.8); }
   if (midiNote >= 58) { minEnv *= 0.5; minSnr *= 0.5; } if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) { minSnr *= 0.75; minEnv *= 0.8; }
   return { env: Math.max(0.0001, minEnv), snr: Math.max(1.0, minSnr) };
@@ -1605,9 +1614,49 @@ function switchGuideTab(tab) {
   event.target.classList.add('active'); $('gPane-' + tab).classList.add('active');
 }
 
+// Global A4 Toggle UI Logic
+window.toggleTunerA4 = function() {
+    let btn = $('btnTunerToggle');
+    if (!btn) return;
+    
+    // Clear all interval listen buttons
+    document.querySelectorAll('.listen-btn').forEach(b => b.classList.remove('active-listen'));
+    
+    if (btn.classList.contains('active-listen')) {
+        // Turn it off
+        btn.classList.remove('active-listen');
+        btn.style.background = '#e0f0ff';
+        btn.style.color = '#0044bb';
+        tunerActive = false;
+        $('tunerReadout').className = 'guide-result guide-res-wait'; 
+        $('tunerReadout').innerHTML = '--- Hz';
+    } else {
+        // Turn it on
+        btn.classList.add('active-listen');
+        btn.style.background = '#0066ff';
+        btn.style.color = '#fff';
+        tunerActive = true; 
+        smoothedPitch = -1; pitchHistory = []; 
+        tunerDataArray = new Float32Array(analyserTuner.fftSize); 
+        updateTunerFilter();
+        runTuner();
+    }
+}
+
 window.setTarget = function(midi, ivKey) {
   lowerMidi = midi; 
-  if($('tunerTargetLbl')) $('tunerTargetLbl').textContent = noteName(lowerMidi);
+  
+  // Instantly turn off A4 Pitch Tuner mode when clicking an interval
+  let a4Btn = $('btnTunerToggle');
+  if (a4Btn && a4Btn.classList.contains('active-listen')) {
+      a4Btn.classList.remove('active-listen');
+      a4Btn.style.background = '#e0f0ff';
+      a4Btn.style.color = '#0044bb';
+      tunerActive = false;
+      $('tunerReadout').className = 'guide-result guide-res-wait'; 
+      $('tunerReadout').innerHTML = '--- Hz';
+  }
+  
   updateTunerFilter();
   
   const fastIntervals = ['m3', 'M3', 'M6', 'M10', 'M17'];
@@ -1723,12 +1772,6 @@ $('btnPassThrough').onclick = () => {
         if(monitorGain) monitorGain.gain.value = 0; 
     } 
 };
-
-$('btnTunerToggle').onclick = () => {
-  tunerActive = !tunerActive; const btn = $('btnTunerToggle'), out = $('tunerReadout');
-  if(tunerActive) { btn.textContent = 'TUNER: ON'; btn.style.background = '#000'; btn.style.color = '#fff'; out.className = 'guide-result guide-res-pass'; smoothedPitch = -1; pitchHistory = []; tunerDataArray = new Float32Array(analyserTuner.fftSize); runTuner(); } 
-  else { btn.textContent = 'TUNER: OFF'; btn.style.background = '#fff'; btn.style.color = '#000'; out.className = 'guide-result guide-res-wait'; out.innerHTML = '--- Hz'; }
-}
 
 function updateRollBounds() { while (lowerMidi < rollBaseMidi) rollBaseMidi -= 12; while (lowerMidi >= rollBaseMidi + 12) rollBaseMidi += 12; }
 function enforceReblitzLimits() { const ivDef = IV[curIv]; if (lowerMidi < ivDef.min) lowerMidi = ivDef.min; if (lowerMidi > ivDef.max) lowerMidi = ivDef.max; updateRollBounds(); }
@@ -2200,7 +2243,7 @@ function buildAudioProcessor() {
       const rms = Math.sqrt(sum / limit); 
       
       envelopeRunning = (envelopeRunning * 0.7) + (rms * 0.3); 
-      // Lowered transient gate to 1.5x and floor to 0.002
+      // Lowered transient gate to 1.5x and floor to 0.002 for hyper-sensitivity
       const isStrike = (envelopeRunning > lastEnvelope * 1.5) && (envelopeRunning > 0.002); 
       lastEnvelope = envelopeRunning;
       
@@ -2212,6 +2255,7 @@ function buildAudioProcessor() {
       if (noiseFloor < 0.000001) noiseFloor = 0.000001; 
       const snr = envelopeRunning / noiseFloor;
       
+      // Lowered global SNR trigger to 1.8
       if (isStrike && snr > 1.8) { 
           const timeNow = performance.now(); 
           if (timeNow - lastAttackTime > 400 && (captureState === 'IDLE' || captureState === 'LOCKED')) { 
@@ -2280,9 +2324,11 @@ function renderLoop(ts) {
 function detectBeat(history, theoreticalBeat, ivKey) {
   const N = history.length; const fps = audioCtx.sampleRate / currentChunkSize; const vals = history.map(h => h.val); const windowSize = Math.round(fps * 0.45); const valAvg = vals.reduce((a,b) => a+b, 0) / N;
   const AC = new Float32Array(N); for (let i = 0; i < N; i++) { let start = Math.max(0, i - Math.floor(windowSize / 2)), end = Math.min(N, i + Math.ceil(windowSize / 2)), localSum = 0; for (let j = start; j < end; j++) localSum += vals[j]; AC[i] = vals[i] - (localSum / (end - start)); }
-  // Lowered global beat intensity requirement
+  // Lowered global beat intensity requirement to 0.008 for faint beats
   let ac0 = 0; for (let i = 0; i < N; i++) ac0 += AC[i] * AC[i]; let beatIntensity = Math.sqrt(ac0 / N) / valAvg; if (beatIntensity < 0.008 && valAvg > 0.002) return 0.0; if (ac0 < 1e-12) return null;
   const minLag = Math.max(2, Math.round(fps / 55)), maxLag = Math.min(N - 2, Math.round(fps / 0.5)); const ac = new Float32Array(maxLag + 1); for (let lag = minLag; lag <= maxLag; lag++) { let sum = 0; for (let i = 0; i < N - lag; i++) sum += AC[i] * AC[i + lag]; ac[lag] = sum / ac0; }
+  
+  // Specific M10/M17 threshold drop to catch weak 5th partials
   const peaks = []; let acThreshold = theoreticalBeat > 10.0 ? 0.01 : 0.02; if (ivKey === 'M10' || ivKey === 'M17') acThreshold = 0.008; if (ivKey === 'P4' || ivKey === 'P5' || ivKey.includes('OCT')) acThreshold = 0.005; if (lowerMidi >= 58) { acThreshold *= 0.5; } 
   for (let lag = minLag + 1; lag < maxLag; lag++) { if (ac[lag] > ac[lag - 1] && ac[lag] > ac[lag + 1] && ac[lag] > acThreshold) peaks.push({ lag, ac: ac[lag] }); }
   if (peaks.length === 0) { if (ivKey.includes('OCT')) return 0.0; return null; }
